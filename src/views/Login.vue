@@ -36,19 +36,33 @@
 
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
-            <label for="token" class="form-label">Bearer Token</label>
+            <label for="username" class="form-label">Username</label>
             <input
-              id="token"
-              v-model="token"
-              type="password"
+              id="username"
+              v-model="username"
+              type="text"
               class="form-input"
-              placeholder="Enter your bearer token"
+              placeholder="Enter your username"
               required
+              autocomplete="username"
             />
           </div>
 
-          <div v-if="error" class="error-message">
-            {{ error }}
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+              id="password"
+              v-model="password"
+              type="password"
+              class="form-input"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <div v-if="authStore.error" class="error-message">
+            {{ authStore.error }}
           </div>
 
           <BaseButton
@@ -60,6 +74,10 @@
           >
             Login
           </BaseButton>
+
+          <p class="login-hint">
+            Default credentials: admin / admin123
+          </p>
         </form>
       </BaseCard>
     </div>
@@ -76,28 +94,22 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const token = ref('')
+const username = ref('')
+const password = ref('')
 const loading = ref(false)
-const error = ref('')
 
 async function handleLogin() {
-  if (!token.value) {
-    error.value = 'Please enter a bearer token'
-    return
-  }
-
   loading.value = true
-  error.value = ''
 
-  try {
-    authStore.setToken(token.value)
+  // Login to UI (validates username/password)
+  const success = authStore.loginUI(username.value, password.value)
+
+  if (success) {
+    // Redirect to media page
     await router.push('/media')
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Login failed'
-    authStore.logout()
-  } finally {
-    loading.value = false
   }
+
+  loading.value = false
 }
 </script>
 
@@ -184,5 +196,13 @@ async function handleLogin() {
   color: #991b1b;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
+}
+
+.login-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--slate-500);
+  margin: 0;
+  font-style: italic;
 }
 </style>

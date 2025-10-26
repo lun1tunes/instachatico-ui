@@ -3,33 +3,6 @@
     <div class="container">
       <div class="app-header__content">
         <router-link to="/" class="app-header__logo">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="32" height="32" rx="8" fill="url(#gradient)" />
-            <path
-              d="M16 10L20 14H18V20H14V14H12L16 10Z"
-              fill="white"
-              opacity="0.9"
-            />
-            <defs>
-              <linearGradient
-                id="gradient"
-                x1="0"
-                y1="0"
-                x2="32"
-                y2="32"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stop-color="#3B82F6" />
-                <stop offset="1" stop-color="#1E40AF" />
-              </linearGradient>
-            </defs>
-          </svg>
           <span class="app-header__title">Instachatico</span>
         </router-link>
 

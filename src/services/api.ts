@@ -57,6 +57,17 @@ class ApiService {
     return this.bearerToken
   }
 
+  // Authentication endpoints
+  async login(credentials: { username: string; password: string }) {
+    const response = await this.client.post('/auth/login', credentials)
+    return response.data
+  }
+
+  async getCurrentUser() {
+    const response = await this.client.get('/auth/me')
+    return response.data
+  }
+
   // Media endpoints
   async getMedia(query?: PaginationQuery): Promise<ApiResponse<Media[]>> {
     const response = await this.client.get<ApiResponse<Media[]>>('/media', {

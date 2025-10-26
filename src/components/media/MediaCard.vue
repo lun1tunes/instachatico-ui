@@ -1,11 +1,40 @@
 <template>
-  <BaseCard hover class="media-card" @click="$emit('click')">
-    <div class="media-card__image">
-      <img :src="media.url" :alt="media.caption" />
+  <BaseCard hover class="media-card" @click="handleCardClick">
+    <div class="media-card__image" @click.stop>
+      <img :src="imageUrl" :alt="media.caption" @error="handleImageError" />
       <div class="media-card__type-badge">
         <BaseBadge :variant="mediaTypeBadge">
           {{ mediaTypeLabel }}
         </BaseBadge>
+      </div>
+
+      <!-- Carousel indicator for preview -->
+      <div v-if="isCarousel && media.children_urls.length > 1" class="carousel-preview">
+        <button
+          class="carousel-preview-btn carousel-preview-btn--prev"
+          :disabled="currentImageIndex === 0"
+          @click="previousImage"
+          aria-label="Previous image"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <div class="carousel-preview-indicator">
+          {{ currentImageIndex + 1 }} / {{ totalImages }}
+        </div>
+
+        <button
+          class="carousel-preview-btn carousel-preview-btn--next"
+          :disabled="currentImageIndex === totalImages - 1"
+          @click="nextImage"
+          aria-label="Next image"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -75,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Media } from '@/types/api'
 import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -87,9 +116,62 @@ interface Props {
 
 const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   click: []
 }>()
+
+const imageError = ref(false)
+const currentImageIndex = ref(0)
+
+// Check if this is a carousel
+const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
+
+// Total number of images (for carousel)
+const totalImages = computed(() => {
+  if (isCarousel.value && props.media.children_urls.length > 0) {
+    return props.media.children_urls.length
+  }
+  return 1
+})
+
+// Try to use the Instagram URL directly, fallback to placeholder on error
+const imageUrl = computed(() => {
+  if (imageError.value) {
+    return `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+  }
+
+  // For carousel, show current image from children_urls
+  if (isCarousel.value && props.media.children_urls.length > 0) {
+    return props.media.children_urls[currentImageIndex.value] || props.media.url
+  }
+
+  // Use direct Instagram URL for single images/videos
+  return props.media.url
+})
+
+function handleImageError() {
+  imageError.value = true
+}
+
+// Carousel navigation (prevents card click when navigating)
+function nextImage() {
+  if (currentImageIndex.value < totalImages.value - 1) {
+    currentImageIndex.value++
+    imageError.value = false
+  }
+}
+
+function previousImage() {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+    imageError.value = false
+  }
+}
+
+// Handle card click (only navigate when not clicking carousel buttons)
+function handleCardClick() {
+  emit('click')
+}
 
 const truncatedCaption = computed(() => {
   const maxLength = 100
@@ -102,7 +184,7 @@ const truncatedCaption = computed(() => {
 const mediaTypeLabel = computed(() => {
   switch (props.media.type) {
     case MediaType.IMAGE:
-      return 'Image'
+      return 'Post'
     case MediaType.VIDEO:
       return 'Video'
     case MediaType.CAROUSEL:
@@ -147,12 +229,76 @@ const mediaTypeBadge = computed(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: opacity var(--transition-fast);
 }
 
 .media-card__type-badge {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
+  z-index: 2;
+}
+
+/* Carousel Preview Controls */
+.carousel-preview {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.8), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.media-card__image:hover .carousel-preview {
+  opacity: 1;
+}
+
+.carousel-preview-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  color: var(--navy-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.carousel-preview-btn:hover:not(:disabled) {
+  background-color: white;
+  color: var(--blue-500);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.carousel-preview-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-preview-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.carousel-preview-indicator {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--navy-800);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 .media-card__content {

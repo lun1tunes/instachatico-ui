@@ -1,7 +1,36 @@
 <template>
   <BaseCard class="media-detail-card">
     <div class="media-detail-card__image">
-      <img :src="media.url" :alt="media.caption" />
+      <img :src="imageUrl" :alt="media.caption" @error="handleImageError" />
+
+      <!-- Carousel Navigation -->
+      <div v-if="isCarousel && media.children_urls.length > 1" class="carousel-controls">
+        <button
+          class="carousel-btn carousel-btn--prev"
+          :disabled="currentImageIndex === 0"
+          @click="previousImage"
+          aria-label="Previous image"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <button
+          class="carousel-btn carousel-btn--next"
+          :disabled="currentImageIndex === totalImages - 1"
+          @click="nextImage"
+          aria-label="Next image"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <div class="carousel-indicator">
+          {{ currentImageIndex + 1 }} / {{ totalImages }}
+        </div>
+      </div>
     </div>
 
     <div class="media-detail-card__info">
@@ -118,11 +147,58 @@ const emit = defineEmits<{
 
 const showContextModal = ref(false)
 const editedContext = ref(props.media.context)
+const imageError = ref(false)
+const currentImageIndex = ref(0)
+
+// Check if this is a carousel
+const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
+
+// Total number of images (for carousel)
+const totalImages = computed(() => {
+  if (isCarousel.value && props.media.children_urls.length > 0) {
+    return props.media.children_urls.length
+  }
+  return 1
+})
+
+// Current image URL (supports carousel)
+const imageUrl = computed(() => {
+  if (imageError.value) {
+    return `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+  }
+
+  // For carousel, show current image from children_urls
+  if (isCarousel.value && props.media.children_urls.length > 0) {
+    return props.media.children_urls[currentImageIndex.value] || props.media.url
+  }
+
+  // Use direct Instagram URL for single images/videos
+  return props.media.url
+})
+
+function handleImageError() {
+  imageError.value = true
+}
+
+// Carousel navigation
+function nextImage() {
+  if (currentImageIndex.value < totalImages.value - 1) {
+    currentImageIndex.value++
+    imageError.value = false // Reset error state for new image
+  }
+}
+
+function previousImage() {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+    imageError.value = false // Reset error state for new image
+  }
+}
 
 const mediaTypeLabel = computed(() => {
   switch (props.media.type) {
     case MediaType.IMAGE:
-      return 'Image'
+      return 'Post'
     case MediaType.VIDEO:
       return 'Video'
     case MediaType.CAROUSEL:
@@ -181,6 +257,69 @@ function openPermalink() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: opacity var(--transition-fast);
+}
+
+/* Carousel Controls */
+.carousel-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.carousel-btn {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  color: var(--navy-700);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  pointer-events: all;
+  margin: 0 var(--spacing-md);
+  box-shadow: var(--shadow-md);
+}
+
+.carousel-btn:hover:not(:disabled) {
+  background-color: white;
+  color: var(--blue-500);
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.carousel-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-btn svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.carousel-indicator {
+  position: absolute;
+  bottom: var(--spacing-md);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(15, 23, 42, 0.8);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  pointer-events: all;
+  backdrop-filter: blur(4px);
 }
 
 .media-detail-card__info {
