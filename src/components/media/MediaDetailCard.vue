@@ -49,15 +49,15 @@
         <span class="value">{{ media.comments_count }}</span>
       </div>
 
-      <div class="info-row">
+      <div class="info-row info-row--instagram">
         <BaseButton
           v-if="instagramUrl"
           variant="ghost"
           size="sm"
-          class="instagram-link-btn"
+          class="instagram-link-btn instagram-link-btn--full"
           @click="openPermalink"
         >
-          Open in Instagram
+          View on Instagram
         </BaseButton>
         <span v-else class="value">—</span>
       </div>
@@ -79,16 +79,7 @@
     <div class="media-detail-card__settings">
       <h4>Settings</h4>
       <div class="settings-group">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            :checked="media.is_comment_enabled"
-            @change="toggleComments"
-          />
-          <span>Allow Comments</span>
-        </label>
-
-        <label class="checkbox-label">
+        <label class="checkbox-label checkbox-label--danger">
           <input
             type="checkbox"
             :checked="media.is_processing_enabled"
@@ -96,19 +87,21 @@
           />
           <span>Enable Processing</span>
         </label>
+
+        <label class="checkbox-label checkbox-label--danger">
+          <input
+            type="checkbox"
+            :checked="media.is_comment_enabled"
+            @change="confirmToggleComments"
+          />
+          <div class="checkbox-content">
+            <span>Allow Comments</span>
+            <small>Disabling deletes all comments permanently</small>
+          </div>
+        </label>
       </div>
     </div>
 
-    <div class="media-detail-card__link" v-if="instagramUrl">
-      <BaseButton
-        variant="ghost"
-        size="sm"
-        full-width
-        @click="openPermalink"
-      >
-        View on Instagram
-      </BaseButton>
-    </div>
   </BaseCard>
 
   <BaseModal v-model="showContextModal" title="Edit Context">
@@ -263,9 +256,26 @@ const instagramUrl = computed(() => {
   return ''
 })
 
-function toggleComments(event: Event) {
+function toggleComments(enabled: boolean) {
+  emit('update', { is_comment_enabled: enabled })
+}
+
+function confirmToggleComments(event: Event) {
   const target = event.target as HTMLInputElement
-  emit('update', { is_comment_enabled: target.checked })
+  const nextValue = target.checked
+
+  if (!nextValue) {
+    const confirmed = window.confirm(
+      'Disabling comments will permanently delete all existing comments. This action cannot be undone. Do you want to continue?'
+    )
+
+    if (!confirmed) {
+      target.checked = true
+      return
+    }
+  }
+
+  toggleComments(nextValue)
 }
 
 function toggleProcessing(event: Event) {
@@ -384,6 +394,10 @@ function openPermalink() {
   font-size: 0.875rem;
 }
 
+.info-row--instagram {
+  justify-content: center;
+}
+
 .label {
   color: var(--navy-600);
   font-weight: 500;
@@ -394,7 +408,20 @@ function openPermalink() {
 }
 
 .instagram-link-btn {
-  padding: 0.25rem 0.75rem;
+  padding: 0.625rem 1rem;
+  width: 100%;
+  justify-content: center;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+}
+
+.instagram-link-btn--full {
+  width: 100%;
+}
+
+.info-row .instagram-link-btn {
+  flex: 1;
 }
 
 .media-detail-card__caption,
@@ -430,17 +457,44 @@ function openPermalink() {
 
 .checkbox-label {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-sm);
   cursor: pointer;
   font-size: 0.875rem;
   color: var(--navy-700);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
 }
 
 .checkbox-label input[type="checkbox"] {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
+}
+
+.checkbox-label:hover {
+  background-color: var(--slate-100);
+}
+
+.checkbox-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.checkbox-label--danger {
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.checkbox-label--danger:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.checkbox-label--danger small {
+  color: var(--error);
+  font-size: 0.75rem;
+  line-height: 1.2;
 }
 
 .media-detail-card__link {

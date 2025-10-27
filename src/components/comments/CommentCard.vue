@@ -1,60 +1,78 @@
 <template>
   <BaseCard class="comment-card">
     <div class="comment-header">
-      <div class="comment-user">
-        <div class="user-avatar">{{ userInitial }}</div>
-        <div class="user-info">
-          <span class="username">@{{ comment.username }}</span>
-          <BaseBadge
-            v-if="comment.parent_id"
-            variant="info"
-            size="sm"
-          >
-            Reply
-          </BaseBadge>
-        </div>
+      <div class="comment-meta">
+        <BaseBadge
+          :variant="statusBadgeVariant"
+          size="sm"
+          class="meta-badge"
+        >
+          {{ statusBadgeLabel }}
+        </BaseBadge>
+        <BaseBadge
+          v-if="hasClassificationTag"
+          :classification-type="comment.classification.classification_type ?? undefined"
+          class="meta-badge"
+        >
+          {{ getClassificationLabel(comment.classification.classification_type) }}
+        </BaseBadge>
       </div>
 
-      <div class="comment-actions">
-        <BaseButton
-          variant="ghost"
-          size="sm"
-          @click="toggleHidden"
-          :loading="loading"
-        >
-          <svg
-            v-if="comment.is_hidden"
-            class="action-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
+      <div class="comment-header-main">
+        <div class="comment-user">
+          <div class="user-avatar">{{ userInitial }}</div>
+          <div class="user-info">
+            <span class="username">@{{ comment.username }}</span>
+            <BaseBadge
+              v-if="comment.parent_id"
+              variant="info"
+              size="sm"
+            >
+              Reply
+            </BaseBadge>
+          </div>
+        </div>
+
+        <div class="comment-actions">
+          <BaseButton
+            variant="ghost"
+            size="sm"
+            @click="toggleHidden"
+            :loading="loading"
           >
-            <path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          <svg
-            v-else
-            class="action-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3 3 21 21" />
-            <path d="M10.73 5.08A8.06 8.06 0 0 1 12 5c6.5 0 10.5 7 10.5 7a18.74 18.74 0 0 1-3.21 4.18" />
-            <path d="M6.12 6.11C2.69 8.2 1.5 12 1.5 12s2 4.5 6.35 6.71" />
-            <path d="M9.53 9.53A3 3 0 0 0 14.47 14.5" />
-            <path d="M12 9v0" />
-          </svg>
-          <span>{{ comment.is_hidden ? 'Unhide' : 'Hide' }}</span>
-        </BaseButton>
+            <svg
+              v-if="comment.is_hidden"
+              class="action-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <svg
+              v-else
+              class="action-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 3 21 21" />
+              <path d="M10.73 5.08A8.06 8.06 0 0 1 12 5c6.5 0 10.5 7 10.5 7a18.74 18.74 0 0 1-3.21 4.18" />
+              <path d="M6.12 6.11C2.69 8.2 1.5 12 1.5 12s2 4.5 6.35 6.71" />
+              <path d="M9.53 9.53A3 3 0 0 0 14.47 14.5" />
+              <path d="M12 9v0" />
+            </svg>
+            <span>{{ comment.is_hidden ? 'Unhide' : 'Hide' }}</span>
+          </BaseButton>
         <BaseButton
           variant="danger"
           size="sm"
@@ -80,6 +98,8 @@
           <span>Delete</span>
         </BaseButton>
       </div>
+    </div>
+
     </div>
 
     <div class="comment-body">
@@ -114,10 +134,6 @@
       </div>
 
       <div class="classification-info">
-        <BaseBadge :classification-type="comment.classification.classification_type">
-          {{ getClassificationLabel(comment.classification.classification_type) }}
-        </BaseBadge>
-
         <div v-if="comment.classification.confidence !== null" class="confidence">
           <span class="confidence-label">Confidence:</span>
           <div class="confidence-bar">
@@ -128,15 +144,6 @@
           </div>
           <span class="confidence-value">{{ comment.classification.confidence }}%</span>
         </div>
-
-        <!-- Only show processing status badge if classification actually failed (no confidence/reasoning) -->
-        <BaseBadge
-          v-if="isClassificationFailed"
-          :variant="getProcessingStatusVariant(comment.classification.processing_status)"
-          size="sm"
-        >
-          {{ getProcessingStatusLabel(comment.classification.processing_status) }}
-        </BaseBadge>
       </div>
 
       <div v-if="comment.classification.reasoning" class="classification-reasoning">
@@ -214,6 +221,28 @@ const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
 })
 
+const hasClassificationTag = computed(() => {
+  const status = props.comment.classification.processing_status
+  const classificationType = props.comment.classification.classification_type
+
+  const isProcessingState = [
+    ProcessingStatusEnum.PENDING,
+    ProcessingStatusEnum.PROCESSING,
+    ProcessingStatusEnum.FAILED,
+    ProcessingStatusEnum.RETRY
+  ].includes(status)
+
+  return classificationType !== null && !isProcessingState
+})
+
+const statusBadgeVariant = computed(() =>
+  getProcessingStatusVariant(props.comment.classification.processing_status)
+)
+
+const statusBadgeLabel = computed(() =>
+  getProcessingStatusLabel(props.comment.classification.processing_status)
+)
+
 // Only consider classification failed if it has no confidence or reasoning
 // If we have data, it means classification succeeded even if status says "Failed"
 const isClassificationFailed = computed(() => {
@@ -224,7 +253,10 @@ const isClassificationFailed = computed(() => {
   )
 })
 
-function getClassificationLabel(type: ClassificationType): string {
+function getClassificationLabel(type: ClassificationType | null): string {
+  if (type === null || type === undefined) {
+    return 'Pending Classification'
+  }
   return ClassificationTypeLabels[type] || 'Unknown'
 }
 
@@ -284,17 +316,39 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   border-left: 3px solid var(--blue-500);
 }
 
+
 .comment-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.comment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.comment-header-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-md);
 }
 
 .comment-user {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+}
+
+.meta-badge {
+  min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .user-avatar {

@@ -21,7 +21,7 @@ function normalizeClassification(raw?: RawClassification | null): Classification
   const classificationType =
     classification.classification_type ??
     classification.type ??
-    ClassificationTypeEnum.POSITIVE_FEEDBACK
+    null
 
   const confidence =
     classification.confidence !== undefined && classification.confidence !== null

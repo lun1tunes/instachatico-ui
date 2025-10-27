@@ -82,7 +82,7 @@ export interface Classification {
   processing_completed_at: string
   last_error: string | null
   confidence: number | null
-  classification_type: ClassificationType
+  classification_type: ClassificationType | null
   reasoning: string
 }
 

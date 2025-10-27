@@ -48,7 +48,7 @@ import type { UpdateClassificationRequest } from '@/types/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
 interface Props {
-  currentType: ClassificationType
+  currentType: ClassificationType | null
   currentReasoning: string
 }
 
@@ -59,7 +59,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const selectedType = ref(String(props.currentType))
+const selectedType = ref(String(props.currentType ?? ClassificationType.POSITIVE_FEEDBACK))
 const reasoning = ref(props.currentReasoning)
 
 const classificationTypes = {
