@@ -35,13 +35,14 @@
 
         <div class="comment-actions">
           <BaseButton
-            variant="ghost"
+            :variant="isHiding ? 'secondary' : 'ghost'"
             size="sm"
             @click="toggleHidden"
-            :loading="loading"
+            :loading="hideLoading"
+            :disabled="hideLoading"
           >
             <svg
-              v-if="comment.is_hidden"
+              v-if="isHiding"
               class="action-icon"
               viewBox="0 0 24 24"
               fill="none"
@@ -51,7 +52,7 @@
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z" />
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
             <svg
@@ -65,13 +66,12 @@
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path d="M3 3 21 21" />
-              <path d="M10.73 5.08A8.06 8.06 0 0 1 12 5c6.5 0 10.5 7 10.5 7a18.74 18.74 0 0 1-3.21 4.18" />
-              <path d="M6.12 6.11C2.69 8.2 1.5 12 1.5 12s2 4.5 6.35 6.71" />
-              <path d="M9.53 9.53A3 3 0 0 0 14.47 14.5" />
-              <path d="M12 9v0" />
+              <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+              <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+              <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+              <line x1="2" y1="2" x2="22" y2="22" />
             </svg>
-            <span>{{ comment.is_hidden ? 'Unhide' : 'Hide' }}</span>
+            <span>{{ isHiding ? 'Unhide' : 'Hide' }}</span>
           </BaseButton>
         <BaseButton
           variant="danger"
@@ -103,7 +103,7 @@
     </div>
 
     <div class="comment-body">
-      <p :class="{ 'comment-hidden': comment.is_hidden }">
+      <p :class="{ 'comment-hidden': isHiding }">
         {{ comment.text }}
       </p>
     </div>
@@ -133,7 +133,7 @@
         </BaseButton>
       </div>
 
-      <div class="classification-info">
+      <div v-if="!isClassificationFailed" class="classification-info">
         <div v-if="comment.classification.confidence !== null" class="confidence">
           <span class="confidence-label">Confidence:</span>
           <div class="confidence-bar">
@@ -146,13 +146,14 @@
         </div>
       </div>
 
-      <div v-if="comment.classification.reasoning" class="classification-reasoning">
+      <div v-if="!isClassificationFailed && comment.classification.reasoning" class="classification-reasoning">
         <span class="reasoning-label">Reasoning:</span>
         <p>{{ comment.classification.reasoning }}</p>
       </div>
 
-      <div v-if="comment.classification.last_error" class="classification-error">
-        Error: {{ comment.classification.last_error }}
+      <div v-if="isClassificationFailed && comment.classification.last_error" class="classification-error">
+        <div class="error-header">Error while classification</div>
+        <div class="error-details">{{ comment.classification.last_error }}</div>
       </div>
     </div>
 
@@ -183,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type {
   Comment,
   UpdateCommentRequest,
@@ -215,7 +216,16 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
+const hideLoading = ref(false)
 const showClassificationModal = ref(false)
+
+// Local state for optimistic UI updates
+const isHiding = ref(props.comment.is_hidden)
+
+// Watch for prop changes from parent
+watch(() => props.comment.is_hidden, (newValue) => {
+  isHiding.value = newValue
+})
 
 const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
@@ -243,14 +253,9 @@ const statusBadgeLabel = computed(() =>
   getProcessingStatusLabel(props.comment.classification.processing_status)
 )
 
-// Only consider classification failed if it has no confidence or reasoning
-// If we have data, it means classification succeeded even if status says "Failed"
+// Hide confidence and reasoning when classification status is FAILED
 const isClassificationFailed = computed(() => {
-  return (
-    props.comment.classification.processing_status === ProcessingStatusEnum.FAILED &&
-    props.comment.classification.confidence === null &&
-    !props.comment.classification.reasoning
-  )
+  return props.comment.classification.processing_status === ProcessingStatusEnum.FAILED
 })
 
 function getClassificationLabel(type: ClassificationType | null): string {
@@ -283,13 +288,16 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
 }
 
 async function toggleHidden() {
-  loading.value = true
+  hideLoading.value = true
+
   try {
+    const newHiddenState = !isHiding.value
     emit('update', props.comment.id, {
-      is_hidden: !props.comment.is_hidden
+      is_hidden: newHiddenState
     })
+    // Note: isHiding will be updated via the watch when parent updates the prop
   } finally {
-    loading.value = false
+    hideLoading.value = false
   }
 }
 
@@ -313,7 +321,7 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 
 <style scoped>
 .comment-card {
-  border-left: 3px solid var(--blue-500);
+  border-left: 3px solid var(--blue-300);
 }
 
 
@@ -354,9 +362,9 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 .user-avatar {
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue-500), var(--navy-700));
-  color: white;
+  border-radius: var(--radius-md);
+  background: var(--blue-100);
+  color: var(--blue-500);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -388,6 +396,10 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 
 .comment-body {
   margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--blue-50);
+  border-left: 2px solid var(--blue-200);
+  border-radius: var(--radius-md);
 }
 
 .comment-body p {
@@ -397,8 +409,8 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 }
 
 .comment-hidden {
-  opacity: 0.5;
-  text-decoration: line-through;
+  opacity: 0.4;
+  color: var(--slate-400);
 }
 
 .comment-classification {
@@ -484,11 +496,23 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 
 .classification-error {
   margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  background-color: #fee2e2;
-  color: #991b1b;
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  background-color: var(--blue-50);
+  border-left: 2px solid var(--blue-200);
+  border-radius: var(--radius-md);
+}
+
+.error-header {
+  margin-bottom: var(--spacing-sm);
+  color: var(--error);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.error-details {
+  color: var(--navy-600);
   font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
 .comment-answers {
