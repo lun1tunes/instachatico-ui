@@ -106,6 +106,9 @@
       <p :class="{ 'comment-hidden': isHiding }">
         {{ comment.text }}
       </p>
+      <time v-if="comment.created_at" class="comment-date">
+        {{ formattedCreatedAt }}
+      </time>
     </div>
 
     <div class="comment-classification">
@@ -194,6 +197,7 @@ import type {
   ClassificationType
 } from '@/types/api'
 import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
+import { format, parseISO } from 'date-fns'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -229,6 +233,17 @@ watch(() => props.comment.is_hidden, (newValue) => {
 
 const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
+})
+
+const formattedCreatedAt = computed(() => {
+  if (!props.comment.created_at) return ''
+  try {
+    const date = parseISO(props.comment.created_at)
+    return format(date, 'MMM d, yyyy HH:mm')
+  } catch (error) {
+    console.error('Failed to parse created_at date:', error)
+    return props.comment.created_at
+  }
 })
 
 const hasClassificationTag = computed(() => {
@@ -403,9 +418,16 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 }
 
 .comment-body p {
-  margin: 0;
+  margin: 0 0 var(--spacing-sm) 0;
   color: var(--navy-700);
   line-height: 1.6;
+}
+
+.comment-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--slate-400);
+  font-style: italic;
 }
 
 .comment-hidden {

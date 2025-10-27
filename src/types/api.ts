@@ -108,6 +108,7 @@ export interface Comment {
   text: string
   is_hidden: boolean
   last_error: string | null
+  created_at?: string
   classification: Classification
   answers: Answer[]
 }
