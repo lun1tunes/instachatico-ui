@@ -135,12 +135,12 @@ function handleClick(event: MouseEvent) {
 }
 
 .base-button--danger {
-  background-color: var(--error);
-  color: white;
+  background: linear-gradient(135deg, #fee2e2, #fda4a1);
+  color: #000000;
 }
 
 .base-button--danger:hover:not(.base-button--disabled) {
-  background-color: #dc2626;
+  background: linear-gradient(135deg, #fecaca, #f87171);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }

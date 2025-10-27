@@ -69,11 +69,26 @@
     </div>
 
     <div class="media-detail-card__context">
-      <h4>Context</h4>
+      <div class="context-header">
+        <h4>AI Context</h4>
+        <BaseButton variant="ghost" size="sm" @click="showContextModal = true">
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9" />
+            <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
+          </svg>
+          Edit
+        </BaseButton>
+      </div>
       <p>{{ media.context }}</p>
-      <BaseButton variant="ghost" size="sm" @click="showContextModal = true">
-        Edit Context
-      </BaseButton>
     </div>
 
     <div class="media-detail-card__settings">
@@ -433,12 +448,23 @@ function openPermalink() {
 }
 
 .media-detail-card__caption h4,
-.media-detail-card__context h4,
-.media-detail-card__settings h4 {
+.media-detail-card__settings h4,
+.context-header h4 {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--navy-700);
+}
+
+.context-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--spacing-sm);
+}
+
+.context-header .action-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .media-detail-card__caption p,

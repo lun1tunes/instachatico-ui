@@ -93,17 +93,6 @@
         <label class="checkbox-label" @click.stop>
           <input
             type="checkbox"
-            :checked="media.is_comment_enabled"
-            @change="handleToggleComments"
-            class="checkbox-input"
-          />
-          <span class="checkbox-custom"></span>
-          <span class="checkbox-text">Comments</span>
-        </label>
-
-        <label class="checkbox-label" @click.stop>
-          <input
-            type="checkbox"
             :checked="media.is_processing_enabled"
             @change="handleToggleProcessing"
             class="checkbox-input"
