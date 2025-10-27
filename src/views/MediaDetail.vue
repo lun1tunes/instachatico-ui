@@ -1,25 +1,29 @@
 <template>
   <div class="media-detail-page">
     <div class="container">
-      <div class="back-button-wrapper">
-        <BaseButton variant="ghost" @click="goBackToMedia">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10 12L6 8L10 4"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          Back to Media
-        </BaseButton>
+      <div class="page-header">
+        <div class="back-button-wrapper">
+          <BaseButton variant="ghost" @click="goBackToMedia">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10 12L6 8L10 4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Back to Media
+          </BaseButton>
+        </div>
+
+        <h2 class="comments-heading">Comments</h2>
       </div>
 
       <LoadingSpinner v-if="mediaStore.loading && !mediaStore.currentMedia" message="Loading media..." />
@@ -92,8 +96,24 @@ async function handleUpdateMedia(data: UpdateMediaRequest) {
   min-height: calc(100vh - 4rem);
 }
 
-.back-button-wrapper {
+.page-header {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
+  align-items: center;
+}
+
+.back-button-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.comments-heading {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--navy-800);
+  text-align: center;
 }
 
 .media-detail {
@@ -104,6 +124,11 @@ async function handleUpdateMedia(data: UpdateMediaRequest) {
 }
 
 @media (max-width: 1024px) {
+  .page-header {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
   .media-detail {
     grid-template-columns: 1fr;
   }

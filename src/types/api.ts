@@ -107,6 +107,7 @@ export interface Comment {
   username: string
   text: string
   is_hidden: boolean
+  is_deleted: boolean
   last_error: string | null
   created_at?: string
   classification: Classification

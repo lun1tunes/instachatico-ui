@@ -61,17 +61,27 @@ export const useCommentsStore = defineStore('comments', () => {
   const statusFilter = ref<ProcessingStatus[]>([])
   const classificationFilter = ref<ClassificationType[]>([])
   const visibilityFilter = ref<'all' | 'visible' | 'hidden'>('all')
+  const deletedFilter = ref<'all' | 'active' | 'deleted'>('all')
 
-  // Computed: Filter comments by visibility (frontend-only filter)
+  // Computed: Filter comments by visibility and deleted status (frontend-only filters)
   const comments = computed(() => {
-    if (visibilityFilter.value === 'all') {
-      return allComments.value
-    } else if (visibilityFilter.value === 'visible') {
-      return allComments.value.filter(comment => !comment.is_hidden)
+    let filtered = allComments.value
+
+    // Apply visibility filter
+    if (visibilityFilter.value === 'visible') {
+      filtered = filtered.filter(comment => !comment.is_hidden)
     } else if (visibilityFilter.value === 'hidden') {
-      return allComments.value.filter(comment => comment.is_hidden)
+      filtered = filtered.filter(comment => comment.is_hidden)
     }
-    return allComments.value
+
+    // Apply deleted filter
+    if (deletedFilter.value === 'active') {
+      filtered = filtered.filter(comment => !comment.is_deleted)
+    } else if (deletedFilter.value === 'deleted') {
+      filtered = filtered.filter(comment => comment.is_deleted)
+    }
+
+    return filtered
   })
 
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
@@ -184,10 +194,16 @@ export const useCommentsStore = defineStore('comments', () => {
     currentPage.value = 1
   }
 
+  function setDeletedFilter(deleted: 'all' | 'active' | 'deleted') {
+    deletedFilter.value = deleted
+    currentPage.value = 1
+  }
+
   function clearFilters() {
     statusFilter.value = []
     classificationFilter.value = []
     visibilityFilter.value = 'all'
+    deletedFilter.value = 'all'
     currentPage.value = 1
   }
 
@@ -275,6 +291,7 @@ export const useCommentsStore = defineStore('comments', () => {
     statusFilter,
     classificationFilter,
     visibilityFilter,
+    deletedFilter,
     fetchComments,
     deleteComment,
     updateComment,
@@ -284,6 +301,7 @@ export const useCommentsStore = defineStore('comments', () => {
     setStatusFilter,
     setClassificationFilter,
     setVisibilityFilter,
+    setDeletedFilter,
     clearFilters,
     clearComments,
     nextPage,

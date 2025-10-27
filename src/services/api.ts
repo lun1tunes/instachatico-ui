@@ -129,7 +129,11 @@ class ApiService {
   }
 
   async updateComment(id: string, data: UpdateCommentRequest): Promise<ApiResponse<Comment>> {
-    const response = await this.client.patch<ApiResponse<Comment>>(`/comments/${id}`, data)
+    const response = await this.client.patch<ApiResponse<Comment>>(`/comments/${id}`, null, {
+      params: {
+        is_hidden: data.is_hidden
+      }
+    })
     return response.data
   }
 

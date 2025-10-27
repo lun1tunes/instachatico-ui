@@ -1,7 +1,15 @@
 <template>
-  <BaseCard class="comment-card">
+  <BaseCard class="comment-card" padding="sm">
     <div class="comment-header">
       <div class="comment-meta">
+        <BaseBadge
+          v-if="comment.is_deleted"
+          variant="error"
+          size="sm"
+          class="meta-badge"
+        >
+          Deleted
+        </BaseBadge>
         <BaseBadge
           :variant="statusBadgeVariant"
           size="sm"
@@ -74,6 +82,7 @@
             <span>{{ isHiding ? 'Unhide' : 'Hide' }}</span>
           </BaseButton>
         <BaseButton
+          v-if="!comment.is_deleted"
           variant="danger"
           size="sm"
           @click="handleDelete"

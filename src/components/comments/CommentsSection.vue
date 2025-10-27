@@ -1,14 +1,12 @@
 <template>
   <div class="comments-section">
-    <div class="comments-header">
-      <h2>Comments</h2>
-      <CommentFilters
-        :status-filters="commentsStore.statusFilter"
-        :classification-filters="commentsStore.classificationFilter"
-        :visibility-filter="commentsStore.visibilityFilter"
-        @update="handleFilterUpdate"
-      />
-    </div>
+    <CommentFilters
+      :status-filters="commentsStore.statusFilter"
+      :classification-filters="commentsStore.classificationFilter"
+      :visibility-filter="commentsStore.visibilityFilter"
+      :deleted-filter="commentsStore.deletedFilter"
+      @update="handleFilterUpdate"
+    />
 
     <LoadingSpinner v-if="commentsStore.loading && !commentsStore.comments.length" message="Loading comments..." />
 
@@ -89,17 +87,20 @@ async function loadComments() {
 }
 
 type VisibilityFilter = 'all' | 'visible' | 'hidden'
+type DeletedFilter = 'all' | 'active' | 'deleted'
 
 interface FilterUpdatePayload {
   statuses: ProcessingStatus[]
   classifications: ClassificationType[]
   visibility: VisibilityFilter
+  deleted: DeletedFilter
 }
 
 function handleFilterUpdate(filters: FilterUpdatePayload) {
   commentsStore.setStatusFilter(filters.statuses)
   commentsStore.setClassificationFilter(filters.classifications)
   commentsStore.setVisibilityFilter(filters.visibility)
+  commentsStore.setDeletedFilter(filters.deleted)
   loadComments()
 }
 
@@ -109,7 +110,8 @@ function handlePageChange(page: number) {
 }
 
 async function handleDelete(id: string) {
-  if (confirm('Are you sure you want to delete this comment?')) {
+  const message = 'Are you sure? Comment will be deleted permanently. This action cannot be undone. Do you want to continue?'
+  if (confirm(message)) {
     try {
       await commentsStore.deleteComment(id)
     } catch (error) {
@@ -160,22 +162,10 @@ async function handleUpdateAnswer(commentId: string, answerId: string, data: Upd
   gap: var(--spacing-md);
 }
 
-.comments-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.comments-header h2 {
-  margin: 0;
-}
-
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .error-state,

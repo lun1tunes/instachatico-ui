@@ -255,7 +255,7 @@ function handleDelete() {
   flex-direction: column;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm);
-  background-color: var(--slate-50);
+  background-color: #fafbfc;
   border-radius: var(--radius-md);
 }
 

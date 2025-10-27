@@ -39,6 +39,42 @@
         </div>
       </div>
 
+      <!-- Deleted Filter -->
+      <div class="filter-section">
+        <span class="filter-label">Deleted:</span>
+        <div class="filter-chips">
+          <button
+            :class="['filter-chip', { active: deletedFilter === 'all' }]"
+            @click="setDeletedFilter('all')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            All
+          </button>
+          <button
+            :class="['filter-chip', { active: deletedFilter === 'active' }]"
+            @click="setDeletedFilter('active')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Active
+          </button>
+          <button
+            :class="['filter-chip', { active: deletedFilter === 'deleted' }]"
+            @click="setDeletedFilter('deleted')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            Deleted
+          </button>
+        </div>
+      </div>
+
       <!-- Status Filter -->
       <div class="filter-section">
         <span class="filter-label">Status:</span>
@@ -89,15 +125,18 @@ import { ref, computed } from 'vue'
 import { ProcessingStatus, ClassificationType, ClassificationTypeLabels } from '@/types/api'
 
 type VisibilityFilter = 'all' | 'visible' | 'hidden'
+type DeletedFilter = 'all' | 'active' | 'deleted'
 
 interface Props {
   statusFilters: ProcessingStatus[]
   classificationFilters: ClassificationType[]
   visibilityFilter?: VisibilityFilter
+  deletedFilter?: DeletedFilter
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  visibilityFilter: 'all'
+  visibilityFilter: 'all',
+  deletedFilter: 'all'
 })
 
 const emit = defineEmits<{
@@ -105,10 +144,12 @@ const emit = defineEmits<{
     statuses: ProcessingStatus[]
     classifications: ClassificationType[]
     visibility: VisibilityFilter
+    deleted: DeletedFilter
   }]
 }>()
 
 const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
+const deletedFilter = ref<DeletedFilter>(props.deletedFilter)
 
 const processingStatuses = [
   { value: ProcessingStatus.PENDING, label: 'Pending' },
@@ -159,7 +200,8 @@ const classificationOptions = [
 const hasActiveFilters = computed(() => {
   return props.statusFilters.length > 0 ||
          props.classificationFilters.length > 0 ||
-         visibilityFilter.value !== 'all'
+         visibilityFilter.value !== 'all' ||
+         deletedFilter.value !== 'all'
 })
 
 function isStatusActive(status: ProcessingStatus): boolean {
@@ -175,7 +217,18 @@ function setVisibilityFilter(filter: VisibilityFilter) {
   emit('update', {
     statuses: [...props.statusFilters],
     classifications: [...props.classificationFilters],
-    visibility: filter
+    visibility: filter,
+    deleted: deletedFilter.value
+  })
+}
+
+function setDeletedFilter(filter: DeletedFilter) {
+  deletedFilter.value = filter
+  emit('update', {
+    statuses: [...props.statusFilters],
+    classifications: [...props.classificationFilters],
+    visibility: visibilityFilter.value,
+    deleted: filter
   })
 }
 
@@ -192,7 +245,8 @@ function toggleStatus(status: ProcessingStatus) {
   emit('update', {
     statuses: newFilters,
     classifications: [...props.classificationFilters],
-    visibility: visibilityFilter.value
+    visibility: visibilityFilter.value,
+    deleted: deletedFilter.value
   })
 }
 
@@ -209,13 +263,15 @@ function toggleClassification(classification: ClassificationType) {
   emit('update', {
     statuses: [...props.statusFilters],
     classifications: newFilters,
-    visibility: visibilityFilter.value
+    visibility: visibilityFilter.value,
+    deleted: deletedFilter.value
   })
 }
 
 function clearFilters() {
   visibilityFilter.value = 'all'
-  emit('update', { statuses: [], classifications: [], visibility: 'all' })
+  deletedFilter.value = 'all'
+  emit('update', { statuses: [], classifications: [], visibility: 'all', deleted: 'all' })
 }
 </script>
 
