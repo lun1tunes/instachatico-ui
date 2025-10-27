@@ -157,7 +157,7 @@ async function handleUpdateAnswer(commentId: string, answerId: string, data: Upd
 .comments-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .comments-header {
@@ -165,7 +165,7 @@ async function handleUpdateAnswer(commentId: string, answerId: string, data: Upd
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .comments-header h2 {
@@ -175,7 +175,7 @@ async function handleUpdateAnswer(commentId: string, answerId: string, data: Upd
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .error-state,

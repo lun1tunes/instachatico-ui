@@ -206,12 +206,22 @@ function handleDelete() {
 <style scoped>
 .answer-card {
   padding: var(--spacing-md);
-  background-color: var(--blue-50);
-  border-radius: var(--radius-md);
-  border-left: 3px solid var(--blue-500);
+  background-color: white;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--blue-200);
+  border-left: 3px solid var(--blue-300);
+  border-right: 3px solid var(--blue-300);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-fast);
+}
+
+.answer-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  border-left-color: var(--blue-400);
+  border-right-color: var(--blue-400);
 }
 
 .answer-header {
@@ -219,17 +229,19 @@ function handleDelete() {
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--slate-100);
 }
 
 .answer-status {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   flex-wrap: wrap;
 }
 
 .answer-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .action-icon {
@@ -242,6 +254,9 @@ function handleDelete() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--slate-50);
+  border-radius: var(--radius-md);
 }
 
 .score {
@@ -254,12 +269,12 @@ function handleDelete() {
   font-size: 0.75rem;
   color: var(--navy-600);
   font-weight: 500;
-  min-width: 4rem;
+  min-width: 4.5rem;
 }
 
 .score-bar {
   flex: 1;
-  height: 0.375rem;
+  height: 0.5rem;
   background-color: var(--slate-200);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -272,7 +287,7 @@ function handleDelete() {
 }
 
 .score-fill.quality {
-  background: linear-gradient(90deg, var(--success), #0ea574);
+  background: linear-gradient(90deg, var(--success), #14b8a6);
 }
 
 .score-value {
@@ -284,14 +299,18 @@ function handleDelete() {
 }
 
 .answer-body {
-  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: linear-gradient(135deg, #f7fef9 0%, #f8fefb 100%);
+  border-radius: var(--radius-md);
+  border-left: 2px solid #bbf7d0;
 }
 
 .answer-body p {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--navy-700);
-  line-height: 1.6;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 .answer-reply-status {
@@ -305,7 +324,6 @@ function handleDelete() {
 }
 
 .answer-error {
-  margin-top: var(--spacing-sm);
   padding: var(--spacing-sm);
   background-color: #fee2e2;
   color: #991b1b;
@@ -316,13 +334,13 @@ function handleDelete() {
 .answer-edit-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .form-label {

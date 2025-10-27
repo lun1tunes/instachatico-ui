@@ -135,12 +135,12 @@ function handleClick(event: MouseEvent) {
 }
 
 .base-button--danger {
-  background: linear-gradient(135deg, #fee2e2, #fda4a1);
-  color: #000000;
+  background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
 }
 
 .base-button--danger:hover:not(.base-button--disabled) {
-  background: linear-gradient(135deg, #fecaca, #f87171);
+  background: linear-gradient(90deg, #fee2e2 0%, #fecaca 100%);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }

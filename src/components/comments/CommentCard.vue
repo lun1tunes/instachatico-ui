@@ -136,6 +136,11 @@
         </BaseButton>
       </div>
 
+      <div v-if="!isClassificationFailed && comment.classification.processing_completed_at" class="classification-timestamp">
+        <span class="timestamp-label">Processed at:</span>
+        <time class="timestamp-value">{{ formattedProcessingCompletedAt }}</time>
+      </div>
+
       <div v-if="!isClassificationFailed" class="classification-info">
         <div v-if="comment.classification.confidence !== null" class="confidence">
           <span class="confidence-label">Confidence:</span>
@@ -246,6 +251,17 @@ const formattedCreatedAt = computed(() => {
   }
 })
 
+const formattedProcessingCompletedAt = computed(() => {
+  if (!props.comment.classification.processing_completed_at) return ''
+  try {
+    const date = parseISO(props.comment.classification.processing_completed_at)
+    return format(date, 'MMM d, yyyy HH:mm')
+  } catch (error) {
+    console.error('Failed to parse processing_completed_at date:', error)
+    return props.comment.classification.processing_completed_at
+  }
+})
+
 const hasClassificationTag = computed(() => {
   const status = props.comment.classification.processing_status
   const classificationType = props.comment.classification.classification_type
@@ -343,27 +359,27 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 .comment-header {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
 }
 
 .comment-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
 }
 
 .comment-header-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .comment-user {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .meta-badge {
@@ -410,17 +426,17 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 }
 
 .comment-body {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background-color: var(--blue-50);
-  border-left: 2px solid var(--blue-200);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: linear-gradient(135deg, #f3f8ff 0%, #f5f9ff 100%);
+  border-left: 2px solid #c7deff;
   border-radius: var(--radius-md);
 }
 
 .comment-body p {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-xs) 0;
   color: var(--navy-700);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .comment-date {
@@ -436,17 +452,17 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 }
 
 .comment-classification {
-  padding: var(--spacing-md);
-  background-color: var(--slate-50);
+  padding: var(--spacing-sm);
+  background-color: #fafbfc;
   border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .classification-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .classification-header h4 {
@@ -460,7 +476,6 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   align-items: center;
   gap: var(--spacing-md);
   flex-wrap: wrap;
-  margin-bottom: var(--spacing-sm);
 }
 
 .confidence {
@@ -500,7 +515,7 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
 }
 
 .classification-reasoning {
-  margin-top: var(--spacing-sm);
+  margin-top: 0.125rem;
 }
 
 .reasoning-label {
@@ -514,6 +529,25 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   font-size: 0.875rem;
   color: var(--navy-600);
   line-height: 1.5;
+}
+
+.classification-timestamp {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.timestamp-label {
+  font-size: 0.75rem;
+  color: var(--navy-600);
+  font-weight: 500;
+}
+
+.timestamp-value {
+  font-size: 0.75rem;
+  color: var(--slate-400);
+  font-style: italic;
 }
 
 .classification-error {
