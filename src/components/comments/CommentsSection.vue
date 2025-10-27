@@ -3,7 +3,8 @@
     <div class="comments-header">
       <h2>Comments</h2>
       <CommentFilters
-        :current-filters="commentsStore.statusFilter"
+        :status-filters="commentsStore.statusFilter"
+        :classification-filters="commentsStore.classificationFilter"
         @update="handleFilterUpdate"
       />
     </div>
@@ -27,6 +28,8 @@
         @delete="handleDelete"
         @update="handleUpdate"
         @update-classification="handleUpdateClassification"
+        @delete-answer="handleDeleteAnswer"
+        @update-answer="handleUpdateAnswer"
       />
     </div>
 
@@ -48,7 +51,9 @@ import { useCommentsStore } from '@/stores/comments'
 import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
-  ProcessingStatus
+  UpdateAnswerRequest,
+  ProcessingStatus,
+  ClassificationType
 } from '@/types/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
@@ -57,7 +62,7 @@ import CommentFilters from './CommentFilters.vue'
 import CommentCard from './CommentCard.vue'
 
 interface Props {
-  mediaId: number
+  mediaId: string
 }
 
 const props = defineProps<Props>()
@@ -69,6 +74,7 @@ onMounted(() => {
 })
 
 watch(() => props.mediaId, () => {
+  commentsStore.clearComments()
   commentsStore.clearFilters()
   loadComments()
 })
@@ -81,8 +87,14 @@ async function loadComments() {
   }
 }
 
-function handleFilterUpdate(statuses: ProcessingStatus[]) {
-  commentsStore.setStatusFilter(statuses)
+interface FilterUpdatePayload {
+  statuses: ProcessingStatus[]
+  classifications: ClassificationType[]
+}
+
+function handleFilterUpdate(filters: FilterUpdatePayload) {
+  commentsStore.setStatusFilter(filters.statuses)
+  commentsStore.setClassificationFilter(filters.classifications)
   loadComments()
 }
 
@@ -91,7 +103,7 @@ function handlePageChange(page: number) {
   loadComments()
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   if (confirm('Are you sure you want to delete this comment?')) {
     try {
       await commentsStore.deleteComment(id)
@@ -101,7 +113,7 @@ async function handleDelete(id: number) {
   }
 }
 
-async function handleUpdate(id: number, data: UpdateCommentRequest) {
+async function handleUpdate(id: string, data: UpdateCommentRequest) {
   try {
     await commentsStore.updateComment(id, data)
   } catch (error) {
@@ -109,11 +121,29 @@ async function handleUpdate(id: number, data: UpdateCommentRequest) {
   }
 }
 
-async function handleUpdateClassification(id: number, data: UpdateClassificationRequest) {
+async function handleUpdateClassification(id: string, data: UpdateClassificationRequest) {
   try {
     await commentsStore.updateClassification(id, data)
   } catch (error) {
     console.error('Failed to update classification:', error)
+  }
+}
+
+async function handleDeleteAnswer(commentId: string, answerId: string) {
+  if (confirm('Are you sure you want to delete this answer?')) {
+    try {
+      await commentsStore.deleteAnswer(commentId, answerId)
+    } catch (error) {
+      console.error('Failed to delete answer:', error)
+    }
+  }
+}
+
+async function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAnswerRequest) {
+  try {
+    await commentsStore.updateAnswer(commentId, answerId, data)
+  } catch (error) {
+    console.error('Failed to update answer:', error)
   }
 }
 </script>

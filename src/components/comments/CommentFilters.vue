@@ -1,54 +1,117 @@
 <template>
   <div class="comment-filters">
-    <div class="filter-label">Filter by status:</div>
-    <div class="filter-buttons">
-      <button
-        v-for="status in processingStatuses"
-        :key="status.value"
-        :class="['filter-button', { active: isActive(status.value) }]"
-        @click="toggleFilter(status.value)"
-      >
-        {{ status.label }}
-      </button>
+    <div class="filters-content">
+      <div class="filter-group">
+        <div class="filter-label">Status</div>
+        <div class="filter-buttons">
+          <button
+            v-for="status in processingStatuses"
+            :key="status.value"
+            :class="['filter-button', { active: isStatusActive(status.value) }]"
+            @click="toggleStatus(status.value)"
+          >
+            {{ status.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-label">Classification</div>
+        <div class="filter-buttons filter-buttons--wrap">
+          <button
+            v-for="classification in classificationOptions"
+            :key="classification.value"
+            :class="['filter-button', { active: isClassificationActive(classification.value) }]"
+            @click="toggleClassification(classification.value)"
+          >
+            {{ classification.label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-actions">
       <BaseButton
-        v-if="currentFilters.length > 0"
         variant="ghost"
         size="sm"
+        :disabled="!hasActiveFilters"
         @click="clearFilters"
       >
-        Clear
+        Clear All
       </BaseButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ProcessingStatus } from '@/types/api'
+import { computed } from 'vue'
+import { ProcessingStatus, ClassificationType, ClassificationTypeLabels } from '@/types/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
 interface Props {
-  currentFilters: ProcessingStatus[]
+  statusFilters: ProcessingStatus[]
+  classificationFilters: ClassificationType[]
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  update: [statuses: ProcessingStatus[]]
+  update: [filters: { statuses: ProcessingStatus[]; classifications: ClassificationType[] }]
 }>()
 
 const processingStatuses = [
   { value: ProcessingStatus.PENDING, label: 'Pending' },
   { value: ProcessingStatus.PROCESSING, label: 'Processing' },
   { value: ProcessingStatus.COMPLETED, label: 'Completed' },
-  { value: ProcessingStatus.FAILED, label: 'Failed' }
+  { value: ProcessingStatus.FAILED, label: 'Failed' },
+  { value: ProcessingStatus.RETRY, label: 'Retry' }
 ]
 
-function isActive(status: ProcessingStatus): boolean {
-  return props.currentFilters.includes(status)
+const classificationOptions = [
+  {
+    value: ClassificationType.POSITIVE_FEEDBACK,
+    label: ClassificationTypeLabels[ClassificationType.POSITIVE_FEEDBACK]
+  },
+  {
+    value: ClassificationType.CRITICAL_FEEDBACK,
+    label: ClassificationTypeLabels[ClassificationType.CRITICAL_FEEDBACK]
+  },
+  {
+    value: ClassificationType.URGENT_ISSUE,
+    label: ClassificationTypeLabels[ClassificationType.URGENT_ISSUE]
+  },
+  {
+    value: ClassificationType.QUESTION_INQUIRY,
+    label: ClassificationTypeLabels[ClassificationType.QUESTION_INQUIRY]
+  },
+  {
+    value: ClassificationType.PARTNERSHIP_PROPOSAL,
+    label: ClassificationTypeLabels[ClassificationType.PARTNERSHIP_PROPOSAL]
+  },
+  {
+    value: ClassificationType.TOXIC_ABUSIVE,
+    label: ClassificationTypeLabels[ClassificationType.TOXIC_ABUSIVE]
+  },
+  {
+    value: ClassificationType.SPAM_IRRELEVANT,
+    label: ClassificationTypeLabels[ClassificationType.SPAM_IRRELEVANT]
+  }
+]
+
+const hasActiveFilters = computed(() => {
+  return props.statusFilters.length > 0 || props.classificationFilters.length > 0
+})
+
+function isStatusActive(status: ProcessingStatus): boolean {
+  return props.statusFilters.includes(status)
 }
 
-function toggleFilter(status: ProcessingStatus) {
-  const newFilters = [...props.currentFilters]
+function isClassificationActive(classification: ClassificationType): boolean {
+  return props.classificationFilters.includes(classification)
+}
+
+function toggleStatus(status: ProcessingStatus) {
+  const newFilters = [...props.statusFilters]
   const index = newFilters.indexOf(status)
 
   if (index > -1) {
@@ -57,31 +120,59 @@ function toggleFilter(status: ProcessingStatus) {
     newFilters.push(status)
   }
 
-  emit('update', newFilters)
+  emit('update', { statuses: newFilters, classifications: [...props.classificationFilters] })
+}
+
+function toggleClassification(classification: ClassificationType) {
+  const newFilters = [...props.classificationFilters]
+  const index = newFilters.indexOf(classification)
+
+  if (index > -1) {
+    newFilters.splice(index, 1)
+  } else {
+    newFilters.push(classification)
+  }
+
+  emit('update', { statuses: [...props.statusFilters], classifications: newFilters })
 }
 
 function clearFilters() {
-  emit('update', [])
+  emit('update', { statuses: [], classifications: [] })
 }
 </script>
 
 <style scoped>
 .comment-filters {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--slate-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-200);
+}
+
+.filters-content {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
   flex-wrap: wrap;
+  gap: var(--spacing-lg);
 }
 
 .filter-label {
   font-size: 0.875rem;
   color: var(--navy-600);
   font-weight: 500;
+  margin-bottom: var(--spacing-sm);
 }
 
 .filter-buttons {
   display: flex;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.filter-buttons--wrap {
   flex-wrap: wrap;
 }
 
@@ -111,5 +202,26 @@ function clearFilters() {
 .filter-button.active:hover {
   background-color: var(--blue-400);
   border-color: var(--blue-400);
+}
+
+.filter-group {
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .comment-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
+  }
 }
 </style>

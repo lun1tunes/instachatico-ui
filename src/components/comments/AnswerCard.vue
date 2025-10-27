@@ -2,7 +2,9 @@
   <div class="answer-card">
     <div class="answer-header">
       <div class="answer-status">
+        <!-- Only show processing status if reply hasn't been sent, or if it's completed/processing -->
         <BaseBadge
+          v-if="!answer.reply_sent || answer.processing_status !== ProcessingStatusEnum.FAILED"
           :variant="getProcessingStatusVariant(answer.processing_status)"
           size="sm"
         >
@@ -18,28 +20,74 @@
         </BaseBadge>
       </div>
 
-      <div class="answer-scores">
-        <div class="score">
-          <span class="score-label">Confidence:</span>
-          <div class="score-bar">
-            <div
-              class="score-fill"
-              :style="{ width: `${answer.confidence}%` }"
-            ></div>
-          </div>
-          <span class="score-value">{{ answer.confidence }}%</span>
-        </div>
+      <div class="answer-actions">
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          @click="openEditModal"
+        >
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9" />
+            <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
+          </svg>
+          Edit
+        </BaseButton>
+        <BaseButton
+          variant="danger"
+          size="sm"
+          @click="handleDelete"
+        >
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+          Delete
+        </BaseButton>
+      </div>
+    </div>
 
-        <div class="score">
-          <span class="score-label">Quality:</span>
-          <div class="score-bar">
-            <div
-              class="score-fill quality"
-              :style="{ width: `${answer.quality_score}%` }"
-            ></div>
-          </div>
-          <span class="score-value">{{ answer.quality_score }}%</span>
+    <div class="answer-scores">
+      <div class="score">
+        <span class="score-label">Confidence:</span>
+        <div class="score-bar">
+          <div
+            class="score-fill"
+            :style="{ width: `${answer.confidence}%` }"
+          ></div>
         </div>
+        <span class="score-value">{{ answer.confidence }}%</span>
+      </div>
+
+      <div class="score">
+        <span class="score-label">Quality:</span>
+        <div class="score-bar">
+          <div
+            class="score-fill quality"
+            :style="{ width: `${answer.quality_score}%` }"
+          ></div>
+        </div>
+        <span class="score-value">{{ answer.quality_score }}%</span>
       </div>
     </div>
 
@@ -47,45 +95,111 @@
       <p>{{ answer.answer }}</p>
     </div>
 
-    <div v-if="answer.reply_status" class="answer-reply-status">
-      <span class="status-label">Reply Status:</span>
-      <span>{{ answer.reply_status }}</span>
-    </div>
-
     <div v-if="answer.reply_error || answer.last_error" class="answer-error">
       Error: {{ answer.reply_error || answer.last_error }}
     </div>
   </div>
+
+  <BaseModal
+    v-model="showEditModal"
+    title="Edit Answer"
+    size="md"
+  >
+    <form @submit.prevent="handleUpdate" class="answer-edit-form">
+      <div class="form-group">
+        <label for="answerText" class="form-label">Answer</label>
+        <textarea
+          id="answerText"
+          v-model="editedAnswer"
+          class="form-textarea"
+          rows="4"
+          placeholder="Update the generated answer..."
+          required
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <BaseButton type="button" variant="ghost" @click="showEditModal = false">
+          Cancel
+        </BaseButton>
+        <BaseButton type="submit" variant="primary">
+          Save Changes
+        </BaseButton>
+      </div>
+    </form>
+  </BaseModal>
 </template>
 
 <script setup lang="ts">
-import type { Answer, ProcessingStatus } from '@/types/api'
+import { ref, watch } from 'vue'
+import type { Answer, ProcessingStatus, UpdateAnswerRequest } from '@/types/api'
+import { ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import BaseModal from '@/components/ui/BaseModal.vue'
 
 interface Props {
   answer: Answer
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'update-answer': [data: UpdateAnswerRequest]
+  'delete-answer': []
+}>()
+
+const showEditModal = ref(false)
+const editedAnswer = ref(props.answer.answer)
+
+watch(
+  () => props.answer.answer,
+  (newValue) => {
+    if (!showEditModal.value) {
+      editedAnswer.value = newValue
+    }
+  }
+)
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
-    0: 'Pending',
-    1: 'Processing',
-    2: 'Completed',
-    3: 'Failed'
+    [ProcessingStatusEnum.PENDING]: 'Pending',
+    [ProcessingStatusEnum.PROCESSING]: 'Processing',
+    [ProcessingStatusEnum.COMPLETED]: 'Completed',
+    [ProcessingStatusEnum.FAILED]: 'Failed',
+    [ProcessingStatusEnum.RETRY]: 'Retry'
   }
   return labels[status] || 'Unknown'
 }
 
 function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info' | 'success' | 'error' | 'default' {
   const variants: Record<number, 'warning' | 'info' | 'success' | 'error'> = {
-    0: 'warning',
-    1: 'info',
-    2: 'success',
-    3: 'error'
+    [ProcessingStatusEnum.PENDING]: 'warning',
+    [ProcessingStatusEnum.PROCESSING]: 'info',
+    [ProcessingStatusEnum.COMPLETED]: 'success',
+    [ProcessingStatusEnum.FAILED]: 'error',
+    [ProcessingStatusEnum.RETRY]: 'warning'
   }
   return variants[status] || 'default'
+}
+
+function openEditModal() {
+  editedAnswer.value = props.answer.answer
+  showEditModal.value = true
+}
+
+function handleUpdate() {
+  const trimmedAnswer = editedAnswer.value.trim()
+  if (!trimmedAnswer) {
+    return
+  }
+
+  emit('update-answer', { answer: trimmedAnswer })
+  showEditModal.value = false
+}
+
+function handleDelete() {
+  emit('delete-answer')
 }
 </script>
 
@@ -95,18 +209,33 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
   background-color: var(--blue-50);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--blue-500);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .answer-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
 }
 
 .answer-status {
   display: flex;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.answer-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.action-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.375rem;
 }
 
 .answer-scores {
@@ -182,5 +311,48 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
   color: #991b1b;
   border-radius: var(--radius-sm);
   font-size: 0.8125rem;
+}
+
+.answer-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy-700);
+}
+
+.form-textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  color: var(--navy-800);
+  background-color: white;
+  transition: all var(--transition-fast);
+  resize: vertical;
+  min-height: 140px;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
 }
 </style>

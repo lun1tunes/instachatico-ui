@@ -47,10 +47,20 @@ class ApiService {
         throw error
       }
     )
+
+    const bootstrapToken = import.meta.env.VITE_BEARER_TOKEN
+    if (bootstrapToken) {
+      this.setAuthToken(bootstrapToken)
+    }
   }
 
   setAuthToken(token: string) {
     this.bearerToken = token
+    if (token) {
+      this.client.defaults.headers.common.Authorization = `Bearer ${token}`
+    } else {
+      delete this.client.defaults.headers.common.Authorization
+    }
   }
 
   getAuthToken(): string {
@@ -76,24 +86,34 @@ class ApiService {
     return response.data
   }
 
-  async getMediaById(id: number): Promise<ApiResponse<Media>> {
+  async getMediaById(id: string): Promise<ApiResponse<Media>> {
     const response = await this.client.get<ApiResponse<Media>>(`/media/${id}`)
     return response.data
   }
 
-  async updateMedia(id: number, data: UpdateMediaRequest): Promise<ApiResponse<Media>> {
+  async updateMedia(id: string, data: UpdateMediaRequest): Promise<ApiResponse<Media>> {
     const response = await this.client.patch<ApiResponse<Media>>(`/media/${id}`, data)
     return response.data
   }
 
   // Comments endpoints
-  async getComments(mediaId: number, query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
+  async getComments(mediaId: string, query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
     const params: any = { ...query }
 
-    // Convert status array to multiple status[] query params
+    // Convert status array to multiple status query params (no brackets)
     if (query?.status && query.status.length > 0) {
       delete params.status
-      params['status[]'] = query.status
+      // Backend expects comma-delimited values rather than repeated query keys
+      params.status = query.status.join(',')
+    }
+
+    const classificationFilter =
+      (query as any)?.classification_type ?? (query as any)?.classification
+
+    if (classificationFilter && classificationFilter.length > 0) {
+      delete params.classification_type
+      delete params.classification
+      params.classification_type = classificationFilter.join(',')
     }
 
     const response = await this.client.get<ApiResponse<Comment[]>>(
@@ -103,18 +123,18 @@ class ApiService {
     return response.data
   }
 
-  async deleteComment(id: number): Promise<ApiResponse<null>> {
+  async deleteComment(id: string): Promise<ApiResponse<null>> {
     const response = await this.client.delete<ApiResponse<null>>(`/comments/${id}`)
     return response.data
   }
 
-  async updateComment(id: number, data: UpdateCommentRequest): Promise<ApiResponse<Comment>> {
+  async updateComment(id: string, data: UpdateCommentRequest): Promise<ApiResponse<Comment>> {
     const response = await this.client.patch<ApiResponse<Comment>>(`/comments/${id}`, data)
     return response.data
   }
 
   async updateCommentClassification(
-    id: number,
+    id: string,
     data: UpdateClassificationRequest
   ): Promise<ApiResponse<Comment>> {
     const response = await this.client.patch<ApiResponse<Comment>>(
@@ -125,25 +145,25 @@ class ApiService {
   }
 
   // Answers endpoints
-  async getAnswers(commentId: number): Promise<ApiResponse<Answer[]>> {
+  async getAnswers(commentId: string): Promise<ApiResponse<Answer[]>> {
     const response = await this.client.get<ApiResponse<Answer[]>>(
       `/comments/${commentId}/answers`
     )
     return response.data
   }
 
-  async deleteAnswer(id: number): Promise<ApiResponse<null>> {
+  async deleteAnswer(id: string): Promise<ApiResponse<null>> {
     const response = await this.client.delete<ApiResponse<null>>(`/answers/${id}`)
     return response.data
   }
 
-  async updateAnswer(id: number, data: UpdateAnswerRequest): Promise<ApiResponse<Answer>> {
+  async updateAnswer(id: string, data: UpdateAnswerRequest): Promise<ApiResponse<Answer>> {
     const response = await this.client.patch<ApiResponse<Answer>>(`/answers/${id}`, data)
     return response.data
   }
 
   // Image proxy endpoint - fetch as blob with auth header
-  async fetchMediaImage(mediaId: number, childIndex?: number): Promise<string> {
+  async fetchMediaImage(mediaId: string, childIndex?: number): Promise<string> {
     const endpoint = `/media/${mediaId}/image`
     const params = childIndex !== undefined ? { child_index: childIndex } : {}
 

@@ -22,7 +22,38 @@
           @click="toggleHidden"
           :loading="loading"
         >
-          {{ comment.is_hidden ? 'Unhide' : 'Hide' }}
+          <svg
+            v-if="comment.is_hidden"
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+          <svg
+            v-else
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 3 21 21" />
+            <path d="M10.73 5.08A8.06 8.06 0 0 1 12 5c6.5 0 10.5 7 10.5 7a18.74 18.74 0 0 1-3.21 4.18" />
+            <path d="M6.12 6.11C2.69 8.2 1.5 12 1.5 12s2 4.5 6.35 6.71" />
+            <path d="M9.53 9.53A3 3 0 0 0 14.47 14.5" />
+            <path d="M12 9v0" />
+          </svg>
+          <span>{{ comment.is_hidden ? 'Unhide' : 'Hide' }}</span>
         </BaseButton>
         <BaseButton
           variant="danger"
@@ -30,7 +61,23 @@
           @click="handleDelete"
           :loading="loading"
         >
-          Delete
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+          <span>Delete</span>
         </BaseButton>
       </div>
     </div>
@@ -49,13 +96,26 @@
           size="sm"
           @click="showClassificationModal = true"
         >
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20h9" />
+            <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
+          </svg>
           Edit
         </BaseButton>
       </div>
 
       <div class="classification-info">
-        <BaseBadge :classification-type="comment.classification.type">
-          {{ getClassificationLabel(comment.classification.type) }}
+        <BaseBadge :classification-type="comment.classification.classification_type">
+          {{ getClassificationLabel(comment.classification.classification_type) }}
         </BaseBadge>
 
         <div v-if="comment.classification.confidence !== null" class="confidence">
@@ -69,7 +129,9 @@
           <span class="confidence-value">{{ comment.classification.confidence }}%</span>
         </div>
 
+        <!-- Only show processing status badge if classification actually failed (no confidence/reasoning) -->
         <BaseBadge
+          v-if="isClassificationFailed"
           :variant="getProcessingStatusVariant(comment.classification.processing_status)"
           size="sm"
         >
@@ -93,6 +155,8 @@
         v-for="answer in comment.answers"
         :key="answer.id"
         :answer="answer"
+        @delete-answer="handleDeleteAnswer(answer.id)"
+        @update-answer="(data) => handleUpdateAnswer(answer.id, data)"
       />
     </div>
   </BaseCard>
@@ -103,7 +167,7 @@
     size="md"
   >
     <ClassificationForm
-      :current-type="comment.classification.type"
+      :current-type="comment.classification.classification_type"
       :current-reasoning="comment.classification.reasoning"
       @submit="handleUpdateClassification"
       @cancel="showClassificationModal = false"
@@ -117,10 +181,11 @@ import type {
   Comment,
   UpdateCommentRequest,
   UpdateClassificationRequest,
+  UpdateAnswerRequest,
   ProcessingStatus,
   ClassificationType
 } from '@/types/api'
-import { ClassificationTypeLabels } from '@/types/api'
+import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -135,9 +200,11 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  delete: [id: number]
-  update: [id: number, data: UpdateCommentRequest]
-  'update-classification': [id: number, data: UpdateClassificationRequest]
+  delete: [id: string]
+  update: [id: string, data: UpdateCommentRequest]
+  'update-classification': [id: string, data: UpdateClassificationRequest]
+  'delete-answer': [commentId: string, answerId: string]
+  'update-answer': [commentId: string, answerId: string, data: UpdateAnswerRequest]
 }>()
 
 const loading = ref(false)
@@ -147,26 +214,38 @@ const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
 })
 
+// Only consider classification failed if it has no confidence or reasoning
+// If we have data, it means classification succeeded even if status says "Failed"
+const isClassificationFailed = computed(() => {
+  return (
+    props.comment.classification.processing_status === ProcessingStatusEnum.FAILED &&
+    props.comment.classification.confidence === null &&
+    !props.comment.classification.reasoning
+  )
+})
+
 function getClassificationLabel(type: ClassificationType): string {
   return ClassificationTypeLabels[type] || 'Unknown'
 }
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
-    0: 'Pending',
-    1: 'Processing',
-    2: 'Completed',
-    3: 'Failed'
+    [ProcessingStatusEnum.PENDING]: 'Pending',
+    [ProcessingStatusEnum.PROCESSING]: 'Processing',
+    [ProcessingStatusEnum.COMPLETED]: 'Completed',
+    [ProcessingStatusEnum.FAILED]: 'Failed',
+    [ProcessingStatusEnum.RETRY]: 'Retry'
   }
   return labels[status] || 'Unknown'
 }
 
 function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info' | 'success' | 'error' | 'default' {
   const variants: Record<number, 'warning' | 'info' | 'success' | 'error'> = {
-    0: 'warning',
-    1: 'info',
-    2: 'success',
-    3: 'error'
+    [ProcessingStatusEnum.PENDING]: 'warning',
+    [ProcessingStatusEnum.PROCESSING]: 'info',
+    [ProcessingStatusEnum.COMPLETED]: 'success',
+    [ProcessingStatusEnum.FAILED]: 'error',
+    [ProcessingStatusEnum.RETRY]: 'warning'
   }
   return variants[status] || 'default'
 }
@@ -189,6 +268,14 @@ function handleDelete() {
 function handleUpdateClassification(data: UpdateClassificationRequest) {
   emit('update-classification', props.comment.id, data)
   showClassificationModal.value = false
+}
+
+function handleDeleteAnswer(answerId: string) {
+  emit('delete-answer', props.comment.id, answerId)
+}
+
+function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
+  emit('update-answer', props.comment.id, answerId, data)
 }
 </script>
 
@@ -237,6 +324,12 @@ function handleUpdateClassification(data: UpdateClassificationRequest) {
 .comment-actions {
   display: flex;
   gap: var(--spacing-sm);
+}
+
+.action-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.375rem;
 }
 
 .comment-body {

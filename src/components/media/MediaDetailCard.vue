@@ -50,8 +50,16 @@
       </div>
 
       <div class="info-row">
-        <span class="label">Shortcode:</span>
-        <code class="value">{{ media.shortcode }}</code>
+        <BaseButton
+          v-if="instagramUrl"
+          variant="ghost"
+          size="sm"
+          class="instagram-link-btn"
+          @click="openPermalink"
+        >
+          Open in Instagram
+        </BaseButton>
+        <span v-else class="value">—</span>
       </div>
     </div>
 
@@ -91,7 +99,7 @@
       </div>
     </div>
 
-    <div class="media-detail-card__link">
+    <div class="media-detail-card__link" v-if="instagramUrl">
       <BaseButton
         variant="ghost"
         size="sm"
@@ -245,6 +253,16 @@ const mediaTypeBadge = computed(() => {
   }
 })
 
+const instagramUrl = computed(() => {
+  if (props.media.permalink) {
+    return props.media.permalink
+  }
+  if (props.media.shortcode) {
+    return `https://www.instagram.com/p/${props.media.shortcode}/`
+  }
+  return ''
+})
+
 function toggleComments(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update', { is_comment_enabled: target.checked })
@@ -261,7 +279,9 @@ function saveContext() {
 }
 
 function openPermalink() {
-  window.open(props.media.permalink, '_blank')
+  if (instagramUrl.value) {
+    window.open(instagramUrl.value, '_blank')
+  }
 }
 </script>
 
@@ -373,12 +393,8 @@ function openPermalink() {
   color: var(--navy-800);
 }
 
-code.value {
-  background-color: var(--slate-100);
-  padding: 0.125rem 0.375rem;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+.instagram-link-btn {
+  padding: 0.25rem 0.75rem;
 }
 
 .media-detail-card__caption,

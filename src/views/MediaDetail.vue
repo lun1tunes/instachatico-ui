@@ -2,7 +2,7 @@
   <div class="media-detail-page">
     <div class="container">
       <div class="back-button-wrapper">
-        <BaseButton variant="ghost" @click="router.back()">
+        <BaseButton variant="ghost" @click="goBackToMedia">
           <svg
             width="16"
             height="16"
@@ -59,8 +59,9 @@ onMounted(() => {
 })
 
 async function loadMedia() {
-  const id = Number(route.params.id)
-  if (isNaN(id)) {
+  const id = String(route.params.id)
+
+  if (!id) {
     router.push('/media')
     return
   }
@@ -72,8 +73,12 @@ async function loadMedia() {
   }
 }
 
+function goBackToMedia() {
+  router.push({ name: 'MediaList' })
+}
+
 async function handleUpdateMedia(data: UpdateMediaRequest) {
-  const id = Number(route.params.id)
+  const id = String(route.params.id)
   try {
     await mediaStore.updateMedia(id, data)
   } catch (error) {

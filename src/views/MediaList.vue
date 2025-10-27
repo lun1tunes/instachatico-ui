@@ -19,6 +19,8 @@
           :key="media.id"
           :media="media"
           @click="goToMedia(media.id)"
+          @update:comments="(enabled) => handleUpdateSettings(media.id, { is_comment_enabled: enabled })"
+          @update:processing="(enabled) => handleUpdateSettings(media.id, { is_processing_enabled: enabled })"
         />
       </div>
 
@@ -59,8 +61,16 @@ async function loadMedia() {
   }
 }
 
-function goToMedia(id: number) {
+function goToMedia(id: string) {
   router.push(`/media/${id}`)
+}
+
+async function handleUpdateSettings(id: string, settings: { is_comment_enabled?: boolean; is_processing_enabled?: boolean }) {
+  try {
+    await mediaStore.updateMedia(id, settings)
+  } catch (error) {
+    console.error('Failed to update media settings:', error)
+  }
 }
 </script>
 

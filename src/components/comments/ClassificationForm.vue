@@ -74,7 +74,7 @@ const classificationTypes = {
 
 function handleSubmit() {
   emit('submit', {
-    type: selectedType.value,
+    classification_type: selectedType.value,
     reasoning: reasoning.value
   })
 }

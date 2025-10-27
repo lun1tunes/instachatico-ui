@@ -1,7 +1,8 @@
 <template>
-  <BaseCard hover class="media-card" @click="handleCardClick">
-    <div class="media-card__image" @click.stop>
-      <img :src="imageUrl" :alt="media.caption" @error="handleImageError" />
+  <BaseCard ref="cardRef" hover class="media-card" @click="handleCardClick">
+    <div class="media-card__image">
+      <div v-if="isLoadingImage && !imageUrl" class="image-skeleton"></div>
+      <img v-else :src="imageUrl" :alt="media.caption" @error="handleImageError" />
       <div class="media-card__type-badge">
         <BaseBadge :variant="mediaTypeBadge">
           {{ mediaTypeLabel }}
@@ -13,7 +14,7 @@
         <button
           class="carousel-preview-btn carousel-preview-btn--prev"
           :disabled="currentImageIndex === 0"
-          @click="previousImage"
+          @click.stop="previousImage"
           aria-label="Previous image"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,7 +29,7 @@
         <button
           class="carousel-preview-btn carousel-preview-btn--next"
           :disabled="currentImageIndex === totalImages - 1"
-          @click="nextImage"
+          @click.stop="nextImage"
           aria-label="Next image"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -88,23 +89,35 @@
         </div>
       </div>
 
-      <div class="media-card__status">
-        <BaseBadge v-if="!media.is_comment_enabled" variant="warning" size="sm">
-          Comments Disabled
-        </BaseBadge>
-        <BaseBadge v-if="!media.is_processing_enabled" variant="error" size="sm">
-          Processing Disabled
-        </BaseBadge>
-        <BaseBadge v-if="media.is_comment_enabled && media.is_processing_enabled" variant="success" size="sm">
-          Active
-        </BaseBadge>
+      <div class="media-card__settings">
+        <label class="checkbox-label" @click.stop>
+          <input
+            type="checkbox"
+            :checked="media.is_comment_enabled"
+            @change="handleToggleComments"
+            class="checkbox-input"
+          />
+          <span class="checkbox-custom"></span>
+          <span class="checkbox-text">Comments</span>
+        </label>
+
+        <label class="checkbox-label" @click.stop>
+          <input
+            type="checkbox"
+            :checked="media.is_processing_enabled"
+            @change="handleToggleProcessing"
+            class="checkbox-input"
+          />
+          <span class="checkbox-custom"></span>
+          <span class="checkbox-text">Processing</span>
+        </label>
       </div>
     </div>
   </BaseCard>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
 import type { Media } from '@/types/api'
 import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -119,12 +132,15 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: []
+  'update:comments': [enabled: boolean]
+  'update:processing': [enabled: boolean]
 }>()
 
 const imageError = ref(false)
 const currentImageIndex = ref(0)
 const imageUrl = ref<string>('')
 const isLoadingImage = ref(true)
+let abortController: AbortController | null = null
 
 // Check if this is a carousel
 const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
@@ -139,6 +155,12 @@ const totalImages = computed(() => {
 
 // Fetch image as blob with auth header
 async function loadImage() {
+  // Cancel previous request if still pending
+  if (abortController) {
+    abortController.abort()
+  }
+
+  abortController = new AbortController()
   isLoadingImage.value = true
   imageError.value = false
 
@@ -156,21 +178,36 @@ async function loadImage() {
 
     imageUrl.value = blobUrl
   } catch (error) {
+    // Ignore abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return
+    }
     console.error('Failed to load image:', error)
     imageError.value = true
     imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
   } finally {
     isLoadingImage.value = false
+    abortController = null
   }
 }
 
-// Load image on mount and when index changes
-watch([() => props.media.id, currentImageIndex], loadImage, { immediate: true })
+// Load image on mount
+onMounted(() => {
+  loadImage()
+})
+
+// Watch for carousel index changes
+watch(currentImageIndex, () => {
+  loadImage()
+})
 
 // Cleanup blob URLs on unmount
 onBeforeUnmount(() => {
   if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
     URL.revokeObjectURL(imageUrl.value)
+  }
+  if (abortController) {
+    abortController.abort()
   }
 })
 
@@ -197,6 +234,17 @@ function previousImage() {
 // Handle card click (only navigate when not clicking carousel buttons)
 function handleCardClick() {
   emit('click')
+}
+
+// Handle checkbox toggles
+function handleToggleComments(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:comments', target.checked)
+}
+
+function handleToggleProcessing(event: Event) {
+  const target = event.target as HTMLInputElement
+  emit('update:processing', target.checked)
 }
 
 const truncatedCaption = computed(() => {
@@ -256,6 +304,31 @@ const mediaTypeBadge = computed(() => {
   height: 100%;
   object-fit: cover;
   transition: opacity var(--transition-fast);
+}
+
+.image-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--slate-200) 0%,
+    var(--slate-100) 50%,
+    var(--slate-200) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .media-card__type-badge {
@@ -362,9 +435,79 @@ const mediaTypeBadge = computed(() => {
   color: var(--navy-400);
 }
 
-.media-card__status {
+.media-card__settings {
   display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+/* Checkbox styling - Pineapple style */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-fast);
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+}
+
+.checkbox-label:hover {
+  background-color: rgba(100, 116, 139, 0.05);
+}
+
+.checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkbox-custom {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 5px;
+  background-color: white;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-label:hover .checkbox-custom {
+  border-color: #94a3b8;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  border-color: #3b82f6;
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+
+.checkbox-input:focus + .checkbox-custom {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+  outline: none;
+}
+
+.checkbox-text {
+  font-size: 0.75rem;
+  color: var(--navy-600);
+  font-weight: 500;
+  line-height: 1;
 }
 </style>

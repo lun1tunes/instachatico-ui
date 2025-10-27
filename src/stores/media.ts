@@ -41,7 +41,7 @@ export const useMediaStore = defineStore('media', () => {
     }
   }
 
-  async function fetchMediaById(id: number) {
+  async function fetchMediaById(id: string) {
     loading.value = true
     error.value = null
 
@@ -57,7 +57,7 @@ export const useMediaStore = defineStore('media', () => {
     }
   }
 
-  async function updateMedia(id: number, data: UpdateMediaRequest) {
+  async function updateMedia(id: string, data: UpdateMediaRequest) {
     loading.value = true
     error.value = null
 

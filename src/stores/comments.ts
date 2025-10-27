@@ -6,8 +6,46 @@ import type {
   CommentsQuery,
   UpdateCommentRequest,
   UpdateClassificationRequest,
-  ProcessingStatus
+  UpdateAnswerRequest,
+  ProcessingStatus,
+  ClassificationType,
+  Classification
 } from '@/types/api'
+import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
+
+type RawClassification = Partial<Classification> & { type?: number | null }
+
+function normalizeClassification(raw?: RawClassification | null): Classification {
+  const classification = raw ?? {}
+
+  const classificationType =
+    classification.classification_type ??
+    classification.type ??
+    ClassificationTypeEnum.POSITIVE_FEEDBACK
+
+  const confidence =
+    classification.confidence !== undefined && classification.confidence !== null
+      ? Number(classification.confidence)
+      : null
+
+  return {
+    id: classification.id ?? '',
+    processing_status:
+      classification.processing_status ?? ProcessingStatusEnum.PENDING,
+    processing_completed_at: classification.processing_completed_at ?? '',
+    last_error: classification.last_error ?? null,
+    confidence,
+    classification_type: classificationType as Classification['classification_type'],
+    reasoning: classification.reasoning ?? ''
+  }
+}
+
+function normalizeComment(comment: Comment): Comment {
+  return {
+    ...comment,
+    classification: normalizeClassification(comment.classification)
+  }
+}
 
 export const useCommentsStore = defineStore('comments', () => {
   const comments = ref<Comment[]>([])
@@ -21,23 +59,29 @@ export const useCommentsStore = defineStore('comments', () => {
 
   // Filters
   const statusFilter = ref<ProcessingStatus[]>([])
+  const classificationFilter = ref<ClassificationType[]>([])
 
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
   const hasNextPage = computed(() => currentPage.value < totalPages.value)
   const hasPrevPage = computed(() => currentPage.value > 1)
 
-  async function fetchComments(mediaId: number, query?: CommentsQuery) {
+  async function fetchComments(mediaId: string, query?: CommentsQuery) {
     loading.value = true
     error.value = null
 
     try {
-      const response = await apiService.getComments(mediaId, query || {
-        page: currentPage.value,
-        per_page: perPage.value,
-        status: statusFilter.value.length > 0 ? statusFilter.value : undefined
-      })
+      const response = await apiService.getComments(
+        mediaId,
+        query || {
+          page: currentPage.value,
+          per_page: perPage.value,
+          status: statusFilter.value.length > 0 ? statusFilter.value : undefined,
+          classification_type:
+            classificationFilter.value.length > 0 ? classificationFilter.value : undefined
+        }
+      )
 
-      comments.value = response.payload
+      comments.value = response.payload.map(normalizeComment)
 
       if (response.meta.page) currentPage.value = response.meta.page
       if (response.meta.per_page) perPage.value = response.meta.per_page
@@ -50,7 +94,7 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
-  async function deleteComment(id: number) {
+  async function deleteComment(id: string) {
     loading.value = true
     error.value = null
 
@@ -68,7 +112,7 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
-  async function updateComment(id: number, data: UpdateCommentRequest) {
+  async function updateComment(id: string, data: UpdateCommentRequest) {
     loading.value = true
     error.value = null
 
@@ -78,7 +122,7 @@ export const useCommentsStore = defineStore('comments', () => {
       // Update in local state
       const index = comments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        comments.value[index] = response.payload
+        comments.value[index] = normalizeComment(response.payload)
       }
 
       return response.payload
@@ -90,7 +134,7 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
-  async function updateClassification(id: number, data: UpdateClassificationRequest) {
+  async function updateClassification(id: string, data: UpdateClassificationRequest) {
     loading.value = true
     error.value = null
 
@@ -100,7 +144,7 @@ export const useCommentsStore = defineStore('comments', () => {
       // Update in local state
       const index = comments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        comments.value[index] = response.payload
+        comments.value[index] = normalizeComment(response.payload)
       }
 
       return response.payload
@@ -117,22 +161,85 @@ export const useCommentsStore = defineStore('comments', () => {
     currentPage.value = 1 // Reset to first page when filtering
   }
 
-  function clearFilters() {
-    statusFilter.value = []
+  function setClassificationFilter(classifications: ClassificationType[]) {
+    classificationFilter.value = classifications
     currentPage.value = 1
   }
 
-  function nextPage(mediaId: number) {
+  function clearFilters() {
+    statusFilter.value = []
+    classificationFilter.value = []
+    currentPage.value = 1
+  }
+
+  function clearComments() {
+    comments.value = []
+    currentPage.value = 1
+    totalItems.value = 0
+    error.value = null
+  }
+
+  function nextPage(mediaId: string) {
     if (hasNextPage.value) {
       currentPage.value++
       fetchComments(mediaId)
     }
   }
 
-  function prevPage(mediaId: number) {
+  function prevPage(mediaId: string) {
     if (hasPrevPage.value) {
       currentPage.value--
       fetchComments(mediaId)
+    }
+  }
+
+  async function deleteAnswer(commentId: string, answerId: string) {
+    loading.value = true
+    error.value = null
+
+    try {
+      await apiService.deleteAnswer(answerId)
+
+      const index = comments.value.findIndex((comment) => comment.id === commentId)
+      if (index !== -1) {
+        const comment = comments.value[index]
+        comments.value[index] = {
+          ...comment,
+          answers: comment.answers.filter((answer) => answer.id !== answerId)
+        }
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete answer'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateAnswer(commentId: string, answerId: string, data: UpdateAnswerRequest) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.updateAnswer(answerId, data)
+
+      const index = comments.value.findIndex((comment) => comment.id === commentId)
+      if (index !== -1) {
+        const comment = comments.value[index]
+        comments.value[index] = {
+          ...comment,
+          answers: comment.answers.map((answer) =>
+            answer.id === answerId ? response.payload : answer
+          )
+        }
+      }
+
+      return response.payload
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update answer'
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
@@ -147,12 +254,17 @@ export const useCommentsStore = defineStore('comments', () => {
     hasNextPage,
     hasPrevPage,
     statusFilter,
+    classificationFilter,
     fetchComments,
     deleteComment,
     updateComment,
     updateClassification,
+    updateAnswer,
+    deleteAnswer,
     setStatusFilter,
+    setClassificationFilter,
     clearFilters,
+    clearComments,
     nextPage,
     prevPage
   }

@@ -2,13 +2,13 @@
   <header class="app-header">
     <div class="container">
       <div class="app-header__content">
-        <router-link to="/" class="app-header__logo">
+        <router-link :to="{ name: 'MediaList' }" class="app-header__logo">
           <span class="app-header__title">Instachatico</span>
         </router-link>
 
         <nav class="app-header__nav">
           <router-link
-            to="/media"
+            :to="{ name: 'MediaList' }"
             class="app-header__nav-link"
             active-class="app-header__nav-link--active"
           >

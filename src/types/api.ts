@@ -17,13 +17,14 @@ export interface ApiResponse<T> {
 }
 
 // Processing Status Type
-export type ProcessingStatus = 0 | 1 | 2 | 3
+export type ProcessingStatus = 1 | 2 | 3 | 4 | 5
 
 export const ProcessingStatus = {
-  PENDING: 0 as ProcessingStatus,
-  PROCESSING: 1 as ProcessingStatus,
-  COMPLETED: 2 as ProcessingStatus,
-  FAILED: 3 as ProcessingStatus
+  PENDING: 1 as ProcessingStatus,
+  PROCESSING: 2 as ProcessingStatus,
+  COMPLETED: 3 as ProcessingStatus,
+  FAILED: 4 as ProcessingStatus,
+  RETRY: 5 as ProcessingStatus
 }
 
 // Classification Type
@@ -61,7 +62,7 @@ export const MediaType = {
 
 // DTOs
 export interface Media {
-  id: number
+  id: string
   permalink: string
   caption: string
   url: string
@@ -76,17 +77,17 @@ export interface Media {
 }
 
 export interface Classification {
-  id: number
+  id: string
   processing_status: ProcessingStatus
   processing_completed_at: string
   last_error: string | null
   confidence: number | null
-  type: ClassificationType
+  classification_type: ClassificationType
   reasoning: string
 }
 
 export interface Answer {
-  id: number
+  id: string
   processing_status: ProcessingStatus
   processing_completed_at: string
   last_error: string | null
@@ -100,8 +101,8 @@ export interface Answer {
 }
 
 export interface Comment {
-  id: number
-  parent_id: number | null
+  id: string
+  parent_id: string | null
   username: string
   text: string
   is_hidden: boolean
@@ -122,7 +123,7 @@ export interface UpdateCommentRequest {
 }
 
 export interface UpdateClassificationRequest {
-  type: string
+  classification_type: string
   reasoning: string
 }
 
@@ -140,4 +141,6 @@ export interface PaginationQuery {
 
 export interface CommentsQuery extends PaginationQuery {
   status?: ProcessingStatus[]
+  classification_type?: ClassificationType[]
+  classification?: ClassificationType[] // legacy fallback
 }
