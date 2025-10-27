@@ -5,6 +5,7 @@
       <CommentFilters
         :status-filters="commentsStore.statusFilter"
         :classification-filters="commentsStore.classificationFilter"
+        :visibility-filter="commentsStore.visibilityFilter"
         @update="handleFilterUpdate"
       />
     </div>
@@ -87,14 +88,18 @@ async function loadComments() {
   }
 }
 
+type VisibilityFilter = 'all' | 'visible' | 'hidden'
+
 interface FilterUpdatePayload {
   statuses: ProcessingStatus[]
   classifications: ClassificationType[]
+  visibility: VisibilityFilter
 }
 
 function handleFilterUpdate(filters: FilterUpdatePayload) {
   commentsStore.setStatusFilter(filters.statuses)
   commentsStore.setClassificationFilter(filters.classifications)
+  commentsStore.setVisibilityFilter(filters.visibility)
   loadComments()
 }
 

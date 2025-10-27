@@ -49,6 +49,11 @@
         <span class="value">{{ media.comments_count }}</span>
       </div>
 
+      <div v-if="media.posted_at" class="info-row">
+        <span class="label">Created at:</span>
+        <span class="value">{{ formattedPostedAt }}</span>
+      </div>
+
       <div class="info-row info-row--instagram">
         <BaseButton
           v-if="instagramUrl"
@@ -151,6 +156,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import { apiService } from '@/services/api'
+import { format, parseISO } from 'date-fns'
 
 interface Props {
   media: Media
@@ -269,6 +275,17 @@ const instagramUrl = computed(() => {
     return `https://www.instagram.com/p/${props.media.shortcode}/`
   }
   return ''
+})
+
+const formattedPostedAt = computed(() => {
+  if (!props.media.posted_at) return ''
+  try {
+    const date = parseISO(props.media.posted_at)
+    return format(date, 'MMM d, yyyy HH:mm')
+  } catch (error) {
+    console.error('Failed to parse posted_at date:', error)
+    return props.media.posted_at
+  }
 })
 
 function toggleComments(enabled: boolean) {

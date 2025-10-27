@@ -74,6 +74,7 @@ export interface Media {
   shortcode: string
   is_comment_enabled: boolean
   is_processing_enabled: boolean
+  posted_at?: string
 }
 
 export interface Classification {

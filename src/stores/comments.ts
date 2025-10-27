@@ -48,7 +48,7 @@ function normalizeComment(comment: Comment): Comment {
 }
 
 export const useCommentsStore = defineStore('comments', () => {
-  const comments = ref<Comment[]>([])
+  const allComments = ref<Comment[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -60,6 +60,19 @@ export const useCommentsStore = defineStore('comments', () => {
   // Filters
   const statusFilter = ref<ProcessingStatus[]>([])
   const classificationFilter = ref<ClassificationType[]>([])
+  const visibilityFilter = ref<'all' | 'visible' | 'hidden'>('all')
+
+  // Computed: Filter comments by visibility (frontend-only filter)
+  const comments = computed(() => {
+    if (visibilityFilter.value === 'all') {
+      return allComments.value
+    } else if (visibilityFilter.value === 'visible') {
+      return allComments.value.filter(comment => !comment.is_hidden)
+    } else if (visibilityFilter.value === 'hidden') {
+      return allComments.value.filter(comment => comment.is_hidden)
+    }
+    return allComments.value
+  })
 
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
   const hasNextPage = computed(() => currentPage.value < totalPages.value)
@@ -81,7 +94,7 @@ export const useCommentsStore = defineStore('comments', () => {
         }
       )
 
-      comments.value = response.payload.map(normalizeComment)
+      allComments.value = response.payload.map(normalizeComment)
 
       if (response.meta.page) currentPage.value = response.meta.page
       if (response.meta.per_page) perPage.value = response.meta.per_page
@@ -102,7 +115,7 @@ export const useCommentsStore = defineStore('comments', () => {
       await apiService.deleteComment(id)
 
       // Remove from local state
-      comments.value = comments.value.filter(c => c.id !== id)
+      allComments.value = allComments.value.filter(c => c.id !== id)
       totalItems.value = Math.max(0, totalItems.value - 1)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete comment'
@@ -120,9 +133,9 @@ export const useCommentsStore = defineStore('comments', () => {
       const response = await apiService.updateComment(id, data)
 
       // Update in local state
-      const index = comments.value.findIndex(c => c.id === id)
+      const index = allComments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        comments.value[index] = normalizeComment(response.payload)
+        allComments.value[index] = normalizeComment(response.payload)
       }
 
       return response.payload
@@ -142,9 +155,9 @@ export const useCommentsStore = defineStore('comments', () => {
       const response = await apiService.updateCommentClassification(id, data)
 
       // Update in local state
-      const index = comments.value.findIndex(c => c.id === id)
+      const index = allComments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        comments.value[index] = normalizeComment(response.payload)
+        allComments.value[index] = normalizeComment(response.payload)
       }
 
       return response.payload
@@ -166,14 +179,20 @@ export const useCommentsStore = defineStore('comments', () => {
     currentPage.value = 1
   }
 
+  function setVisibilityFilter(visibility: 'all' | 'visible' | 'hidden') {
+    visibilityFilter.value = visibility
+    currentPage.value = 1
+  }
+
   function clearFilters() {
     statusFilter.value = []
     classificationFilter.value = []
+    visibilityFilter.value = 'all'
     currentPage.value = 1
   }
 
   function clearComments() {
-    comments.value = []
+    allComments.value = []
     currentPage.value = 1
     totalItems.value = 0
     error.value = null
@@ -200,10 +219,10 @@ export const useCommentsStore = defineStore('comments', () => {
     try {
       await apiService.deleteAnswer(answerId)
 
-      const index = comments.value.findIndex((comment) => comment.id === commentId)
+      const index = allComments.value.findIndex((comment) => comment.id === commentId)
       if (index !== -1) {
-        const comment = comments.value[index]
-        comments.value[index] = {
+        const comment = allComments.value[index]
+        allComments.value[index] = {
           ...comment,
           answers: comment.answers.filter((answer) => answer.id !== answerId)
         }
@@ -223,10 +242,10 @@ export const useCommentsStore = defineStore('comments', () => {
     try {
       const response = await apiService.updateAnswer(answerId, data)
 
-      const index = comments.value.findIndex((comment) => comment.id === commentId)
+      const index = allComments.value.findIndex((comment) => comment.id === commentId)
       if (index !== -1) {
-        const comment = comments.value[index]
-        comments.value[index] = {
+        const comment = allComments.value[index]
+        allComments.value[index] = {
           ...comment,
           answers: comment.answers.map((answer) =>
             answer.id === answerId ? response.payload : answer
@@ -255,6 +274,7 @@ export const useCommentsStore = defineStore('comments', () => {
     hasPrevPage,
     statusFilter,
     classificationFilter,
+    visibilityFilter,
     fetchComments,
     deleteComment,
     updateComment,
@@ -263,6 +283,7 @@ export const useCommentsStore = defineStore('comments', () => {
     deleteAnswer,
     setStatusFilter,
     setClassificationFilter,
+    setVisibilityFilter,
     clearFilters,
     clearComments,
     nextPage,

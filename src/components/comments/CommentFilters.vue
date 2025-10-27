@@ -1,13 +1,52 @@
 <template>
   <div class="comment-filters">
-    <div class="filters-content">
-      <div class="filter-group">
-        <div class="filter-label">Status</div>
-        <div class="filter-buttons">
+    <div class="filters-row">
+      <!-- Visibility Filter -->
+      <div class="filter-section">
+        <span class="filter-label">Visibility:</span>
+        <div class="filter-chips">
+          <button
+            :class="['filter-chip', { active: visibilityFilter === 'all' }]"
+            @click="setVisibilityFilter('all')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+            All
+          </button>
+          <button
+            :class="['filter-chip', { active: visibilityFilter === 'visible' }]"
+            @click="setVisibilityFilter('visible')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Visible
+          </button>
+          <button
+            :class="['filter-chip', { active: visibilityFilter === 'hidden' }]"
+            @click="setVisibilityFilter('hidden')"
+          >
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+              <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+              <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+              <line x1="2" y1="2" x2="22" y2="22" />
+            </svg>
+            Hidden
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-section">
+        <span class="filter-label">Status:</span>
+        <div class="filter-chips">
           <button
             v-for="status in processingStatuses"
             :key="status.value"
-            :class="['filter-button', { active: isStatusActive(status.value) }]"
+            :class="['filter-chip', { active: isStatusActive(status.value) }]"
             @click="toggleStatus(status.value)"
           >
             {{ status.label }}
@@ -15,49 +54,61 @@
         </div>
       </div>
 
-      <div class="filter-group">
-        <div class="filter-label">Classification</div>
-        <div class="filter-buttons filter-buttons--wrap">
+      <!-- Classification Filter -->
+      <div class="filter-section filter-section--full">
+        <span class="filter-label">Type:</span>
+        <div class="filter-chips filter-chips--wrap">
           <button
             v-for="classification in classificationOptions"
             :key="classification.value"
-            :class="['filter-button', { active: isClassificationActive(classification.value) }]"
+            :class="['filter-chip', `filter-chip--${classification.variant}`, { active: isClassificationActive(classification.value) }]"
             @click="toggleClassification(classification.value)"
           >
-            {{ classification.label }}
+            {{ classification.shortLabel }}
           </button>
         </div>
       </div>
     </div>
 
-    <div class="filter-actions">
-      <BaseButton
-        variant="ghost"
-        size="sm"
-        :disabled="!hasActiveFilters"
-        @click="clearFilters"
-      >
-        Clear All
-      </BaseButton>
-    </div>
+    <button
+      v-if="hasActiveFilters"
+      class="clear-button"
+      @click="clearFilters"
+      title="Clear all filters"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { ProcessingStatus, ClassificationType, ClassificationTypeLabels } from '@/types/api'
-import BaseButton from '@/components/ui/BaseButton.vue'
+
+type VisibilityFilter = 'all' | 'visible' | 'hidden'
 
 interface Props {
   statusFilters: ProcessingStatus[]
   classificationFilters: ClassificationType[]
+  visibilityFilter?: VisibilityFilter
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  visibilityFilter: 'all'
+})
 
 const emit = defineEmits<{
-  update: [filters: { statuses: ProcessingStatus[]; classifications: ClassificationType[] }]
+  update: [filters: {
+    statuses: ProcessingStatus[]
+    classifications: ClassificationType[]
+    visibility: VisibilityFilter
+  }]
 }>()
+
+const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
 
 const processingStatuses = [
   { value: ProcessingStatus.PENDING, label: 'Pending' },
@@ -70,36 +121,45 @@ const processingStatuses = [
 const classificationOptions = [
   {
     value: ClassificationType.POSITIVE_FEEDBACK,
-    label: ClassificationTypeLabels[ClassificationType.POSITIVE_FEEDBACK]
+    shortLabel: 'Positive',
+    variant: 'positive'
   },
   {
     value: ClassificationType.CRITICAL_FEEDBACK,
-    label: ClassificationTypeLabels[ClassificationType.CRITICAL_FEEDBACK]
+    shortLabel: 'Critical',
+    variant: 'critical'
   },
   {
     value: ClassificationType.URGENT_ISSUE,
-    label: ClassificationTypeLabels[ClassificationType.URGENT_ISSUE]
+    shortLabel: 'Urgent',
+    variant: 'urgent'
   },
   {
     value: ClassificationType.QUESTION_INQUIRY,
-    label: ClassificationTypeLabels[ClassificationType.QUESTION_INQUIRY]
+    shortLabel: 'Question',
+    variant: 'question'
   },
   {
     value: ClassificationType.PARTNERSHIP_PROPOSAL,
-    label: ClassificationTypeLabels[ClassificationType.PARTNERSHIP_PROPOSAL]
+    shortLabel: 'Partnership',
+    variant: 'partnership'
   },
   {
     value: ClassificationType.TOXIC_ABUSIVE,
-    label: ClassificationTypeLabels[ClassificationType.TOXIC_ABUSIVE]
+    shortLabel: 'Toxic',
+    variant: 'toxic'
   },
   {
     value: ClassificationType.SPAM_IRRELEVANT,
-    label: ClassificationTypeLabels[ClassificationType.SPAM_IRRELEVANT]
+    shortLabel: 'Spam',
+    variant: 'spam'
   }
 ]
 
 const hasActiveFilters = computed(() => {
-  return props.statusFilters.length > 0 || props.classificationFilters.length > 0
+  return props.statusFilters.length > 0 ||
+         props.classificationFilters.length > 0 ||
+         visibilityFilter.value !== 'all'
 })
 
 function isStatusActive(status: ProcessingStatus): boolean {
@@ -108,6 +168,15 @@ function isStatusActive(status: ProcessingStatus): boolean {
 
 function isClassificationActive(classification: ClassificationType): boolean {
   return props.classificationFilters.includes(classification)
+}
+
+function setVisibilityFilter(filter: VisibilityFilter) {
+  visibilityFilter.value = filter
+  emit('update', {
+    statuses: [...props.statusFilters],
+    classifications: [...props.classificationFilters],
+    visibility: filter
+  })
 }
 
 function toggleStatus(status: ProcessingStatus) {
@@ -120,7 +189,11 @@ function toggleStatus(status: ProcessingStatus) {
     newFilters.push(status)
   }
 
-  emit('update', { statuses: newFilters, classifications: [...props.classificationFilters] })
+  emit('update', {
+    statuses: newFilters,
+    classifications: [...props.classificationFilters],
+    visibility: visibilityFilter.value
+  })
 }
 
 function toggleClassification(classification: ClassificationType) {
@@ -133,95 +206,178 @@ function toggleClassification(classification: ClassificationType) {
     newFilters.push(classification)
   }
 
-  emit('update', { statuses: [...props.statusFilters], classifications: newFilters })
+  emit('update', {
+    statuses: [...props.statusFilters],
+    classifications: newFilters,
+    visibility: visibilityFilter.value
+  })
 }
 
 function clearFilters() {
-  emit('update', { statuses: [], classifications: [] })
+  visibilityFilter.value = 'all'
+  emit('update', { statuses: [], classifications: [], visibility: 'all' })
 }
 </script>
 
 <style scoped>
 .comment-filters {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: start;
-  gap: var(--spacing-lg);
+  position: relative;
   padding: var(--spacing-md);
-  background-color: var(--slate-50);
+  background: linear-gradient(to bottom, var(--blue-50), white);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--slate-200);
+  border: 1px solid var(--blue-200);
 }
 
-.filters-content {
+.filters-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-lg);
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.filter-label {
-  font-size: 0.875rem;
-  color: var(--navy-600);
-  font-weight: 500;
-  margin-bottom: var(--spacing-sm);
-}
-
-.filter-buttons {
+.filter-section {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
-.filter-buttons--wrap {
+.filter-section--full {
+  flex: 1 1 100%;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--navy-600);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  min-width: 70px;
+}
+
+.filter-chips {
+  display: flex;
+  gap: 0.375rem;
   flex-wrap: wrap;
 }
 
-.filter-button {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid var(--slate-300);
+.filter-chips--wrap {
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border: 1.5px solid var(--slate-300);
   background-color: white;
   color: var(--navy-700);
-  border-radius: var(--radius-md);
-  font-size: 0.8125rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
-.filter-button:hover {
-  background-color: var(--slate-100);
+.chip-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.filter-chip:hover {
+  background-color: var(--slate-50);
   border-color: var(--slate-400);
+  transform: translateY(-1px);
 }
 
-.filter-button.active {
+.filter-chip.active {
   background-color: var(--blue-500);
   color: white;
   border-color: var(--blue-500);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
-.filter-button.active:hover {
+.filter-chip.active:hover {
   background-color: var(--blue-400);
   border-color: var(--blue-400);
 }
 
-.filter-group {
-  min-width: 200px;
-  display: flex;
-  flex-direction: column;
+/* Classification type color variants */
+.filter-chip--positive.active {
+  background-color: var(--positive);
+  border-color: var(--positive);
 }
 
-.filter-actions {
+.filter-chip--critical.active {
+  background-color: var(--critical);
+  border-color: var(--critical);
+}
+
+.filter-chip--urgent.active {
+  background-color: var(--urgent);
+  border-color: var(--urgent);
+}
+
+.filter-chip--question.active {
+  background-color: var(--question);
+  border-color: var(--question);
+}
+
+.filter-chip--partnership.active {
+  background-color: var(--partnership);
+  border-color: var(--partnership);
+}
+
+.filter-chip--toxic.active {
+  background-color: var(--toxic);
+  border-color: var(--toxic);
+}
+
+.filter-chip--spam.active {
+  background-color: var(--spam);
+  border-color: var(--spam);
+  color: white;
+}
+
+.clear-button {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  background-color: var(--slate-200);
+  color: var(--navy-600);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+.clear-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.clear-button:hover {
+  background-color: var(--error);
+  color: white;
+  transform: rotate(90deg);
 }
 
 @media (max-width: 768px) {
-  .comment-filters {
-    grid-template-columns: 1fr;
+  .filter-label {
+    min-width: 100%;
+    margin-bottom: 0.25rem;
   }
 
-  .filter-actions {
-    justify-content: flex-start;
+  .filter-section {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
