@@ -127,13 +127,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import type { Media, UpdateMediaRequest } from '@/types/api'
 import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import { apiService } from '@/services/api'
 
 interface Props {
   media: Media
@@ -149,6 +150,8 @@ const showContextModal = ref(false)
 const editedContext = ref(props.media.context)
 const imageError = ref(false)
 const currentImageIndex = ref(0)
+const imageUrl = ref<string>('')
+const isLoadingImage = ref(true)
 
 // Check if this is a carousel
 const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
@@ -161,23 +164,46 @@ const totalImages = computed(() => {
   return 1
 })
 
-// Current image URL (supports carousel)
-const imageUrl = computed(() => {
-  if (imageError.value) {
-    return `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
-  }
+// Fetch image as blob with auth header
+async function loadImage() {
+  isLoadingImage.value = true
+  imageError.value = false
 
-  // For carousel, show current image from children_urls
-  if (isCarousel.value && props.media.children_urls.length > 0) {
-    return props.media.children_urls[currentImageIndex.value] || props.media.url
-  }
+  try {
+    const childIndex = isCarousel.value && props.media.children_urls.length > 0
+      ? currentImageIndex.value
+      : undefined
 
-  // Use direct Instagram URL for single images/videos
-  return props.media.url
+    const blobUrl = await apiService.fetchMediaImage(props.media.id, childIndex)
+
+    // Revoke old URL to prevent memory leaks
+    if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
+      URL.revokeObjectURL(imageUrl.value)
+    }
+
+    imageUrl.value = blobUrl
+  } catch (error) {
+    console.error('Failed to load image:', error)
+    imageError.value = true
+    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+  } finally {
+    isLoadingImage.value = false
+  }
+}
+
+// Load image on mount and when index changes
+watch([() => props.media.id, currentImageIndex], loadImage, { immediate: true })
+
+// Cleanup blob URLs on unmount
+onBeforeUnmount(() => {
+  if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(imageUrl.value)
+  }
 })
 
 function handleImageError() {
   imageError.value = true
+  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
 }
 
 // Carousel navigation

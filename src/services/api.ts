@@ -141,6 +141,20 @@ class ApiService {
     const response = await this.client.patch<ApiResponse<Answer>>(`/answers/${id}`, data)
     return response.data
   }
+
+  // Image proxy endpoint - fetch as blob with auth header
+  async fetchMediaImage(mediaId: number, childIndex?: number): Promise<string> {
+    const endpoint = `/media/${mediaId}/image`
+    const params = childIndex !== undefined ? { child_index: childIndex } : {}
+
+    const response = await this.client.get(endpoint, {
+      params,
+      responseType: 'blob'
+    })
+
+    // Create object URL from blob
+    return URL.createObjectURL(response.data)
+  }
 }
 
 export const apiService = new ApiService()
