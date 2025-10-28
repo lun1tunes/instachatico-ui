@@ -105,43 +105,23 @@
     </div>
   </div>
 
-  <BaseModal
+  <FullScreenMarkdownEditor
     v-model="showEditModal"
-    title="Edit Answer"
-    size="md"
-  >
-    <form @submit.prevent="handleUpdate" class="answer-edit-form">
-      <div class="form-group">
-        <label for="answerText" class="form-label">Answer</label>
-        <textarea
-          id="answerText"
-          v-model="editedAnswer"
-          class="form-textarea"
-          rows="4"
-          placeholder="Update the generated answer..."
-          required
-        ></textarea>
-      </div>
-
-      <div class="form-actions">
-        <BaseButton type="button" variant="ghost" @click="showEditModal = false">
-          Cancel
-        </BaseButton>
-        <BaseButton type="submit" variant="primary">
-          Save Changes
-        </BaseButton>
-      </div>
-    </form>
-  </BaseModal>
+    title="Edit AI Generated Answer"
+    :initial-content="answer.answer"
+    placeholder="Edit the AI-generated answer. Markdown formatting is supported..."
+    save-button-text="Update Answer"
+    @save="handleUpdate"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import type { Answer, ProcessingStatus, UpdateAnswerRequest } from '@/types/api'
 import { ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseModal from '@/components/ui/BaseModal.vue'
+import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.vue'
 
 interface Props {
   answer: Answer
@@ -157,16 +137,6 @@ const emit = defineEmits<{
 }>()
 
 const showEditModal = ref(false)
-const editedAnswer = ref(props.answer.answer)
-
-watch(
-  () => props.answer.answer,
-  (newValue) => {
-    if (!showEditModal.value) {
-      editedAnswer.value = newValue
-    }
-  }
-)
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
@@ -191,18 +161,16 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
 }
 
 function openEditModal() {
-  editedAnswer.value = props.answer.answer
   showEditModal.value = true
 }
 
-function handleUpdate() {
-  const trimmedAnswer = editedAnswer.value.trim()
+function handleUpdate(content: string) {
+  const trimmedAnswer = content.trim()
   if (!trimmedAnswer) {
     return
   }
 
   emit('update-answer', { answer: trimmedAnswer })
-  showEditModal.value = false
 }
 
 function handleDelete() {

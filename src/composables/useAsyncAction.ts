@@ -1,4 +1,13 @@
 import { ref } from 'vue'
+import { useConfirm } from './useConfirm'
+
+interface ConfirmOptions {
+  title?: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  variant?: 'warning' | 'danger' | 'info'
+}
 
 /**
  * Composable for handling async actions with loading states and duplicate prevention
@@ -10,7 +19,12 @@ import { ref } from 'vue'
  *   },
  *   {
  *     onSuccess: () => console.log('Comment deleted'),
- *     onError: (error) => console.error('Failed to delete:', error)
+ *     onError: (error) => console.error('Failed to delete:', error),
+ *     confirm: {
+ *       title: 'Delete Comment',
+ *       message: 'Are you sure? This action cannot be undone.',
+ *       variant: 'danger'
+ *     }
  *   }
  * )
  */
@@ -19,11 +33,14 @@ export function useAsyncAction<TArgs extends any[], TResult = void>(
   options?: {
     onSuccess?: (result: TResult) => void
     onError?: (error: Error) => void
+    /** @deprecated Use confirm object instead */
     confirmMessage?: string
+    confirm?: ConfirmOptions
   }
 ) {
   const loading = ref(false)
   const error = ref<Error | null>(null)
+  const { confirm } = useConfirm()
 
   const execute = async (...args: TArgs): Promise<TResult | undefined> => {
     // Prevent duplicate calls while loading
@@ -33,8 +50,17 @@ export function useAsyncAction<TArgs extends any[], TResult = void>(
     }
 
     // Optional confirmation dialog
-    if (options?.confirmMessage) {
-      const confirmed = window.confirm(options.confirmMessage)
+    if (options?.confirm) {
+      const confirmed = await confirm(options.confirm)
+      if (!confirmed) {
+        return
+      }
+    } else if (options?.confirmMessage) {
+      // Backward compatibility with old string-based confirmation
+      const confirmed = await confirm({
+        message: options.confirmMessage,
+        variant: 'warning'
+      })
       if (!confirmed) {
         return
       }
@@ -99,7 +125,9 @@ export function useAsyncActions<
     [K in keyof TActions]?: {
       onSuccess?: (result: Awaited<ReturnType<TActions[K]>>) => void
       onError?: (error: Error) => void
+      /** @deprecated Use confirm object instead */
       confirmMessage?: string
+      confirm?: ConfirmOptions
     }
   }
 ) {

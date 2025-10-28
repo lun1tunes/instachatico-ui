@@ -124,27 +124,14 @@
 
   </BaseCard>
 
-  <BaseModal v-model="showContextModal" title="Edit Context">
-    <div class="modal-form">
-      <label for="context" class="form-label">AI Context Description</label>
-      <textarea
-        id="context"
-        v-model="editedContext"
-        class="form-textarea"
-        rows="6"
-        placeholder="Override or adjust AI description of the post"
-      ></textarea>
-    </div>
-
-    <template #footer>
-      <BaseButton variant="ghost" @click="showContextModal = false">
-        Cancel
-      </BaseButton>
-      <BaseButton variant="primary" @click="saveContext">
-        Save Changes
-      </BaseButton>
-    </template>
-  </BaseModal>
+  <FullScreenMarkdownEditor
+    v-model="showContextModal"
+    title="Edit AI Context"
+    :initial-content="media.context"
+    placeholder="Provide context about this media post to help AI generate better responses..."
+    save-button-text="Save Context"
+    @save="saveContext"
+  />
 </template>
 
 <script setup lang="ts">
@@ -154,9 +141,10 @@ import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseModal from '@/components/ui/BaseModal.vue'
+import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.vue'
 import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
+import { useConfirm } from '@/composables/useConfirm'
 
 interface Props {
   media: Media
@@ -168,8 +156,9 @@ const emit = defineEmits<{
   update: [data: UpdateMediaRequest]
 }>()
 
+const { confirm } = useConfirm()
+
 const showContextModal = ref(false)
-const editedContext = ref(props.media.context)
 const imageError = ref(false)
 const currentImageIndex = ref(0)
 const imageUrl = ref<string>('')
@@ -296,14 +285,18 @@ function toggleComments(enabled: boolean) {
   emit('update', { is_comment_enabled: enabled })
 }
 
-function confirmToggleComments(event: Event) {
+async function confirmToggleComments(event: Event) {
   const target = event.target as HTMLInputElement
   const nextValue = target.checked
 
   if (!nextValue) {
-    const confirmed = window.confirm(
-      'Disabling comments will permanently delete all existing comments. This action cannot be undone. Do you want to continue?'
-    )
+    const confirmed = await confirm({
+      title: 'Disable Comments',
+      message: 'Disabling comments will permanently delete all existing comments from Instagram. This action cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Disable & Delete All',
+      cancelText: 'Cancel'
+    })
 
     if (!confirmed) {
       target.checked = true
@@ -319,9 +312,8 @@ function toggleProcessing(event: Event) {
   emit('update', { is_processing_enabled: target.checked })
 }
 
-function saveContext() {
-  emit('update', { context: editedContext.value })
-  showContextModal.value = false
+function saveContext(content: string) {
+  emit('update', { context: content })
 }
 
 function openPermalink() {

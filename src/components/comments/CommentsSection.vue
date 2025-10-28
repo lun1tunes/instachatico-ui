@@ -90,7 +90,13 @@ const actions = useAsyncActions(
   },
   {
     deleteComment: {
-      confirmMessage: 'Are you sure? Comment will be deleted permanently. This action cannot be undone. Do you want to continue?',
+      confirm: {
+        title: 'Delete Comment',
+        message: 'This comment will be deleted permanently from Instagram. This action cannot be undone.',
+        variant: 'danger',
+        confirmText: 'Delete Permanently',
+        cancelText: 'Cancel'
+      },
       onError: (error) => console.error('Failed to delete comment:', error)
     },
     updateComment: {
@@ -100,7 +106,13 @@ const actions = useAsyncActions(
       onError: (error) => console.error('Failed to update classification:', error)
     },
     deleteAnswer: {
-      confirmMessage: 'Are you sure you want to delete this answer?',
+      confirm: {
+        title: 'Delete Answer',
+        message: 'This AI-generated answer will be deleted permanently. Do you want to continue?',
+        variant: 'danger',
+        confirmText: 'Delete Answer',
+        cancelText: 'Cancel'
+      },
       onError: (error) => console.error('Failed to delete answer:', error)
     },
     updateAnswer: {
