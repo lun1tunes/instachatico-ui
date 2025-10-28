@@ -105,7 +105,7 @@
             :checked="media.is_processing_enabled"
             @change="toggleProcessing"
           />
-          <span>Enable Processing</span>
+          <span>Enable AI processing</span>
         </label>
 
         <label class="checkbox-label checkbox-label--danger">

@@ -106,6 +106,38 @@
           </svg>
           <span>Delete</span>
         </BaseButton>
+        <div
+          v-else
+          class="deleted-badge-button"
+          title="This comment has been permanently deleted from Instagram"
+        >
+          <svg
+            class="action-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
+          <span>Deleted</span>
+          <svg
+            class="check-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
       </div>
     </div>
 
@@ -180,6 +212,7 @@
         v-for="answer in comment.answers"
         :key="answer.id"
         :answer="answer"
+        :is-comment-deleted="comment.is_deleted"
         @delete-answer="handleDeleteAnswer(answer.id)"
         @update-answer="(data) => handleUpdateAnswer(answer.id, data)"
       />
@@ -589,5 +622,34 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   margin: 0 0 var(--spacing-md);
   font-size: 0.875rem;
   color: var(--navy-700);
+}
+
+.deleted-badge-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--slate-100), var(--slate-200));
+  color: var(--slate-500);
+  border: 1px solid var(--slate-300);
+  cursor: not-allowed;
+  opacity: 0.8;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.deleted-badge-button:hover {
+  background: linear-gradient(135deg, var(--slate-200), var(--slate-300));
+  transform: none;
+}
+
+.deleted-badge-button .check-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--success);
+  margin-left: 0.125rem;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="answer-card">
+  <div class="answer-card" :class="{ 'answer-card--inactive': isInactive }">
     <div class="answer-header">
       <div class="answer-status">
         <!-- Only show processing status if reply hasn't been sent, or if it's completed/processing -->
@@ -20,7 +20,7 @@
         </BaseBadge>
       </div>
 
-      <div class="answer-actions">
+      <div v-if="!isInactive" class="answer-actions">
         <BaseButton
           variant="ghost"
           size="sm"
@@ -64,6 +64,11 @@
           </svg>
           Delete
         </BaseButton>
+      </div>
+      <div v-else class="answer-inactive-label">
+        <BaseBadge variant="default" size="sm">
+          Inactive (Comment Deleted)
+        </BaseBadge>
       </div>
     </div>
 
@@ -140,9 +145,11 @@ import BaseModal from '@/components/ui/BaseModal.vue'
 
 interface Props {
   answer: Answer
+  isCommentDeleted?: boolean
 }
 
 const props = defineProps<Props>()
+const isInactive = props.isCommentDeleted || false
 
 const emit = defineEmits<{
   'update-answer': [data: UpdateAnswerRequest]
@@ -222,6 +229,45 @@ function handleDelete() {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
   border-left-color: var(--blue-400);
   border-right-color: var(--blue-400);
+}
+
+/* Inactive state for deleted comments */
+.answer-card--inactive {
+  opacity: 0.6;
+  background-color: var(--slate-50);
+  border-color: var(--slate-300);
+  border-left-color: var(--slate-400);
+  border-right-color: var(--slate-400);
+  filter: grayscale(30%);
+}
+
+.answer-card--inactive:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-left-color: var(--slate-400);
+  border-right-color: var(--slate-400);
+}
+
+.answer-card--inactive .answer-body {
+  background: linear-gradient(135deg, var(--slate-100) 0%, var(--slate-50) 100%);
+  border-left-color: var(--slate-300);
+  color: var(--slate-600);
+}
+
+.answer-card--inactive .answer-body p {
+  color: var(--slate-600);
+}
+
+.answer-card--inactive .score-fill {
+  background: linear-gradient(90deg, var(--slate-400), var(--slate-300));
+}
+
+.answer-card--inactive .score-fill.quality {
+  background: linear-gradient(90deg, var(--slate-400), var(--slate-300));
+}
+
+.answer-inactive-label {
+  display: flex;
+  align-items: center;
 }
 
 .answer-header {

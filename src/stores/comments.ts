@@ -63,25 +63,30 @@ export const useCommentsStore = defineStore('comments', () => {
   const visibilityFilter = ref<'all' | 'visible' | 'hidden'>('all')
   const deletedFilter = ref<'all' | 'active' | 'deleted'>('all')
 
-  // Computed: Filter comments by visibility and deleted status (frontend-only filters)
+  // Computed: Filter and sort comments by visibility, deleted status, and created_at (frontend-only filters)
   const comments = computed(() => {
     let filtered = allComments.value
 
-    // Apply visibility filter
+    // Apply visibility filter (frontend-only)
     if (visibilityFilter.value === 'visible') {
       filtered = filtered.filter(comment => !comment.is_hidden)
     } else if (visibilityFilter.value === 'hidden') {
       filtered = filtered.filter(comment => comment.is_hidden)
     }
 
-    // Apply deleted filter
+    // Apply deleted filter (frontend-only)
     if (deletedFilter.value === 'active') {
       filtered = filtered.filter(comment => !comment.is_deleted)
     } else if (deletedFilter.value === 'deleted') {
       filtered = filtered.filter(comment => comment.is_deleted)
     }
 
-    return filtered
+    // Sort by created_at: recent to oldest
+    return filtered.sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+      return dateB - dateA // Descending order (recent first)
+    })
   })
 
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))

@@ -89,21 +89,23 @@
         </div>
       </div>
 
-      <div v-if="formattedPostedAt" class="media-card__date">
-        {{ formattedPostedAt }}
-      </div>
+      <div class="media-card__footer">
+        <div class="media-card__settings">
+          <label class="checkbox-label" @click.stop>
+            <input
+              type="checkbox"
+              :checked="media.is_processing_enabled"
+              @change="handleToggleProcessing"
+              class="checkbox-input"
+            />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">AI processing</span>
+          </label>
+        </div>
 
-      <div class="media-card__settings">
-        <label class="checkbox-label" @click.stop>
-          <input
-            type="checkbox"
-            :checked="media.is_processing_enabled"
-            @change="handleToggleProcessing"
-            class="checkbox-input"
-          />
-          <span class="checkbox-custom"></span>
-          <span class="checkbox-text">Processing</span>
-        </label>
+        <div v-if="formattedPostedAt" class="media-card__date">
+          {{ formattedPostedAt }}
+        </div>
       </div>
     </div>
   </BaseCard>
@@ -437,6 +439,13 @@ const formattedPostedAt = computed(() => {
 
 .stat svg {
   color: var(--navy-400);
+}
+
+.media-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .media-card__date {
