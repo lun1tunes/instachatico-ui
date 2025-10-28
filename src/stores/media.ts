@@ -4,7 +4,7 @@ import { apiService } from '@/services/api'
 import type { Media, PaginationQuery, UpdateMediaRequest } from '@/types/api'
 
 export const useMediaStore = defineStore('media', () => {
-  const mediaList = ref<Media[]>([])
+  const rawMediaList = ref<Media[]>([])
   const currentMedia = ref<Media | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -18,6 +18,15 @@ export const useMediaStore = defineStore('media', () => {
   const hasNextPage = computed(() => currentPage.value < totalPages.value)
   const hasPrevPage = computed(() => currentPage.value > 1)
 
+  // Sorted media list (recent to oldest)
+  const mediaList = computed(() => {
+    return [...rawMediaList.value].sort((a, b) => {
+      if (!a.posted_at) return 1
+      if (!b.posted_at) return -1
+      return new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
+    })
+  })
+
   async function fetchMedia(query?: PaginationQuery) {
     loading.value = true
     error.value = null
@@ -28,7 +37,7 @@ export const useMediaStore = defineStore('media', () => {
         per_page: perPage.value
       })
 
-      mediaList.value = response.payload
+      rawMediaList.value = response.payload
 
       if (response.meta.page) currentPage.value = response.meta.page
       if (response.meta.per_page) perPage.value = response.meta.per_page
@@ -65,9 +74,9 @@ export const useMediaStore = defineStore('media', () => {
       const response = await apiService.updateMedia(id, data)
 
       // Update in list if present
-      const index = mediaList.value.findIndex(m => m.id === id)
+      const index = rawMediaList.value.findIndex(m => m.id === id)
       if (index !== -1) {
-        mediaList.value[index] = response.payload
+        rawMediaList.value[index] = response.payload
       }
 
       // Update current media if it's the same

@@ -89,6 +89,10 @@
         </div>
       </div>
 
+      <div v-if="formattedPostedAt" class="media-card__date">
+        {{ formattedPostedAt }}
+      </div>
+
       <div class="media-card__settings">
         <label class="checkbox-label" @click.stop>
           <input
@@ -112,6 +116,7 @@ import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import { apiService } from '@/services/api'
+import { format, parseISO } from 'date-fns'
 
 interface Props {
   media: Media
@@ -265,6 +270,16 @@ const mediaTypeBadge = computed(() => {
       return 'partnership'
     default:
       return 'default'
+  }
+})
+
+const formattedPostedAt = computed(() => {
+  if (!props.media.posted_at) return ''
+  try {
+    const date = parseISO(props.media.posted_at)
+    return format(date, 'MMM d, yyyy')
+  } catch (error) {
+    return props.media.posted_at
   }
 })
 </script>
@@ -422,6 +437,12 @@ const mediaTypeBadge = computed(() => {
 
 .stat svg {
   color: var(--navy-400);
+}
+
+.media-card__date {
+  font-size: 0.75rem;
+  color: var(--navy-500);
+  font-weight: 500;
 }
 
 .media-card__settings {

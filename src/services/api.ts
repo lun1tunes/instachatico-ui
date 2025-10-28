@@ -173,7 +173,11 @@ class ApiService {
 
     const response = await this.client.get(endpoint, {
       params,
-      responseType: 'blob'
+      responseType: 'blob',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     })
 
     // Create object URL from blob

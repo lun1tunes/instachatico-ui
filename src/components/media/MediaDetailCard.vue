@@ -196,10 +196,7 @@ async function loadImage() {
       ? currentImageIndex.value
       : undefined
 
-    console.log('Loading image:', { mediaId: props.media.id, childIndex, isCarousel: isCarousel.value, totalImages: totalImages.value })
-
     const blobUrl = await apiService.fetchMediaImage(props.media.id, childIndex)
-    console.log('Fetched blob URL:', blobUrl.substring(0, 50) + '...')
 
     // Store old URL before replacing
     const oldUrl = imageUrl.value
@@ -210,7 +207,6 @@ async function loadImage() {
     // Revoke old URL after setting new one to prevent memory leaks
     if (oldUrl && oldUrl.startsWith('blob:')) {
       URL.revokeObjectURL(oldUrl)
-      console.log('Revoked old blob URL')
     }
   } catch (error) {
     console.error('Failed to load image:', error)
