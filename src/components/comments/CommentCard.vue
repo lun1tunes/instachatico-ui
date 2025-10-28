@@ -43,6 +43,7 @@
 
         <div class="comment-actions">
           <BaseButton
+            v-if="!comment.is_deleted"
             :variant="isHiding ? 'secondary' : 'ghost'"
             size="sm"
             @click="toggleHidden"

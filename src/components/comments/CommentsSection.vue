@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { useCommentsStore } from '@/stores/comments'
+import { useAsyncActions } from '@/composables/useAsyncAction'
 import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
@@ -67,6 +68,46 @@ interface Props {
 const props = defineProps<Props>()
 
 const commentsStore = useCommentsStore()
+
+// Setup async actions with loading states and duplicate prevention
+const actions = useAsyncActions(
+  {
+    deleteComment: async (id: string) => {
+      await commentsStore.deleteComment(id)
+    },
+    updateComment: async (id: string, data: UpdateCommentRequest) => {
+      await commentsStore.updateComment(id, data)
+    },
+    updateClassification: async (id: string, data: UpdateClassificationRequest) => {
+      await commentsStore.updateClassification(id, data)
+    },
+    deleteAnswer: async (commentId: string, answerId: string) => {
+      await commentsStore.deleteAnswer(commentId, answerId)
+    },
+    updateAnswer: async (commentId: string, answerId: string, data: UpdateAnswerRequest) => {
+      await commentsStore.updateAnswer(commentId, answerId, data)
+    }
+  },
+  {
+    deleteComment: {
+      confirmMessage: 'Are you sure? Comment will be deleted permanently. This action cannot be undone. Do you want to continue?',
+      onError: (error) => console.error('Failed to delete comment:', error)
+    },
+    updateComment: {
+      onError: (error) => console.error('Failed to update comment:', error)
+    },
+    updateClassification: {
+      onError: (error) => console.error('Failed to update classification:', error)
+    },
+    deleteAnswer: {
+      confirmMessage: 'Are you sure you want to delete this answer?',
+      onError: (error) => console.error('Failed to delete answer:', error)
+    },
+    updateAnswer: {
+      onError: (error) => console.error('Failed to update answer:', error)
+    }
+  }
+)
 
 onMounted(() => {
   loadComments()
@@ -109,49 +150,25 @@ function handlePageChange(page: number) {
   loadComments()
 }
 
-async function handleDelete(id: string) {
-  const message = 'Are you sure? Comment will be deleted permanently. This action cannot be undone. Do you want to continue?'
-  if (confirm(message)) {
-    try {
-      await commentsStore.deleteComment(id)
-    } catch (error) {
-      console.error('Failed to delete comment:', error)
-    }
-  }
+// All handlers now use the actions composable which prevents duplicate calls
+function handleDelete(id: string) {
+  actions.deleteComment.execute(id)
 }
 
-async function handleUpdate(id: string, data: UpdateCommentRequest) {
-  try {
-    await commentsStore.updateComment(id, data)
-  } catch (error) {
-    console.error('Failed to update comment:', error)
-  }
+function handleUpdate(id: string, data: UpdateCommentRequest) {
+  actions.updateComment.execute(id, data)
 }
 
-async function handleUpdateClassification(id: string, data: UpdateClassificationRequest) {
-  try {
-    await commentsStore.updateClassification(id, data)
-  } catch (error) {
-    console.error('Failed to update classification:', error)
-  }
+function handleUpdateClassification(id: string, data: UpdateClassificationRequest) {
+  actions.updateClassification.execute(id, data)
 }
 
-async function handleDeleteAnswer(commentId: string, answerId: string) {
-  if (confirm('Are you sure you want to delete this answer?')) {
-    try {
-      await commentsStore.deleteAnswer(commentId, answerId)
-    } catch (error) {
-      console.error('Failed to delete answer:', error)
-    }
-  }
+function handleDeleteAnswer(commentId: string, answerId: string) {
+  actions.deleteAnswer.execute(commentId, answerId)
 }
 
-async function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAnswerRequest) {
-  try {
-    await commentsStore.updateAnswer(commentId, answerId, data)
-  } catch (error) {
-    console.error('Failed to update answer:', error)
-  }
+function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAnswerRequest) {
+  actions.updateAnswer.execute(commentId, answerId, data)
 }
 </script>
 

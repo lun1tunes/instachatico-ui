@@ -48,6 +48,7 @@
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
+import { useAsyncAction } from '@/composables/useAsyncAction'
 import type { UpdateMediaRequest } from '@/types/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
@@ -57,6 +58,17 @@ import CommentsSection from '@/components/comments/CommentsSection.vue'
 const route = useRoute()
 const router = useRouter()
 const mediaStore = useMediaStore()
+
+// Setup async action for media updates with duplicate prevention
+const { execute: updateMedia, loading: updateLoading } = useAsyncAction(
+  async (data: UpdateMediaRequest) => {
+    const id = String(route.params.id)
+    await mediaStore.updateMedia(id, data)
+  },
+  {
+    onError: (error) => console.error('Failed to update media:', error)
+  }
+)
 
 onMounted(() => {
   loadMedia()
@@ -81,13 +93,8 @@ function goBackToMedia() {
   router.push({ name: 'MediaList' })
 }
 
-async function handleUpdateMedia(data: UpdateMediaRequest) {
-  const id = String(route.params.id)
-  try {
-    await mediaStore.updateMedia(id, data)
-  } catch (error) {
-    console.error('Failed to update media:', error)
-  }
+function handleUpdateMedia(data: UpdateMediaRequest) {
+  updateMedia(data)
 }
 </script>
 
