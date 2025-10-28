@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useCommentsStore } from '@/stores/comments'
 import { useAsyncActions } from '@/composables/useAsyncAction'
 import type {
@@ -111,6 +111,12 @@ const actions = useAsyncActions(
 
 onMounted(() => {
   loadComments()
+})
+
+// Reset filters when leaving the media detail page
+onUnmounted(() => {
+  commentsStore.clearComments()
+  commentsStore.clearFilters()
 })
 
 watch(() => props.mediaId, () => {
