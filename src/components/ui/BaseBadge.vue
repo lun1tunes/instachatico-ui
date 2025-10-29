@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { ClassificationType } from '@/types/api'
 
 interface Props {
-  variant?: 'default' | 'positive' | 'critical' | 'urgent' | 'question' | 'partnership' | 'toxic' | 'spam' | 'success' | 'warning' | 'error' | 'info'
+  variant?: 'default' | 'secondary' | 'positive' | 'critical' | 'urgent' | 'question' | 'partnership' | 'toxic' | 'spam' | 'success' | 'warning' | 'error' | 'info'
   size?: 'sm' | 'md' | 'lg'
   classificationType?: ClassificationType
 }
@@ -74,6 +74,11 @@ const badgeClasses = computed(() => {
 .base-badge--default {
   background-color: var(--slate-200);
   color: var(--navy-700);
+}
+
+.base-badge--secondary {
+  background-color: var(--slate-200);
+  color: var(--navy-800);
 }
 
 .base-badge--positive {

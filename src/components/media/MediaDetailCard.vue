@@ -93,7 +93,7 @@
           Edit
         </BaseButton>
       </div>
-      <p>{{ media.context }}</p>
+      <div class="context-content markdown-body" v-html="renderedContext"></div>
     </div>
 
     <div class="media-detail-card__settings">
@@ -145,6 +145,7 @@ import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.v
 import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
 import { useConfirm } from '@/composables/useConfirm'
+import { useMarkdown } from '@/composables/useMarkdown'
 
 interface Props {
   media: Media
@@ -157,6 +158,7 @@ const emit = defineEmits<{
 }>()
 
 const { confirm } = useConfirm()
+const { parseMarkdown } = useMarkdown()
 
 const showContextModal = ref(false)
 const imageError = ref(false)
@@ -279,6 +281,10 @@ const formattedPostedAt = computed(() => {
     console.error('Failed to parse posted_at date:', error)
     return props.media.posted_at
   }
+})
+
+const renderedContext = computed(() => {
+  return parseMarkdown(props.media.context || '')
 })
 
 function toggleComments(enabled: boolean) {
@@ -480,12 +486,135 @@ function openPermalink() {
   height: 1rem;
 }
 
-.media-detail-card__caption p,
-.media-detail-card__context p {
+.media-detail-card__caption p {
   font-size: 0.875rem;
   color: var(--navy-600);
   line-height: 1.6;
   margin: 0;
+}
+
+/* Markdown context styles */
+.context-content {
+  font-size: 0.875rem;
+  color: var(--navy-600);
+  line-height: 1.6;
+}
+
+.markdown-body {
+  color: var(--navy-800);
+}
+
+.markdown-body :deep(h1),
+.markdown-body :deep(h2),
+.markdown-body :deep(h3),
+.markdown-body :deep(h4),
+.markdown-body :deep(h5),
+.markdown-body :deep(h6) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: var(--navy-900);
+  line-height: 1.3;
+}
+
+.markdown-body :deep(h1) { font-size: 1.5em; }
+.markdown-body :deep(h2) { font-size: 1.25em; }
+.markdown-body :deep(h3) { font-size: 1.125em; }
+.markdown-body :deep(h4) { font-size: 1em; }
+
+.markdown-body :deep(h1:first-child),
+.markdown-body :deep(h2:first-child),
+.markdown-body :deep(h3:first-child),
+.markdown-body :deep(h4:first-child) {
+  margin-top: 0;
+}
+
+.markdown-body :deep(p) {
+  margin: 0 0 1em 0;
+}
+
+.markdown-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(p + ul),
+.markdown-body :deep(p + ol) {
+  margin-top: 0;
+}
+
+.markdown-body :deep(p:has(+ ul)),
+.markdown-body :deep(p:has(+ ol)) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(ul:last-child),
+.markdown-body :deep(ol:last-child) {
+  margin-bottom: 0;
+}
+
+.markdown-body :deep(strong) {
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
+.markdown-body :deep(em) {
+  font-style: italic;
+}
+
+.markdown-body :deep(code) {
+  padding: 0.125rem 0.375rem;
+  background: var(--slate-100);
+  border-radius: var(--radius-sm);
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.8125em;
+  color: var(--navy-800);
+}
+
+.markdown-body :deep(pre) {
+  padding: var(--spacing-sm);
+  background: var(--navy-900);
+  color: #e2e8f0;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.markdown-body :deep(pre code) {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown-body :deep(ul),
+.markdown-body :deep(ol) {
+  margin: 0 0 0.75em 0;
+  padding-left: 1.5em;
+}
+
+.markdown-body :deep(li) {
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+
+.markdown-body :deep(li p) {
+  margin: 0;
+  display: inline;
+}
+
+.markdown-body :deep(a) {
+  color: var(--blue-600);
+  text-decoration: none;
+}
+
+.markdown-body :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-body :deep(img) {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  margin: 0.5em 0;
 }
 
 .settings-group {

@@ -20,18 +20,67 @@
 
     <div class="form-group">
       <label for="reasoning" class="form-label">Reasoning</label>
+
+      <!-- Markdown Toolbar -->
+      <div class="markdown-toolbar">
+        <button type="button" @click="insertMarkdown('**', '**')" title="Bold (Ctrl+B)" class="toolbar-btn">
+          <strong>B</strong>
+        </button>
+        <button type="button" @click="insertMarkdown('*', '*')" title="Italic (Ctrl+I)" class="toolbar-btn">
+          <em>I</em>
+        </button>
+        <button type="button" @click="insertMarkdown('`', '`')" title="Code" class="toolbar-btn">
+          <code>&lt;/&gt;</code>
+        </button>
+        <div class="toolbar-divider"></div>
+        <button type="button" @click="insertMarkdown('# ', '')" title="Heading 1" class="toolbar-btn">H1</button>
+        <button type="button" @click="insertMarkdown('## ', '')" title="Heading 2" class="toolbar-btn">H2</button>
+        <button type="button" @click="insertMarkdown('### ', '')" title="Heading 3" class="toolbar-btn">H3</button>
+        <div class="toolbar-divider"></div>
+        <button type="button" @click="insertMarkdown('- ', '')" title="Unordered List" class="toolbar-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+        </button>
+        <button type="button" @click="insertMarkdown('1. ', '')" title="Ordered List" class="toolbar-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="10" y1="6" x2="21" y2="6" />
+            <line x1="10" y1="12" x2="21" y2="12" />
+            <line x1="10" y1="18" x2="21" y2="18" />
+            <path d="M4 6h1v4" />
+            <path d="M4 10h2" />
+            <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+          </svg>
+        </button>
+        <button type="button" @click="insertMarkdown('[', '](url)')" title="Link" class="toolbar-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+          </svg>
+        </button>
+        <div class="toolbar-spacer"></div>
+        <span class="char-count">{{ reasoning.length }} characters</span>
+      </div>
+
       <textarea
         id="reasoning"
+        ref="textareaRef"
         v-model="reasoning"
         class="form-textarea"
-        rows="4"
-        placeholder="Explain why this classification is appropriate..."
+        rows="6"
+        placeholder="Explain why this classification is appropriate... Markdown is supported."
         required
+        @keydown="handleKeydown"
       ></textarea>
     </div>
 
     <div class="form-actions">
-      <BaseButton type="button" variant="ghost" @click="$emit('cancel')">
+      <BaseButton type="button" variant="ghost" @click="handleCancel">
         Cancel
       </BaseButton>
       <BaseButton type="submit" variant="primary">
@@ -45,6 +94,7 @@
 import { ref } from 'vue'
 import { ClassificationType, ClassificationTypeLabels } from '@/types/api'
 import type { UpdateClassificationRequest } from '@/types/api'
+import { useConfirm } from '@/composables/useConfirm'
 import BaseButton from '@/components/ui/BaseButton.vue'
 
 interface Props {
@@ -59,8 +109,15 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const { confirm } = useConfirm()
+
+const textareaRef = ref<HTMLTextAreaElement>()
 const selectedType = ref(String(props.currentType ?? ClassificationType.POSITIVE_FEEDBACK))
 const reasoning = ref(props.currentReasoning)
+
+// Store initial values for change detection
+const initialType = String(props.currentType ?? ClassificationType.POSITIVE_FEEDBACK)
+const initialReasoning = props.currentReasoning
 
 const classificationTypes = {
   '1': ClassificationTypeLabels[ClassificationType.POSITIVE_FEEDBACK],
@@ -70,6 +127,74 @@ const classificationTypes = {
   '5': ClassificationTypeLabels[ClassificationType.PARTNERSHIP_PROPOSAL],
   '6': ClassificationTypeLabels[ClassificationType.TOXIC_ABUSIVE],
   '7': ClassificationTypeLabels[ClassificationType.SPAM_IRRELEVANT]
+}
+
+function insertMarkdown(before: string, after: string) {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = reasoning.value.substring(start, end)
+  const beforeText = reasoning.value.substring(0, start)
+  const afterText = reasoning.value.substring(end)
+
+  // Insert markdown syntax
+  reasoning.value = beforeText + before + selectedText + after + afterText
+
+  // Restore cursor position
+  setTimeout(() => {
+    textarea.focus()
+    const newPosition = start + before.length + selectedText.length
+    textarea.setSelectionRange(newPosition, newPosition)
+  }, 0)
+}
+
+function handleKeydown(event: KeyboardEvent) {
+  // Ctrl/Cmd + B for bold
+  if ((event.ctrlKey || event.metaKey) && event.key === 'b') {
+    event.preventDefault()
+    insertMarkdown('**', '**')
+  }
+  // Ctrl/Cmd + I for italic
+  if ((event.ctrlKey || event.metaKey) && event.key === 'i') {
+    event.preventDefault()
+    insertMarkdown('*', '*')
+  }
+  // Tab to insert spaces
+  if (event.key === 'Tab') {
+    event.preventDefault()
+    const textarea = textareaRef.value!
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    reasoning.value = reasoning.value.substring(0, start) + '  ' + reasoning.value.substring(end)
+    setTimeout(() => {
+      textarea.setSelectionRange(start + 2, start + 2)
+    }, 0)
+  }
+}
+
+async function handleCancel() {
+  // Check if content has been modified
+  const hasChanges =
+    selectedType.value !== initialType ||
+    reasoning.value !== initialReasoning
+
+  if (hasChanges) {
+    const confirmed = await confirm({
+      title: 'Unsaved Changes',
+      message: 'You have unsaved changes. Are you sure you want to cancel without saving?',
+      variant: 'warning',
+      confirmText: 'Discard Changes',
+      cancelText: 'Continue Editing'
+    })
+
+    if (!confirmed) {
+      return // Don't close, user wants to continue editing
+    }
+  }
+
+  emit('cancel')
 }
 
 function handleSubmit() {
@@ -120,11 +245,105 @@ function handleSubmit() {
 
 .form-textarea {
   resize: vertical;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  line-height: 1.6;
 }
 
 .form-actions {
   display: flex;
   gap: var(--spacing-md);
   justify-content: flex-end;
+}
+
+/* Markdown Toolbar */
+.markdown-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--slate-50);
+  border: 1px solid var(--slate-300);
+  border-bottom: none;
+  border-radius: var(--radius-md);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--slate-300);
+  background: white;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--navy-700);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.toolbar-btn:hover {
+  border-color: var(--blue-400);
+  background: var(--blue-50);
+  color: var(--blue-600);
+}
+
+.toolbar-btn:active {
+  transform: translateY(1px);
+}
+
+.toolbar-btn strong,
+.toolbar-btn em {
+  font-size: 0.875rem;
+}
+
+.toolbar-btn code {
+  font-size: 0.75rem;
+  color: inherit;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--slate-300);
+  margin: 0 var(--spacing-2xs);
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.char-count {
+  font-size: 0.6875rem;
+  color: var(--navy-500);
+  padding: 0 var(--spacing-xs);
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .markdown-toolbar {
+    gap: var(--spacing-2xs);
+  }
+
+  .toolbar-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .char-count {
+    display: none;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
 }
 </style>

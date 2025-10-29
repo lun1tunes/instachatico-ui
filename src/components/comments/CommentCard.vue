@@ -11,6 +11,14 @@
           Deleted
         </BaseBadge>
         <BaseBadge
+          v-if="comment.is_hidden && !comment.is_deleted"
+          variant="secondary"
+          size="sm"
+          class="meta-badge"
+        >
+          Hidden
+        </BaseBadge>
+        <BaseBadge
           :variant="statusBadgeVariant"
           size="sm"
           class="meta-badge"
