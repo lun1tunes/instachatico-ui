@@ -2,17 +2,43 @@
   <div class="answer-card" :class="{ 'answer-card--inactive': isInactive }">
     <div class="answer-header">
       <div class="answer-status">
-        <!-- Only show processing status if reply hasn't been sent, or if it's completed/processing -->
+        <!-- Show Reply Error badge if reply failed -->
+        <div v-if="hasReplyError" class="reply-error-container">
+          <BaseBadge variant="error">
+            Reply error
+          </BaseBadge>
+          <div class="info-icon-wrapper">
+            <svg
+              class="info-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+            <div class="info-tooltip">
+              Possible reason - user deleted comment immediately after publishing
+            </div>
+          </div>
+        </div>
+
+        <!-- Show processing status only if no reply error -->
         <BaseBadge
-          v-if="!answer.reply_sent || answer.processing_status !== ProcessingStatusEnum.FAILED"
+          v-else-if="!answer.reply_sent || answer.processing_status !== ProcessingStatusEnum.FAILED"
           :variant="getProcessingStatusVariant(answer.processing_status)"
           size="sm"
         >
           {{ getProcessingStatusLabel(answer.processing_status) }}
         </BaseBadge>
 
+        <!-- Show Sent badge only if no reply error -->
         <BaseBadge
-          v-if="answer.reply_sent"
+          v-if="answer.reply_sent && !hasReplyError"
           variant="success"
           size="sm"
         >
@@ -83,25 +109,22 @@
         </div>
         <span class="score-value">{{ answer.confidence }}%</span>
       </div>
-
-      <div class="score">
-        <span class="score-label">Quality:</span>
-        <div class="score-bar">
-          <div
-            class="score-fill quality"
-            :style="{ width: `${answer.quality_score}%` }"
-          ></div>
-        </div>
-        <span class="score-value">{{ answer.quality_score }}%</span>
-      </div>
     </div>
 
     <div class="answer-body">
       <p>{{ answer.answer }}</p>
     </div>
 
-    <div v-if="answer.reply_error || answer.last_error" class="answer-error">
-      Error: {{ answer.reply_error || answer.last_error }}
+    <!-- Reply Error Display -->
+    <div v-if="hasReplyError" class="answer-error">
+      <div class="error-header">Reply error</div>
+      <div class="error-message">{{ answer.reply_error }}</div>
+    </div>
+
+    <!-- Other Errors (processing errors) -->
+    <div v-else-if="answer.last_error" class="answer-error">
+      <div class="error-header">Error</div>
+      <div class="error-message">{{ answer.last_error }}</div>
     </div>
   </div>
 
@@ -116,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Answer, ProcessingStatus, UpdateAnswerRequest } from '@/types/api'
 import { ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -137,6 +160,11 @@ const emit = defineEmits<{
 }>()
 
 const showEditModal = ref(false)
+
+// Check if there's a reply error
+const hasReplyError = computed(() => {
+  return props.answer.reply_status === 'failed' && !!props.answer.reply_error
+})
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
@@ -180,7 +208,7 @@ function handleDelete() {
 
 <style scoped>
 .answer-card {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background-color: white;
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--blue-200);
@@ -251,6 +279,70 @@ function handleDelete() {
   display: flex;
   gap: var(--spacing-xs);
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.reply-error-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.info-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.info-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #dc2626;
+  transition: all var(--transition-fast);
+}
+
+.info-icon-wrapper:hover .info-icon {
+  color: #991b1b;
+  transform: scale(1.1);
+}
+
+.info-tooltip {
+  position: absolute;
+  left: -0.4rem;
+  bottom: calc(100% + 0.5rem);
+  background-color: rgba(248, 250, 252, 0.98);
+  backdrop-filter: blur(8px);
+  color: var(--navy-800);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  min-width: 280px;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+  pointer-events: none;
+  z-index: 1000;
+  border: 1px solid var(--slate-200);
+  white-space: nowrap;
+}
+
+.info-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0.6rem;
+  border: 6px solid transparent;
+  border-top-color: rgba(248, 250, 252, 0.98);
+}
+
+.info-icon-wrapper:hover .info-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 0.65rem);
 }
 
 .answer-actions {
@@ -341,8 +433,25 @@ function handleDelete() {
   padding: var(--spacing-sm);
   background-color: #fee2e2;
   color: #991b1b;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  border-left: 3px solid #dc2626;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.error-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #7f1d1d;
+}
+
+.error-message {
   font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #991b1b;
 }
 
 .answer-edit-form {
