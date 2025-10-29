@@ -163,30 +163,58 @@
 
     <div class="comment-classification">
       <div class="classification-header">
-        <h4>Classification</h4>
-        <BaseButton
-          variant="ghost"
-          size="sm"
-          @click="showClassificationModal = true"
+        <h4
+          class="classification-header-title"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isClassificationExpanded ? 'true' : 'false'"
+          title="Click to toggle classification details"
+          @click="toggleClassificationExpanded"
+          @keydown.enter.prevent="toggleClassificationExpanded"
+          @keydown.space.prevent="toggleClassificationExpanded"
         >
+          Classification
           <svg
-            class="action-icon"
+            class="expand-icon"
+            :class="{ 'expand-icon--expanded': isClassificationExpanded }"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.5"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M12 20h9" />
-            <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
+            <polyline points="6 9 12 15 18 9" />
           </svg>
-          Edit
-        </BaseButton>
+        </h4>
+        <div class="classification-header-actions">
+          <BaseButton
+            v-show="isClassificationExpanded"
+            variant="ghost"
+            size="sm"
+            @click.stop="showClassificationModal = true"
+          >
+            <svg
+              class="action-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 20h9" />
+              <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
+            </svg>
+            Edit
+          </BaseButton>
+        </div>
       </div>
 
-      <div v-if="!isClassificationFailed && comment.classification.processing_completed_at" class="classification-timestamp">
+      <div v-show="isClassificationExpanded" class="classification-content">
+        <div v-if="!isClassificationFailed && comment.classification.processing_completed_at" class="classification-timestamp">
         <span class="timestamp-label">Processed at:</span>
         <time class="timestamp-value">{{ formattedProcessingCompletedAt }}</time>
       </div>
@@ -212,6 +240,7 @@
       <div v-if="isClassificationFailed && comment.classification.last_error" class="classification-error">
         <div class="error-header">Error while classification</div>
         <div class="error-details">{{ comment.classification.last_error }}</div>
+      </div>
       </div>
     </div>
 
@@ -278,6 +307,7 @@ const emit = defineEmits<{
 const loading = ref(false)
 const hideLoading = ref(false)
 const showClassificationModal = ref(false)
+const isClassificationExpanded = ref(false)
 
 // Local state for optimistic UI updates
 const isHiding = ref(props.comment.is_hidden)
@@ -399,6 +429,10 @@ function handleDeleteAnswer(answerId: string) {
 function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   emit('update-answer', props.comment.id, answerId, data)
 }
+
+function toggleClassificationExpanded() {
+  isClassificationExpanded.value = !isClassificationExpanded.value
+}
 </script>
 
 <style scoped>
@@ -439,6 +473,16 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.expand-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  transition: transform var(--transition-base);
+}
+
+.expand-icon--expanded {
+  transform: rotate(180deg);
 }
 
 .user-avatar {
@@ -514,12 +558,43 @@ function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-sm);
+  min-height: 2rem;
+  gap: var(--spacing-sm);
+}
+
+.classification-header-actions {
+  flex-shrink: 0;
+  min-width: 4.5rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .classification-header h4 {
   margin: 0;
   font-size: 0.875rem;
   color: var(--navy-700);
+}
+
+.classification-header-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity var(--transition-fast);
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--navy-700);
+}
+
+.classification-header-title:hover {
+  opacity: 0.7;
+}
+
+.classification-header-title:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .classification-info {
