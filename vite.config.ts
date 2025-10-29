@@ -11,6 +11,9 @@ export default defineConfig({
     }
   },
   server: {
+    port: 51074,          // Dev server port (random port for security)
+    host: '0.0.0.0',      // Listen on all interfaces (allows external access)
+    strictPort: false,    // If port is busy, try next one
     proxy: {
       '/api': {
         target: 'http://localhost:4291',
