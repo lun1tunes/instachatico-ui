@@ -1,10 +1,11 @@
 <template>
-  <BaseCard
-    class="comment-card"
-    :class="{ 'comment-card--new': comment.isNew }"
-    padding="sm"
-    @mouseenter="handleInteraction"
-  >
+  <div class="comment-card-wrapper">
+    <BaseCard
+      class="comment-card"
+      :class="{ 'comment-card--new': comment.isNew }"
+      padding="sm"
+      @mouseenter="handleInteraction"
+    >
     <div class="comment-header">
       <div class="comment-header-top">
         <div class="comment-meta">
@@ -308,29 +309,30 @@
         </div>
       </div>
     </Transition>
-  </BaseCard>
+    </BaseCard>
 
-  <BaseModal
-    v-model="showClassificationModal"
-    title="Update Classification"
-    size="md"
-  >
-    <ClassificationForm
-      :current-type="comment.classification.classification_type"
-      :current-reasoning="comment.classification.reasoning"
-      @submit="handleUpdateClassification"
-      @cancel="showClassificationModal = false"
+    <BaseModal
+      v-model="showClassificationModal"
+      title="Update Classification"
+      size="md"
+    >
+      <ClassificationForm
+        :current-type="comment.classification.classification_type"
+        :current-reasoning="comment.classification.reasoning"
+        @submit="handleUpdateClassification"
+        @cancel="showClassificationModal = false"
+      />
+    </BaseModal>
+
+    <FullScreenMarkdownEditor
+      v-model="showCreateAnswerModal"
+      title="Create Answer for Comment"
+      :initial-content="''"
+      placeholder="Write your answer to this question/inquiry. Markdown formatting is supported..."
+      save-button-text="Create Answer"
+      @save="handleCreateAnswer"
     />
-  </BaseModal>
-
-  <FullScreenMarkdownEditor
-    v-model="showCreateAnswerModal"
-    title="Create Answer for Comment"
-    :initial-content="''"
-    placeholder="Write your answer to this question/inquiry. Markdown formatting is supported..."
-    save-button-text="Create Answer"
-    @save="handleCreateAnswer"
-  />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -505,6 +507,10 @@ function handleToggleHidden() {
   toggleHidden()
 }
 
+function handleInteraction() {
+  clearNewFlag()
+}
+
 function handleDelete() {
   clearNewFlag()
   emit('delete', props.comment.id)
@@ -547,6 +553,10 @@ function toggleClassificationExpanded() {
 </script>
 
 <style scoped>
+.comment-card-wrapper {
+  position: relative;
+}
+
 .comment-card {
   position: relative;
   border-left: 3px solid var(--blue-300);

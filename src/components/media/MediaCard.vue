@@ -43,50 +43,7 @@
       <p class="media-card__caption">{{ truncatedCaption }}</p>
 
       <div class="media-card__stats">
-        <div class="stat">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M5.5 8C5.5 8 6.5 10 8 10C9.5 10 10.5 8 10.5 8"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span>{{ media.like_count }}</span>
-        </div>
-
-        <div class="stat">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M14 10.6667C14 11.0203 13.8595 11.3594 13.6095 11.6095C13.3594 11.8595 13.0203 12 12.6667 12H4.66667L2 14.6667V3.33333C2 2.97971 2.14048 2.64057 2.39052 2.39052C2.64057 2.14048 2.97971 2 3.33333 2H12.6667C13.0203 2 13.3594 2.14048 13.6095 2.39052C13.8595 2.64057 14 2.97971 14 3.33333V10.6667Z"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span>{{ media.comments_count }}</span>
-        </div>
+        <MediaCardStats :media="media" />
       </div>
 
       <div class="media-card__footer">
@@ -119,6 +76,7 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
+import MediaCardStats from '@/components/media/MediaCardStats.vue'
 
 interface Props {
   media: Media
@@ -425,20 +383,7 @@ const formattedPostedAt = computed(() => {
 
 .media-card__stats {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-lg);
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--navy-600);
-  font-size: 0.875rem;
-}
-
-.stat svg {
-  color: var(--navy-400);
+  justify-content: flex-end;
 }
 
 .media-card__footer {

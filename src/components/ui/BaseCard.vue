@@ -66,6 +66,20 @@ const cardClasses = computed(() => {
   padding: var(--spacing-lg);
 }
 
+@media (max-width: 640px) {
+  .base-card--padding-sm .base-card__body {
+    padding: var(--spacing-sm) var(--spacing-xs);
+  }
+
+  .base-card--padding-md .base-card__body {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+
+  .base-card--padding-lg .base-card__body {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+}
+
 /* Shadow */
 .base-card--shadow-none {
   box-shadow: none;
