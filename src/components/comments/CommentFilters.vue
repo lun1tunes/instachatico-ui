@@ -287,13 +287,13 @@ function clearFilters() {
 .filters-row {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: calc(var(--spacing-xs) * 2);
 }
 
 .filter-section {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: calc(var(--spacing-xs) * 2);
   flex-wrap: wrap;
 }
 
@@ -312,7 +312,7 @@ function clearFilters() {
 
 .filter-chips {
   display: flex;
-  gap: 0.375rem;
+  gap: calc(0.375rem * 2);
   flex-wrap: wrap;
 }
 

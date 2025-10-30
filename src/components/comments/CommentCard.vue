@@ -1,60 +1,52 @@
 <template>
-  <BaseCard class="comment-card" padding="sm">
+  <BaseCard
+    class="comment-card"
+    :class="{ 'comment-card--new': comment.isNew }"
+    padding="sm"
+    @mouseenter="handleInteraction"
+  >
     <div class="comment-header">
-      <div class="comment-meta">
-        <BaseBadge
-          v-if="comment.is_deleted"
-          variant="error"
-          size="sm"
-          class="meta-badge"
-        >
-          Deleted
-        </BaseBadge>
-        <BaseBadge
-          v-if="comment.is_hidden && !comment.is_deleted"
-          variant="secondary"
-          size="sm"
-          class="meta-badge"
-        >
-          Hidden
-        </BaseBadge>
-        <BaseBadge
-          :variant="statusBadgeVariant"
-          size="sm"
-          class="meta-badge"
-        >
-          {{ statusBadgeLabel }}
-        </BaseBadge>
-        <BaseBadge
-          v-if="hasClassificationTag"
-          :classification-type="comment.classification.classification_type ?? undefined"
-          class="meta-badge"
-        >
-          {{ getClassificationLabel(comment.classification.classification_type) }}
-        </BaseBadge>
-      </div>
-
-      <div class="comment-header-main">
-        <div class="comment-user">
-          <div class="user-avatar">{{ userInitial }}</div>
-          <div class="user-info">
-            <span class="username">@{{ comment.username }}</span>
-            <BaseBadge
-              v-if="comment.parent_id"
-              variant="info"
-              size="sm"
-            >
-              Reply
-            </BaseBadge>
-          </div>
+      <div class="comment-header-top">
+        <div class="comment-meta">
+          <BaseBadge
+            v-if="comment.is_deleted"
+            variant="error"
+            size="sm"
+            class="meta-badge"
+          >
+            Deleted
+          </BaseBadge>
+          <BaseBadge
+            v-if="comment.is_hidden && !comment.is_deleted"
+            variant="secondary"
+            size="sm"
+            class="meta-badge"
+          >
+            Hidden
+          </BaseBadge>
+          <BaseBadge
+            :variant="statusBadgeVariant"
+            size="sm"
+            class="meta-badge"
+          >
+            {{ statusBadgeLabel }}
+          </BaseBadge>
+          <BaseBadge
+            v-if="hasClassificationTag"
+            :classification-type="comment.classification.classification_type ?? undefined"
+            class="meta-badge"
+          >
+            {{ getClassificationLabel(comment.classification.classification_type) }}
+          </BaseBadge>
         </div>
 
-        <div class="comment-actions">
+        <div class="comment-actions-wrapper">
+          <div class="comment-actions">
           <BaseButton
             v-if="!comment.is_deleted"
             :variant="isHiding ? 'secondary' : 'ghost'"
             size="sm"
-            @click="toggleHidden"
+            @click="handleToggleHidden"
             :loading="hideLoading"
             :disabled="hideLoading"
           >
@@ -147,9 +139,26 @@
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-      </div>
-    </div>
+        </div>
 
+        <!-- NEW badge positioned under buttons -->
+        <div v-if="comment.isNew" class="new-badge">NEW</div>
+        </div>
+      </div>
+
+      <div class="comment-user">
+        <div class="user-avatar">{{ userInitial }}</div>
+        <div class="user-info">
+          <span class="username">@{{ comment.username }}</span>
+          <BaseBadge
+            v-if="comment.parent_id"
+            variant="info"
+            size="sm"
+          >
+            Reply
+          </BaseBadge>
+        </div>
+      </div>
     </div>
 
     <div class="comment-body">
@@ -285,6 +294,7 @@ import type {
 } from '@/types/api'
 import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import { format, parseISO } from 'date-fns'
+import { useCommentsStore } from '@/stores/comments'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -297,6 +307,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const commentsStore = useCommentsStore()
 
 const emit = defineEmits<{
   delete: [id: string]
@@ -401,6 +412,15 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
   return variants[status] || 'default'
 }
 
+/**
+ * Mark comment as read when user interacts with it
+ */
+function handleInteraction() {
+  if (props.comment.isNew) {
+    commentsStore.markCommentAsRead(props.comment.id)
+  }
+}
+
 async function toggleHidden() {
   hideLoading.value = true
 
@@ -415,24 +435,34 @@ async function toggleHidden() {
   }
 }
 
+function handleToggleHidden() {
+  handleInteraction()
+  toggleHidden()
+}
+
 function handleDelete() {
+  handleInteraction()
   emit('delete', props.comment.id)
 }
 
 function handleUpdateClassification(data: UpdateClassificationRequest) {
+  handleInteraction()
   emit('update-classification', props.comment.id, data)
   showClassificationModal.value = false
 }
 
 function handleDeleteAnswer(answerId: string) {
+  handleInteraction()
   emit('delete-answer', props.comment.id, answerId)
 }
 
 function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
+  handleInteraction()
   emit('update-answer', props.comment.id, answerId, data)
 }
 
 function toggleClassificationExpanded() {
+  handleInteraction()
   isClassificationExpanded.value = !isClassificationExpanded.value
 }
 </script>
@@ -440,6 +470,23 @@ function toggleClassificationExpanded() {
 <style scoped>
 .comment-card {
   border-left: 3px solid var(--blue-300);
+}
+
+/* New comment card with blinking background */
+.comment-card--new {
+  animation: background-pulse 2s ease-in-out infinite;
+  border-left-color: #2563eb;
+  border-left-width: 4px;
+}
+
+/* Background pulse animation - alternates every 1 second */
+@keyframes background-pulse {
+  0%, 100% {
+    background-color: #eff6ff; /* Light blue */
+  }
+  50% {
+    background-color: #dbeafe; /* Deep blue */
+  }
 }
 
 
@@ -450,17 +497,51 @@ function toggleClassificationExpanded() {
   margin-bottom: var(--spacing-sm);
 }
 
+.comment-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.comment-actions-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+/* NEW badge styling - positioned under Hide/Delete buttons */
+.new-badge {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  animation: badge-blink 2s ease-in-out infinite;
+}
+
+/* Badge blink animation - alternates every 1 second */
+@keyframes badge-blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+}
+
 .comment-meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
-}
-
-.comment-header-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
+  flex: 1;
 }
 
 .comment-user {

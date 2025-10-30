@@ -169,11 +169,6 @@ export const useCommentsStore = defineStore('comments', () => {
       // Prepend new comments to the beginning with animation
       if (newComments.length > 0) {
         allComments.value = [...newComments, ...allComments.value]
-
-        // Remove isNew flag after animation completes (1 second)
-        setTimeout(() => {
-          removeNewFlags(newComments.map(c => c.id))
-        }, 1000)
       }
 
       // Update total count
@@ -187,13 +182,14 @@ export const useCommentsStore = defineStore('comments', () => {
   }
 
   /**
-   * Remove isNew flags from comments after animation
+   * Mark a single comment as read (remove isNew flag)
+   * Used when user interacts with a comment
    */
-  function removeNewFlags(commentIds: string[]) {
-    const idSet = new Set(commentIds)
-    allComments.value = allComments.value.map(comment =>
-      idSet.has(comment.id) ? { ...comment, isNew: false } : comment
-    )
+  function markCommentAsRead(commentId: string) {
+    const index = allComments.value.findIndex(c => c.id === commentId)
+    if (index !== -1 && allComments.value[index].isNew) {
+      allComments.value[index] = { ...allComments.value[index], isNew: false }
+    }
   }
 
   async function deleteComment(id: string) {
@@ -385,6 +381,7 @@ export const useCommentsStore = defineStore('comments', () => {
     clearFilters,
     clearComments,
     nextPage,
-    prevPage
+    prevPage,
+    markCommentAsRead
   }
 })

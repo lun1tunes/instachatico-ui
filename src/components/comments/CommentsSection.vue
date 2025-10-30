@@ -29,7 +29,6 @@
         v-for="comment in commentsStore.comments"
         :key="comment.id"
         :comment="comment"
-        :class="{ 'comment-new': comment.isNew }"
         @delete="handleDelete"
         @update="handleUpdate"
         @update-classification="handleUpdateClassification"
@@ -283,22 +282,7 @@ function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAns
   }
 }
 
-/* Special highlight for new comments */
-.comment-new {
-  animation: highlight-pulse 1s ease-out;
-}
-
-@keyframes highlight-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.3);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-  }
-}
+/* Removed old highlight-pulse animation - now handled in CommentCard.vue */
 
 .error-state,
 .empty-state {
