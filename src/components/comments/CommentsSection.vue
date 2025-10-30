@@ -19,18 +19,24 @@
       <p>No comments found</p>
     </div>
 
-    <div v-else class="comments-list">
+    <TransitionGroup
+      v-else
+      name="comment-list"
+      tag="div"
+      class="comments-list"
+    >
       <CommentCard
         v-for="comment in commentsStore.comments"
         :key="comment.id"
         :comment="comment"
+        :class="{ 'comment-new': comment.isNew }"
         @delete="handleDelete"
         @update="handleUpdate"
         @update-classification="handleUpdateClassification"
         @delete-answer="handleDeleteAnswer"
         @update-answer="handleUpdateAnswer"
       />
-    </div>
+    </TransitionGroup>
 
     <div v-if="commentsStore.totalPages > 1" class="pagination-wrapper">
       <BasePagination
@@ -45,9 +51,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch, computed } from 'vue'
 import { useCommentsStore } from '@/stores/comments'
 import { useAsyncActions } from '@/composables/useAsyncAction'
+import { usePolling } from '@/composables/usePolling'
 import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
@@ -68,6 +75,35 @@ interface Props {
 const props = defineProps<Props>()
 
 const commentsStore = useCommentsStore()
+
+// Determine if polling should be active
+// Only poll when on first page (regardless of filters)
+// Backend will handle filter matching automatically
+const shouldPoll = computed(() => {
+  return commentsStore.currentPage === 1
+})
+
+// Set up polling for new comments (10 second interval)
+const { pause: pausePolling, resume: resumePolling } = usePolling(
+  async () => {
+    if (shouldPoll.value) {
+      await commentsStore.fetchCommentsInBackground(props.mediaId)
+    }
+  },
+  {
+    interval: 10000, // 10 seconds
+    immediate: false // Don't start immediately, wait for first manual load
+  }
+)
+
+// Watch shouldPoll to pause/resume polling based on user interaction
+watch(shouldPoll, (newValue) => {
+  if (newValue) {
+    resumePolling()
+  } else {
+    pausePolling()
+  }
+})
 
 // Setup async actions with loading states and duplicate prevention
 const actions = useAsyncActions(
@@ -140,6 +176,10 @@ watch(() => props.mediaId, () => {
 async function loadComments() {
   try {
     await commentsStore.fetchComments(props.mediaId)
+    // Start polling after successful initial load
+    if (shouldPoll.value) {
+      resumePolling()
+    }
   } catch (error) {
     console.error('Failed to load comments:', error)
   }
@@ -201,6 +241,63 @@ function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAns
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+/* TransitionGroup animations for entering comments */
+.comment-list-enter-active {
+  animation: slide-fade-in 0.6s ease-out;
+}
+
+.comment-list-leave-active {
+  animation: slide-fade-out 0.4s ease-in;
+}
+
+.comment-list-move {
+  transition: transform 0.5s ease;
+}
+
+/* Keyframe animations for new comments */
+@keyframes slide-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(5px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* Special highlight for new comments */
+.comment-new {
+  animation: highlight-pulse 1s ease-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
 }
 
 .error-state,

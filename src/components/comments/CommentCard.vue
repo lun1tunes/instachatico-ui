@@ -173,7 +173,7 @@
         @keydown.space.prevent="toggleClassificationExpanded"
       >
         <h4 class="classification-header-title">
-          Classification
+          Classification details
           <svg
             class="expand-icon"
             :class="{ 'expand-icon--expanded': isClassificationExpanded }"

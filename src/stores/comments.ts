@@ -122,6 +122,80 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
+  /**
+   * Fetch comments in background for polling (no loading spinner)
+   * Merges new comments AND updates existing ones (badges, classification, answers)
+   */
+  async function fetchCommentsInBackground(mediaId: string) {
+    try {
+      const response = await apiService.getComments(mediaId, {
+        page: currentPage.value,
+        per_page: perPage.value,
+        status: statusFilter.value.length > 0 ? statusFilter.value : undefined,
+        classification_type:
+          classificationFilter.value.length > 0 ? classificationFilter.value : undefined
+      })
+
+      // Create a Map of existing comments by ID for O(1) lookup
+      const existingCommentsMap = new Map(
+        allComments.value.map(c => [c.id, c])
+      )
+
+      const newComments: Comment[] = []
+      const updatedComments: Comment[] = []
+
+      // Process fetched comments
+      response.payload.forEach(rawComment => {
+        const normalized = normalizeComment(rawComment)
+        const existing = existingCommentsMap.get(normalized.id)
+
+        if (!existing) {
+          // Truly new comment - mark with isNew flag for animation
+          newComments.push({ ...normalized, isNew: true })
+        } else {
+          // Existing comment - update it but preserve position, no isNew flag
+          updatedComments.push(normalized)
+        }
+      })
+
+      // Update existing comments in place (preserves order, no animation)
+      if (updatedComments.length > 0) {
+        allComments.value = allComments.value.map(comment => {
+          const updated = updatedComments.find(u => u.id === comment.id)
+          return updated || comment
+        })
+      }
+
+      // Prepend new comments to the beginning with animation
+      if (newComments.length > 0) {
+        allComments.value = [...newComments, ...allComments.value]
+
+        // Remove isNew flag after animation completes (1 second)
+        setTimeout(() => {
+          removeNewFlags(newComments.map(c => c.id))
+        }, 1000)
+      }
+
+      // Update total count
+      if (response.meta.total) {
+        totalItems.value = response.meta.total
+      }
+    } catch (err) {
+      // Silent fail for background polling - don't set error state
+      console.warn('[Comments Store] Background fetch failed:', err)
+    }
+  }
+
+  /**
+   * Remove isNew flags from comments after animation
+   */
+  function removeNewFlags(commentIds: string[]) {
+    const idSet = new Set(commentIds)
+    allComments.value = allComments.value.map(comment =>
+      idSet.has(comment.id) ? { ...comment, isNew: false } : comment
+    )
+  }
+
   async function deleteComment(id: string) {
     loading.value = true
     error.value = null
@@ -298,6 +372,7 @@ export const useCommentsStore = defineStore('comments', () => {
     visibilityFilter,
     deletedFilter,
     fetchComments,
+    fetchCommentsInBackground,
     deleteComment,
     updateComment,
     updateClassification,

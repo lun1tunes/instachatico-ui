@@ -112,6 +112,8 @@ export interface Comment {
   created_at?: string
   classification: Classification
   answers: Answer[]
+  // Client-side only property for entrance animation
+  isNew?: boolean
 }
 
 // Request Types
