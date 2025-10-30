@@ -162,17 +162,17 @@
     </div>
 
     <div class="comment-classification">
-      <div class="classification-header">
-        <h4
-          class="classification-header-title"
-          role="button"
-          tabindex="0"
-          :aria-expanded="isClassificationExpanded ? 'true' : 'false'"
-          title="Click to toggle classification details"
-          @click="toggleClassificationExpanded"
-          @keydown.enter.prevent="toggleClassificationExpanded"
-          @keydown.space.prevent="toggleClassificationExpanded"
-        >
+      <div
+        class="classification-header"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isClassificationExpanded ? 'true' : 'false'"
+        title="Click to toggle classification details"
+        @click="toggleClassificationExpanded"
+        @keydown.enter.prevent="toggleClassificationExpanded"
+        @keydown.space.prevent="toggleClassificationExpanded"
+      >
+        <h4 class="classification-header-title">
           Classification
           <svg
             class="expand-icon"
@@ -190,9 +190,10 @@
         </h4>
         <div class="classification-header-actions">
           <BaseButton
-            v-show="isClassificationExpanded"
             variant="ghost"
             size="sm"
+            :class="{ 'edit-button-inactive': !isClassificationExpanded }"
+            :disabled="!isClassificationExpanded"
             @click.stop="showClassificationModal = true"
           >
             <svg
@@ -560,6 +561,24 @@ function toggleClassificationExpanded() {
   margin-bottom: var(--spacing-sm);
   min-height: 2rem;
   gap: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity var(--transition-fast);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs);
+  margin: calc(var(--spacing-xs) * -1);
+  margin-bottom: var(--spacing-sm);
+}
+
+.classification-header:hover {
+  opacity: 0.7;
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.classification-header:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .classification-header-actions {
@@ -579,22 +598,15 @@ function toggleClassificationExpanded() {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
-  user-select: none;
-  transition: opacity var(--transition-fast);
   margin: 0;
   font-size: 0.875rem;
   color: var(--navy-700);
 }
 
-.classification-header-title:hover {
-  opacity: 0.7;
-}
-
-.classification-header-title:focus-visible {
-  outline: 2px solid var(--blue-500);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
+.edit-button-inactive {
+  opacity: 0.2;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
 }
 
 .classification-info {

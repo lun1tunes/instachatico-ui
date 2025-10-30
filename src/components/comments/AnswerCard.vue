@@ -208,7 +208,7 @@ function handleDelete() {
 
 <style scoped>
 .answer-card {
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   background-color: white;
   border-radius: var(--radius-lg);
   border: 1.5px solid var(--blue-200);
@@ -216,7 +216,7 @@ function handleDelete() {
   border-right: 3px solid var(--blue-300);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all var(--transition-fast);
 }
@@ -360,7 +360,7 @@ function handleDelete() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
   background-color: #fafbfc;
   border-radius: var(--radius-md);
 }
