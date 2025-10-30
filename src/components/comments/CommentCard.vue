@@ -161,9 +161,10 @@
       </time>
     </div>
 
-    <div class="comment-classification">
+    <div class="comment-classification" :class="{ 'comment-classification--collapsed': !isClassificationExpanded }">
       <div
         class="classification-header"
+        :class="{ 'classification-header--collapsed': !isClassificationExpanded }"
         role="button"
         tabindex="0"
         :aria-expanded="isClassificationExpanded ? 'true' : 'false'"
@@ -554,6 +555,11 @@ function toggleClassificationExpanded() {
   margin-bottom: var(--spacing-sm);
 }
 
+.comment-classification--collapsed {
+  margin-bottom: 0;
+  padding-bottom: var(--spacing-xs);
+}
+
 .classification-header {
   display: flex;
   align-items: center;
@@ -579,6 +585,10 @@ function toggleClassificationExpanded() {
   outline: 2px solid var(--blue-500);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+
+.classification-header--collapsed {
+  margin-bottom: 0;
 }
 
 .classification-header-actions {
