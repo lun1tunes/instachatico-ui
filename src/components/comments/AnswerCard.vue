@@ -126,6 +126,16 @@
       <div class="error-header">Error</div>
       <div class="error-message">{{ answer.last_error }}</div>
     </div>
+
+    <!-- Loading Overlay -->
+    <Transition name="loading-fade">
+      <div v-if="isUpdating" class="loading-overlay">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Updating answer...</div>
+        </div>
+      </div>
+    </Transition>
   </div>
 
   <FullScreenMarkdownEditor
@@ -149,6 +159,7 @@ import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.v
 interface Props {
   answer: Answer
   isCommentDeleted?: boolean
+  isUpdating?: boolean
 }
 
 const props = defineProps<Props>()
@@ -208,6 +219,7 @@ function handleDelete() {
 
 <style scoped>
 .answer-card {
+  position: relative;
   padding: var(--spacing-xs);
   background-color: white;
   border-radius: var(--radius-lg);
@@ -495,5 +507,61 @@ function handleDelete() {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-md);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--blue-200);
+  border-top-color: var(--blue-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--blue-600);
+  letter-spacing: 0.01em;
+}
+
+/* Loading Fade Transition */
+.loading-fade-enter-active,
+.loading-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.loading-fade-enter-from,
+.loading-fade-leave-to {
+  opacity: 0;
 }
 </style>

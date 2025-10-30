@@ -29,11 +29,14 @@
         v-for="comment in commentsStore.comments"
         :key="comment.id"
         :comment="comment"
+        :updating-answer-id="updatingAnswerId"
+        :is-creating-answer="creatingAnswerForCommentId === comment.id"
         @delete="handleDelete"
         @update="handleUpdate"
         @update-classification="handleUpdateClassification"
         @delete-answer="handleDeleteAnswer"
         @update-answer="handleUpdateAnswer"
+        @create-answer="handleCreateAnswer"
       />
     </TransitionGroup>
 
@@ -50,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch, computed } from 'vue'
+import { onMounted, onUnmounted, watch, computed, ref } from 'vue'
 import { useCommentsStore } from '@/stores/comments'
 import { useAsyncActions } from '@/composables/useAsyncAction'
 import { usePolling } from '@/composables/usePolling'
@@ -58,6 +61,7 @@ import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
   UpdateAnswerRequest,
+  CreateAnswerRequest,
   ProcessingStatus,
   ClassificationType
 } from '@/types/api'
@@ -74,6 +78,12 @@ interface Props {
 const props = defineProps<Props>()
 
 const commentsStore = useCommentsStore()
+
+// Track which answer is currently being updated
+const updatingAnswerId = ref<string | null>(null)
+
+// Track which comment is currently having an answer created
+const creatingAnswerForCommentId = ref<string | null>(null)
 
 // Determine if polling should be active
 // Only poll when on first page (regardless of filters)
@@ -121,6 +131,9 @@ const actions = useAsyncActions(
     },
     updateAnswer: async (commentId: string, answerId: string, data: UpdateAnswerRequest) => {
       await commentsStore.updateAnswer(commentId, answerId, data)
+    },
+    createAnswer: async (commentId: string, data: CreateAnswerRequest) => {
+      await commentsStore.createAnswer(commentId, data)
     }
   },
   {
@@ -151,7 +164,22 @@ const actions = useAsyncActions(
       onError: (error) => console.error('Failed to delete answer:', error)
     },
     updateAnswer: {
-      onError: (error) => console.error('Failed to update answer:', error)
+      onSuccess: () => {
+        updatingAnswerId.value = null
+      },
+      onError: (error) => {
+        updatingAnswerId.value = null
+        console.error('Failed to update answer:', error)
+      }
+    },
+    createAnswer: {
+      onSuccess: () => {
+        creatingAnswerForCommentId.value = null
+      },
+      onError: (error) => {
+        creatingAnswerForCommentId.value = null
+        console.error('Failed to create answer:', error)
+      }
     }
   }
 )
@@ -225,7 +253,13 @@ function handleDeleteAnswer(commentId: string, answerId: string) {
 }
 
 function handleUpdateAnswer(commentId: string, answerId: string, data: UpdateAnswerRequest) {
+  updatingAnswerId.value = answerId
   actions.updateAnswer.execute(commentId, answerId, data)
+}
+
+function handleCreateAnswer(commentId: string, data: CreateAnswerRequest) {
+  creatingAnswerForCommentId.value = commentId
+  actions.createAnswer.execute(commentId, data)
 }
 </script>
 

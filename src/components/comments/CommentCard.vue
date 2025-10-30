@@ -141,15 +141,22 @@
         </div>
         </div>
 
-        <!-- NEW badge positioned under buttons -->
-        <div v-if="comment.isNew" class="new-badge">NEW</div>
+        <!-- NEW badge moved to username row -->
         </div>
       </div>
 
       <div class="comment-user">
         <div class="user-avatar">{{ userInitial }}</div>
         <div class="user-info">
-          <span class="username">@{{ comment.username }}</span>
+          <div class="user-line">
+            <span class="username">@{{ comment.username }}</span>
+            <span
+              v-if="comment.isNew"
+              class="new-badge new-badge--inline"
+              title="Mark as read"
+              @click="clearNewFlag"
+            >NEW</span>
+          </div>
           <BaseBadge
             v-if="comment.parent_id"
             variant="info"
@@ -255,6 +262,30 @@
       </div>
     </div>
 
+    <!-- Create Answer Button (for Question/Inquiry with no answers) -->
+    <div v-if="shouldShowCreateAnswerButton" class="create-answer-section">
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        @click="openCreateAnswerModal"
+      >
+        <svg
+          class="action-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 20v-6l13-13 6 6-13 13H3z" />
+          <path d="m16 5 3 3" />
+        </svg>
+        Create Answer
+      </BaseButton>
+    </div>
+
     <div v-if="comment.answers.length > 0" class="comment-answers">
       <h4>Answers</h4>
       <AnswerCard
@@ -262,10 +293,21 @@
         :key="answer.id"
         :answer="answer"
         :is-comment-deleted="comment.is_deleted"
+        :is-updating="updatingAnswerId === answer.id"
         @delete-answer="handleDeleteAnswer(answer.id)"
         @update-answer="(data) => handleUpdateAnswer(answer.id, data)"
       />
     </div>
+
+    <!-- Loading Overlay for Creating Answer -->
+    <Transition name="loading-fade">
+      <div v-if="isCreatingAnswer" class="loading-overlay">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Creating answer...</div>
+        </div>
+      </div>
+    </Transition>
   </BaseCard>
 
   <BaseModal
@@ -280,6 +322,15 @@
       @cancel="showClassificationModal = false"
     />
   </BaseModal>
+
+  <FullScreenMarkdownEditor
+    v-model="showCreateAnswerModal"
+    title="Create Answer for Comment"
+    :initial-content="''"
+    placeholder="Write your answer to this question/inquiry. Markdown formatting is supported..."
+    save-button-text="Create Answer"
+    @save="handleCreateAnswer"
+  />
 </template>
 
 <script setup lang="ts">
@@ -289,21 +340,25 @@ import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
   UpdateAnswerRequest,
+  CreateAnswerRequest,
   ProcessingStatus,
   ClassificationType
 } from '@/types/api'
-import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
+import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
 import { format, parseISO } from 'date-fns'
 import { useCommentsStore } from '@/stores/comments'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseModal from '@/components/ui/BaseModal.vue'
+import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.vue'
 import AnswerCard from './AnswerCard.vue'
 import ClassificationForm from './ClassificationForm.vue'
 
 interface Props {
   comment: Comment
+  updatingAnswerId?: string | null
+  isCreatingAnswer?: boolean
 }
 
 const props = defineProps<Props>()
@@ -315,11 +370,13 @@ const emit = defineEmits<{
   'update-classification': [id: string, data: UpdateClassificationRequest]
   'delete-answer': [commentId: string, answerId: string]
   'update-answer': [commentId: string, answerId: string, data: UpdateAnswerRequest]
+  'create-answer': [commentId: string, data: CreateAnswerRequest]
 }>()
 
 const loading = ref(false)
 const hideLoading = ref(false)
 const showClassificationModal = ref(false)
+const showCreateAnswerModal = ref(false)
 const isClassificationExpanded = ref(false)
 
 // Local state for optimistic UI updates
@@ -332,6 +389,14 @@ watch(() => props.comment.is_hidden, (newValue) => {
 
 const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
+})
+
+// Check if we should show "Create Answer" button
+const shouldShowCreateAnswerButton = computed(() => {
+  return (
+    props.comment.classification.classification_type === ClassificationTypeEnum.QUESTION_INQUIRY &&
+    props.comment.answers.length === 0
+  )
 })
 
 const formattedCreatedAt = computed(() => {
@@ -415,7 +480,7 @@ function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info
 /**
  * Mark comment as read when user interacts with it
  */
-function handleInteraction() {
+function clearNewFlag() {
   if (props.comment.isNew) {
     commentsStore.markCommentAsRead(props.comment.id)
   }
@@ -436,39 +501,54 @@ async function toggleHidden() {
 }
 
 function handleToggleHidden() {
-  handleInteraction()
+  clearNewFlag()
   toggleHidden()
 }
 
 function handleDelete() {
-  handleInteraction()
+  clearNewFlag()
   emit('delete', props.comment.id)
 }
 
 function handleUpdateClassification(data: UpdateClassificationRequest) {
-  handleInteraction()
+  clearNewFlag()
   emit('update-classification', props.comment.id, data)
   showClassificationModal.value = false
 }
 
 function handleDeleteAnswer(answerId: string) {
-  handleInteraction()
+  clearNewFlag()
   emit('delete-answer', props.comment.id, answerId)
 }
 
 function handleUpdateAnswer(answerId: string, data: UpdateAnswerRequest) {
-  handleInteraction()
+  clearNewFlag()
   emit('update-answer', props.comment.id, answerId, data)
 }
 
+function handleCreateAnswer(content: string) {
+  const trimmedAnswer = content.trim()
+  if (!trimmedAnswer) {
+    return
+  }
+
+  emit('create-answer', props.comment.id, { answer: trimmedAnswer })
+}
+
+function openCreateAnswerModal() {
+  clearNewFlag()
+  showCreateAnswerModal.value = true
+}
+
 function toggleClassificationExpanded() {
-  handleInteraction()
+  clearNewFlag()
   isClassificationExpanded.value = !isClassificationExpanded.value
 }
 </script>
 
 <style scoped>
 .comment-card {
+  position: relative;
   border-left: 3px solid var(--blue-300);
 }
 
@@ -493,8 +573,9 @@ function toggleClassificationExpanded() {
 .comment-header {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
 }
 
 .comment-header-top {
@@ -523,6 +604,13 @@ function toggleClassificationExpanded() {
   border-radius: 0.25rem;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
   animation: badge-blink 2s ease-in-out infinite;
+}
+
+.new-badge--inline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.375rem;
+  cursor: pointer;
 }
 
 /* Badge blink animation - alternates every 1 second */
@@ -585,6 +673,12 @@ function toggleClassificationExpanded() {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.user-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .username {
@@ -800,6 +894,20 @@ function toggleClassificationExpanded() {
   line-height: 1.5;
 }
 
+.create-answer-section {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--slate-100);
+  margin-top: var(--spacing-sm);
+}
+
+.create-answer-section .action-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.375rem;
+}
+
 .comment-answers {
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--slate-200);
@@ -809,6 +917,62 @@ function toggleClassificationExpanded() {
   margin: 0 0 var(--spacing-md);
   font-size: 0.875rem;
   color: var(--navy-700);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--blue-200);
+  border-top-color: var(--blue-500);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--blue-600);
+  letter-spacing: 0.01em;
+}
+
+/* Loading Fade Transition */
+.loading-fade-enter-active,
+.loading-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.loading-fade-enter-from,
+.loading-fade-leave-to {
+  opacity: 0;
 }
 
 .deleted-badge-button {

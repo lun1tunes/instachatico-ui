@@ -10,7 +10,8 @@ import type {
   UpdateMediaRequest,
   UpdateCommentRequest,
   UpdateClassificationRequest,
-  UpdateAnswerRequest
+  UpdateAnswerRequest,
+  CreateAnswerRequest
 } from '@/types/api'
 
 class ApiService {
@@ -163,6 +164,14 @@ class ApiService {
 
   async updateAnswer(id: string, data: UpdateAnswerRequest): Promise<ApiResponse<Answer>> {
     const response = await this.client.patch<ApiResponse<Answer>>(`/answers/${id}`, data)
+    return response.data
+  }
+
+  async createAnswer(commentId: string, data: CreateAnswerRequest): Promise<ApiResponse<Answer>> {
+    const response = await this.client.put<ApiResponse<Answer>>(
+      `/comments/${commentId}/answers`,
+      data
+    )
     return response.data
   }
 

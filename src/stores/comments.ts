@@ -7,6 +7,7 @@ import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
   UpdateAnswerRequest,
+  CreateAnswerRequest,
   ProcessingStatus,
   ClassificationType,
   Classification
@@ -353,6 +354,31 @@ export const useCommentsStore = defineStore('comments', () => {
     }
   }
 
+  async function createAnswer(commentId: string, data: CreateAnswerRequest) {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.createAnswer(commentId, data)
+
+      const index = allComments.value.findIndex((comment) => comment.id === commentId)
+      if (index !== -1) {
+        const comment = allComments.value[index]
+        allComments.value[index] = {
+          ...comment,
+          answers: [...comment.answers, response.payload]
+        }
+      }
+
+      return response.payload
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create answer'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     comments,
     loading,
@@ -373,6 +399,7 @@ export const useCommentsStore = defineStore('comments', () => {
     updateComment,
     updateClassification,
     updateAnswer,
+    createAnswer,
     deleteAnswer,
     setStatusFilter,
     setClassificationFilter,

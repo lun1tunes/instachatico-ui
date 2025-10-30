@@ -138,6 +138,10 @@ export interface UpdateAnswerRequest {
   quality_score?: number
 }
 
+export interface CreateAnswerRequest {
+  answer: string
+}
+
 // Pagination Query
 export interface PaginationQuery {
   page?: number
