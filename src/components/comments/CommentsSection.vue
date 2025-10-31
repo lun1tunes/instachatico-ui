@@ -8,15 +8,20 @@
       @update="handleFilterUpdate"
     />
 
-    <LoadingSpinner v-if="commentsStore.loading && !commentsStore.comments.length" message="Loading comments..." />
+    <LoadingSpinner
+      v-if="commentsStore.loading && !commentsStore.comments.length"
+      :message="localeStore.t('comments.loading')"
+    />
 
     <div v-else-if="commentsStore.error" class="error-state">
       <p>{{ commentsStore.error }}</p>
-      <BaseButton @click="loadComments">Retry</BaseButton>
+      <BaseButton @click="loadComments">
+        {{ localeStore.t('common.actions.retry') }}
+      </BaseButton>
     </div>
 
     <div v-else-if="!commentsStore.comments.length" class="empty-state">
-      <p>No comments found</p>
+      <p>{{ localeStore.t('comments.empty') }}</p>
     </div>
 
     <TransitionGroup
@@ -57,6 +62,7 @@ import { onMounted, onUnmounted, watch, computed, ref } from 'vue'
 import { useCommentsStore } from '@/stores/comments'
 import { useAsyncActions } from '@/composables/useAsyncAction'
 import { usePolling } from '@/composables/usePolling'
+import { useLocaleStore } from '@/stores/locale'
 import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
@@ -78,6 +84,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const commentsStore = useCommentsStore()
+const localeStore = useLocaleStore()
 
 // Track which answer is currently being updated
 const updatingAnswerId = ref<string | null>(null)
@@ -139,11 +146,11 @@ const actions = useAsyncActions(
   {
     deleteComment: {
       confirm: {
-        title: 'Delete Comment',
-        message: 'This comment will be deleted permanently from Instagram. This action cannot be undone.',
+        title: localeStore.t('comments.confirmations.deleteComment.title'),
+        message: localeStore.t('comments.confirmations.deleteComment.message'),
         variant: 'danger',
-        confirmText: 'Delete Permanently',
-        cancelText: 'Cancel'
+        confirmText: localeStore.t('comments.confirmations.deleteComment.confirm'),
+        cancelText: localeStore.t('comments.confirmations.deleteComment.cancel')
       },
       onError: (error) => console.error('Failed to delete comment:', error)
     },
@@ -155,11 +162,11 @@ const actions = useAsyncActions(
     },
     deleteAnswer: {
       confirm: {
-        title: 'Delete Answer',
-        message: 'This AI-generated answer will be deleted permanently. Do you want to continue?',
+        title: localeStore.t('comments.confirmations.deleteAnswer.title'),
+        message: localeStore.t('comments.confirmations.deleteAnswer.message'),
         variant: 'danger',
-        confirmText: 'Delete Answer',
-        cancelText: 'Cancel'
+        confirmText: localeStore.t('comments.confirmations.deleteAnswer.confirm'),
+        cancelText: localeStore.t('comments.confirmations.deleteAnswer.cancel')
       },
       onError: (error) => console.error('Failed to delete answer:', error)
     },

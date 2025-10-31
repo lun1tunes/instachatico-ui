@@ -62,14 +62,14 @@
               @click="handleCancel"
               :disabled="loading"
             >
-              {{ cancelText }}
+              {{ cancelButtonText }}
             </BaseButton>
             <BaseButton
               :variant="confirmButtonVariant"
               @click="handleConfirm"
               :loading="loading"
             >
-              {{ confirmText }}
+              {{ confirmButtonText }}
             </BaseButton>
           </div>
         </div>
@@ -81,6 +81,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BaseButton from './BaseButton.vue'
+import { useLocaleStore } from '@/stores/locale'
+
+const localeStore = useLocaleStore()
 
 interface Props {
   modelValue: boolean
@@ -94,8 +97,6 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: '',
-  confirmText: 'Confirm',
-  cancelText: 'Cancel',
   variant: 'warning',
   loading: false
 })
@@ -111,6 +112,9 @@ const confirmButtonVariant = computed(() => {
   if (props.variant === 'info') return 'primary'
   return 'primary'
 })
+
+const cancelButtonText = computed(() => props.cancelText ?? localeStore.t('common.actions.cancel'))
+const confirmButtonText = computed(() => props.confirmText ?? localeStore.t('common.actions.confirm'))
 
 function handleConfirm() {
   if (!props.loading) {

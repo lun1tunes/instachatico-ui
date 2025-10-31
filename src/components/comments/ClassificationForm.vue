@@ -1,7 +1,7 @@
 <template>
   <form @submit.prevent="handleSubmit" class="classification-form">
     <div class="form-group">
-      <label for="type" class="form-label">Classification Type</label>
+      <label for="type" class="form-label">{{ localeStore.t('comments.form.classificationType') }}</label>
       <select
         id="type"
         v-model="selectedType"
@@ -9,35 +9,35 @@
         required
       >
         <option
-          v-for="(label, type) in classificationTypes"
-          :key="type"
-          :value="type"
+          v-for="option in classificationTypeOptions"
+          :key="option.value"
+          :value="option.value"
         >
-          {{ label }}
+          {{ option.label }}
         </option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="reasoning" class="form-label">Reasoning</label>
+      <label for="reasoning" class="form-label">{{ localeStore.t('comments.form.reasoning') }}</label>
 
       <!-- Markdown Toolbar -->
       <div class="markdown-toolbar">
-        <button type="button" @click="insertMarkdown('**', '**')" title="Bold (Ctrl+B)" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('**', '**')" :title="localeStore.t('editor.toolbar.bold')" class="toolbar-btn">
           <strong>B</strong>
         </button>
-        <button type="button" @click="insertMarkdown('*', '*')" title="Italic (Ctrl+I)" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('*', '*')" :title="localeStore.t('editor.toolbar.italic')" class="toolbar-btn">
           <em>I</em>
         </button>
-        <button type="button" @click="insertMarkdown('`', '`')" title="Code" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('`', '`')" :title="localeStore.t('editor.toolbar.code')" class="toolbar-btn">
           <code>&lt;/&gt;</code>
         </button>
         <div class="toolbar-divider"></div>
-        <button type="button" @click="insertMarkdown('# ', '')" title="Heading 1" class="toolbar-btn">H1</button>
-        <button type="button" @click="insertMarkdown('## ', '')" title="Heading 2" class="toolbar-btn">H2</button>
-        <button type="button" @click="insertMarkdown('### ', '')" title="Heading 3" class="toolbar-btn">H3</button>
+        <button type="button" @click="insertMarkdown('# ', '')" :title="localeStore.t('editor.toolbar.heading1')" class="toolbar-btn">H1</button>
+        <button type="button" @click="insertMarkdown('## ', '')" :title="localeStore.t('editor.toolbar.heading2')" class="toolbar-btn">H2</button>
+        <button type="button" @click="insertMarkdown('### ', '')" :title="localeStore.t('editor.toolbar.heading3')" class="toolbar-btn">H3</button>
         <div class="toolbar-divider"></div>
-        <button type="button" @click="insertMarkdown('- ', '')" title="Unordered List" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('- ', '')" :title="localeStore.t('editor.toolbar.unorderedList')" class="toolbar-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="8" y1="6" x2="21" y2="6" />
             <line x1="8" y1="12" x2="21" y2="12" />
@@ -47,7 +47,7 @@
             <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
         </button>
-        <button type="button" @click="insertMarkdown('1. ', '')" title="Ordered List" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('1. ', '')" :title="localeStore.t('editor.toolbar.orderedList')" class="toolbar-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="10" y1="6" x2="21" y2="6" />
             <line x1="10" y1="12" x2="21" y2="12" />
@@ -57,14 +57,14 @@
             <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
           </svg>
         </button>
-        <button type="button" @click="insertMarkdown('[', '](url)')" title="Link" class="toolbar-btn">
+        <button type="button" @click="insertMarkdown('[', '](url)')" :title="localeStore.t('editor.toolbar.link')" class="toolbar-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
         </button>
         <div class="toolbar-spacer"></div>
-        <span class="char-count">{{ reasoning.length }} characters</span>
+        <span class="char-count">{{ localeStore.t('comments.form.characters', { count: reasoning.length }) }}</span>
       </div>
 
       <textarea
@@ -73,7 +73,7 @@
         v-model="reasoning"
         class="form-textarea"
         rows="6"
-        placeholder="Explain why this classification is appropriate... Markdown is supported."
+        :placeholder="localeStore.t('comments.form.placeholder')"
         required
         @keydown="handleKeydown"
       ></textarea>
@@ -81,21 +81,22 @@
 
     <div class="form-actions">
       <BaseButton type="button" variant="ghost" @click="handleCancel">
-        Cancel
+        {{ localeStore.t('common.actions.cancel') }}
       </BaseButton>
       <BaseButton type="submit" variant="primary">
-        Update Classification
+        {{ localeStore.t('comments.form.submit') }}
       </BaseButton>
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ClassificationType, ClassificationTypeLabels } from '@/types/api'
+import { ref, computed } from 'vue'
+import { ClassificationType } from '@/types/api'
 import type { UpdateClassificationRequest } from '@/types/api'
 import { useConfirm } from '@/composables/useConfirm'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   currentType: ClassificationType | null
@@ -110,6 +111,7 @@ const emit = defineEmits<{
 }>()
 
 const { confirm } = useConfirm()
+const localeStore = useLocaleStore()
 
 const textareaRef = ref<HTMLTextAreaElement>()
 const selectedType = ref(String(props.currentType ?? ClassificationType.POSITIVE_FEEDBACK))
@@ -119,15 +121,36 @@ const reasoning = ref(props.currentReasoning)
 const initialType = String(props.currentType ?? ClassificationType.POSITIVE_FEEDBACK)
 const initialReasoning = props.currentReasoning
 
-const classificationTypes = {
-  '1': ClassificationTypeLabels[ClassificationType.POSITIVE_FEEDBACK],
-  '2': ClassificationTypeLabels[ClassificationType.CRITICAL_FEEDBACK],
-  '3': ClassificationTypeLabels[ClassificationType.URGENT_ISSUE],
-  '4': ClassificationTypeLabels[ClassificationType.QUESTION_INQUIRY],
-  '5': ClassificationTypeLabels[ClassificationType.PARTNERSHIP_PROPOSAL],
-  '6': ClassificationTypeLabels[ClassificationType.TOXIC_ABUSIVE],
-  '7': ClassificationTypeLabels[ClassificationType.SPAM_IRRELEVANT]
-}
+const classificationTypeOptions = computed(() => [
+  {
+    value: String(ClassificationType.POSITIVE_FEEDBACK),
+    label: localeStore.t('comments.classificationLabels.positive')
+  },
+  {
+    value: String(ClassificationType.CRITICAL_FEEDBACK),
+    label: localeStore.t('comments.classificationLabels.critical')
+  },
+  {
+    value: String(ClassificationType.URGENT_ISSUE),
+    label: localeStore.t('comments.classificationLabels.urgent')
+  },
+  {
+    value: String(ClassificationType.QUESTION_INQUIRY),
+    label: localeStore.t('comments.classificationLabels.question')
+  },
+  {
+    value: String(ClassificationType.PARTNERSHIP_PROPOSAL),
+    label: localeStore.t('comments.classificationLabels.partnership')
+  },
+  {
+    value: String(ClassificationType.TOXIC_ABUSIVE),
+    label: localeStore.t('comments.classificationLabels.toxic')
+  },
+  {
+    value: String(ClassificationType.SPAM_IRRELEVANT),
+    label: localeStore.t('comments.classificationLabels.spam')
+  }
+])
 
 function insertMarkdown(before: string, after: string) {
   const textarea = textareaRef.value
@@ -182,11 +205,11 @@ async function handleCancel() {
 
   if (hasChanges) {
     const confirmed = await confirm({
-      title: 'Unsaved Changes',
-      message: 'You have unsaved changes. Are you sure you want to cancel without saving?',
+      title: localeStore.t('comments.form.unsaved.title'),
+      message: localeStore.t('comments.form.unsaved.message'),
       variant: 'warning',
-      confirmText: 'Discard Changes',
-      cancelText: 'Continue Editing'
+      confirmText: localeStore.t('comments.form.unsaved.confirm'),
+      cancelText: localeStore.t('comments.form.unsaved.cancel')
     })
 
     if (!confirmed) {

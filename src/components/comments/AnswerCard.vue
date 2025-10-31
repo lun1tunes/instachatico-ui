@@ -5,7 +5,7 @@
         <!-- Show Reply Error badge if reply failed -->
         <div v-if="hasReplyError" class="reply-error-container">
           <BaseBadge variant="error">
-            Reply error
+            {{ localeStore.t('comments.answers.replyError') }}
           </BaseBadge>
           <div class="info-icon-wrapper">
             <svg
@@ -22,7 +22,7 @@
               <path d="M12 8h.01" />
             </svg>
             <div class="info-tooltip">
-              Possible reason - user deleted comment immediately after publishing
+              {{ localeStore.t('comments.answers.replyErrorHint') }}
             </div>
           </div>
         </div>
@@ -42,7 +42,7 @@
           variant="success"
           size="sm"
         >
-          Sent
+          {{ localeStore.t('comments.answers.sent') }}
         </BaseBadge>
       </div>
 
@@ -65,7 +65,7 @@
             <path d="M12 20h9" />
             <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
           </svg>
-          Edit
+          {{ localeStore.t('common.actions.edit') }}
         </BaseButton>
         <BaseButton
           variant="danger"
@@ -88,19 +88,19 @@
             <path d="M10 11v6" />
             <path d="M14 11v6" />
           </svg>
-          Delete
+          {{ localeStore.t('common.actions.delete') }}
         </BaseButton>
       </div>
       <div v-else class="answer-inactive-label">
         <BaseBadge variant="default" size="sm">
-          Inactive (Comment Deleted)
+          {{ localeStore.t('comments.answers.inactive') }}
         </BaseBadge>
       </div>
     </div>
 
     <div class="answer-scores">
       <div class="score">
-        <span class="score-label">Confidence:</span>
+        <span class="score-label">{{ localeStore.t('comments.card.confidence') }}</span>
         <div class="score-bar">
           <div
             class="score-fill"
@@ -116,23 +116,23 @@
     </div>
 
     <!-- Reply Error Display -->
-    <div v-if="hasReplyError" class="answer-error">
-      <div class="error-header">Reply error</div>
-      <div class="error-message">{{ answer.reply_error }}</div>
-    </div>
+      <div v-if="hasReplyError" class="answer-error">
+        <div class="error-header">{{ localeStore.t('comments.answers.replyError') }}</div>
+        <div class="error-message">{{ answer.reply_error }}</div>
+      </div>
 
-    <!-- Other Errors (processing errors) -->
-    <div v-else-if="answer.last_error" class="answer-error">
-      <div class="error-header">Error</div>
-      <div class="error-message">{{ answer.last_error }}</div>
-    </div>
+      <!-- Other Errors (processing errors) -->
+      <div v-else-if="answer.last_error" class="answer-error">
+        <div class="error-header">{{ localeStore.t('comments.answers.error') }}</div>
+        <div class="error-message">{{ answer.last_error }}</div>
+      </div>
 
     <!-- Loading Overlay -->
     <Transition name="loading-fade">
       <div v-if="isUpdating" class="loading-overlay">
         <div class="loading-content">
           <div class="loading-spinner"></div>
-          <div class="loading-text">Updating answer...</div>
+          <div class="loading-text">{{ localeStore.t('comments.answers.updating') }}</div>
         </div>
       </div>
     </Transition>
@@ -140,10 +140,10 @@
 
   <FullScreenMarkdownEditor
     v-model="showEditModal"
-    title="Edit AI Generated Answer"
+    :title="localeStore.t('comments.answers.editTitle')"
     :initial-content="answer.answer"
-    placeholder="Edit the AI-generated answer. Markdown formatting is supported..."
-    save-button-text="Update Answer"
+    :placeholder="localeStore.t('comments.answers.placeholder')"
+    :save-button-text="localeStore.t('comments.answers.save')"
     @save="handleUpdate"
   />
 </template>
@@ -155,6 +155,7 @@ import { ProcessingStatus as ProcessingStatusEnum } from '@/types/api'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   answer: Answer
@@ -164,6 +165,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const isInactive = props.isCommentDeleted || false
+const localeStore = useLocaleStore()
 
 const emit = defineEmits<{
   'update-answer': [data: UpdateAnswerRequest]
@@ -179,13 +181,13 @@ const hasReplyError = computed(() => {
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
-    [ProcessingStatusEnum.PENDING]: 'Pending',
-    [ProcessingStatusEnum.PROCESSING]: 'Processing',
-    [ProcessingStatusEnum.COMPLETED]: 'Completed',
-    [ProcessingStatusEnum.FAILED]: 'Failed',
-    [ProcessingStatusEnum.RETRY]: 'Retry'
+    [ProcessingStatusEnum.PENDING]: localeStore.t('comments.statusLabels.pending'),
+    [ProcessingStatusEnum.PROCESSING]: localeStore.t('comments.statusLabels.processing'),
+    [ProcessingStatusEnum.COMPLETED]: localeStore.t('comments.statusLabels.completed'),
+    [ProcessingStatusEnum.FAILED]: localeStore.t('comments.statusLabels.failed'),
+    [ProcessingStatusEnum.RETRY]: localeStore.t('comments.statusLabels.retry')
   }
-  return labels[status] || 'Unknown'
+  return labels[status] || localeStore.t('comments.statusLabels.pending')
 }
 
 function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info' | 'success' | 'error' | 'default' {

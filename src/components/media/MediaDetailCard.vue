@@ -35,22 +35,22 @@
 
     <div class="media-detail-card__info">
       <div class="info-row">
-        <span class="label">Type:</span>
+        <span class="label">{{ localeStore.t('media.detail.type') }}:</span>
         <BaseBadge :variant="mediaTypeBadge">{{ mediaTypeLabel }}</BaseBadge>
       </div>
 
       <div class="info-row">
-        <span class="label">Likes:</span>
+        <span class="label">{{ localeStore.t('media.detail.likes') }}:</span>
         <span class="value">{{ media.like_count }}</span>
       </div>
 
       <div class="info-row">
-        <span class="label">Comments:</span>
+        <span class="label">{{ localeStore.t('media.detail.commentsCount') }}:</span>
         <span class="value">{{ media.comments_count }}</span>
       </div>
 
       <div v-if="media.posted_at" class="info-row">
-        <span class="label">Created at:</span>
+        <span class="label">{{ localeStore.t('media.detail.createdAt') }}:</span>
         <span class="value">{{ formattedPostedAt }}</span>
       </div>
 
@@ -62,20 +62,20 @@
           class="instagram-link-btn instagram-link-btn--full"
           @click="openPermalink"
         >
-          View on Instagram
+          {{ localeStore.t('media.card.viewOnInstagram') }}
         </BaseButton>
         <span v-else class="value">—</span>
       </div>
     </div>
 
     <div class="media-detail-card__caption">
-      <h4>Caption</h4>
+      <h4>{{ localeStore.t('media.card.caption') }}</h4>
       <p>{{ media.caption }}</p>
     </div>
 
     <div class="media-detail-card__context">
       <div class="context-header">
-        <h4>AI Context</h4>
+        <h4>{{ localeStore.t('media.card.aiContext') }}</h4>
         <BaseButton variant="ghost" size="sm" @click="showContextModal = true">
           <svg
             class="action-icon"
@@ -90,14 +90,14 @@
             <path d="M12 20h9" />
             <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
           </svg>
-          Edit
+          {{ localeStore.t('media.card.editContext') }}
         </BaseButton>
       </div>
       <div class="context-content markdown-body" v-html="renderedContext"></div>
     </div>
 
     <div class="media-detail-card__settings">
-      <h4>Settings</h4>
+      <h4>{{ localeStore.t('media.card.settings') }}</h4>
       <div class="settings-group">
         <label class="checkbox-label checkbox-label--danger">
           <input
@@ -105,7 +105,7 @@
             :checked="media.is_processing_enabled"
             @change="toggleProcessing"
           />
-          <span>Enable AI processing</span>
+          <span>{{ localeStore.t('media.detail.enableProcessing') }}</span>
         </label>
 
         <label class="checkbox-label checkbox-label--danger">
@@ -115,8 +115,8 @@
             @change="confirmToggleComments"
           />
           <div class="checkbox-content">
-            <span>Allow Comments</span>
-            <small>Disabling deletes all comments permanently</small>
+            <span>{{ localeStore.t('media.card.allowComments') }}</span>
+            <small>{{ localeStore.t('media.card.allowCommentsWarning') }}</small>
           </div>
         </label>
       </div>
@@ -126,10 +126,10 @@
 
   <FullScreenMarkdownEditor
     v-model="showContextModal"
-    title="Edit AI Context"
+    :title="localeStore.t('media.detail.editContextTitle')"
     :initial-content="media.context"
-    placeholder="Provide context about this media post to help AI generate better responses..."
-    save-button-text="Save Context"
+    :placeholder="localeStore.t('common.placeholders.context')"
+    :save-button-text="localeStore.t('media.detail.saveContext')"
     @save="saveContext"
   />
 </template>
@@ -146,6 +146,7 @@ import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
 import { useConfirm } from '@/composables/useConfirm'
 import { useMarkdown } from '@/composables/useMarkdown'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   media: Media
@@ -159,6 +160,7 @@ const emit = defineEmits<{
 
 const { confirm } = useConfirm()
 const { parseMarkdown } = useMarkdown()
+const localeStore = useLocaleStore()
 
 const showContextModal = ref(false)
 const imageError = ref(false)
@@ -202,7 +204,8 @@ async function loadImage() {
   } catch (error) {
     console.error('Failed to load image:', error)
     imageError.value = true
-    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+    const label = localeStore.t('common.placeholders.image')
+    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
   } finally {
     isLoadingImage.value = false
   }
@@ -220,7 +223,8 @@ onBeforeUnmount(() => {
 
 function handleImageError() {
   imageError.value = true
-  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+  const label = localeStore.t('common.placeholders.image')
+  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
 }
 
 // Carousel navigation
@@ -241,13 +245,13 @@ function previousImage() {
 const mediaTypeLabel = computed(() => {
   switch (props.media.type) {
     case MediaType.IMAGE:
-      return 'Post'
+      return localeStore.t('media.card.types.image')
     case MediaType.VIDEO:
-      return 'Video'
+      return localeStore.t('media.card.types.video')
     case MediaType.CAROUSEL:
-      return 'Carousel'
+      return localeStore.t('media.card.types.carousel')
     default:
-      return 'Unknown'
+      return localeStore.t('media.card.types.unknown')
   }
 })
 
@@ -276,7 +280,8 @@ const formattedPostedAt = computed(() => {
   if (!props.media.posted_at) return ''
   try {
     const date = parseISO(props.media.posted_at)
-    return format(date, 'MMM d, yyyy HH:mm')
+    const pattern = localeStore.t('formats.date.withTime')
+    return format(date, pattern, { locale: localeStore.dateLocale })
   } catch (error) {
     console.error('Failed to parse posted_at date:', error)
     return props.media.posted_at
@@ -297,11 +302,11 @@ async function confirmToggleComments(event: Event) {
 
   if (!nextValue) {
     const confirmed = await confirm({
-      title: 'Disable Comments',
-      message: 'Disabling comments will permanently delete all existing comments from Instagram. This action cannot be undone.',
+      title: localeStore.t('comments.confirmations.disableComments.title'),
+      message: localeStore.t('comments.confirmations.disableComments.message'),
       variant: 'danger',
-      confirmText: 'Disable & Delete All',
-      cancelText: 'Cancel'
+      confirmText: localeStore.t('comments.confirmations.disableComments.confirm'),
+      cancelText: localeStore.t('comments.confirmations.disableComments.cancel')
     })
 
     if (!confirmed) {

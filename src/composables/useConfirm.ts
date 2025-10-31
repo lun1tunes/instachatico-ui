@@ -1,4 +1,5 @@
 import { reactive, readonly } from 'vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface ConfirmOptions {
   title?: string
@@ -23,8 +24,8 @@ const state = reactive<ConfirmState>({
   isOpen: false,
   title: '',
   message: '',
-  confirmText: 'Confirm',
-  cancelText: 'Cancel',
+  confirmText: '',
+  cancelText: '',
   variant: 'warning',
   loading: false,
   resolve: null
@@ -49,6 +50,8 @@ const state = reactive<ConfirmState>({
  * ```
  */
 export function useConfirm() {
+  const localeStore = useLocaleStore()
+
   /**
    * Show a confirmation dialog
    * @returns Promise that resolves to true if confirmed, false if cancelled
@@ -58,8 +61,8 @@ export function useConfirm() {
       state.isOpen = true
       state.title = options.title || ''
       state.message = options.message
-      state.confirmText = options.confirmText || 'Confirm'
-      state.cancelText = options.cancelText || 'Cancel'
+      state.confirmText = options.confirmText || localeStore.t('common.actions.confirm')
+      state.cancelText = options.cancelText || localeStore.t('common.actions.cancel')
       state.variant = options.variant || 'warning'
       state.loading = false
       state.resolve = resolve

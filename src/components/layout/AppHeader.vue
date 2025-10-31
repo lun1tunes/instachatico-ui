@@ -3,7 +3,7 @@
     <div class="container">
       <div class="app-header__content">
         <router-link :to="{ name: 'MediaList' }" class="app-header__logo">
-          <span class="app-header__title">Instachatico</span>
+          <span class="app-header__title">{{ localeStore.t('auth.title') }}</span>
         </router-link>
 
         <nav class="app-header__nav">
@@ -12,13 +12,14 @@
             class="app-header__nav-link"
             active-class="app-header__nav-link--active"
           >
-            Media
+            {{ localeStore.t('navigation.media') }}
           </router-link>
         </nav>
 
         <div class="app-header__actions">
+          <LanguageSwitcher />
           <BaseButton v-if="authStore.isAuthenticated" variant="ghost" size="sm" @click="handleLogout">
-            Logout
+            {{ localeStore.t('navigation.logout') }}
           </BaseButton>
         </div>
       </div>
@@ -29,10 +30,13 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useLocaleStore } from '@/stores/locale'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 
 function handleLogout() {
   authStore.logout()

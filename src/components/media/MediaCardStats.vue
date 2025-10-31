@@ -18,7 +18,7 @@
 
       <template v-else-if="error">
         <button type="button" class="chip chip--error" @click.stop="handleRetry">
-          Retry
+          {{ localeStore.t('common.actions.retry') }}
         </button>
       </template>
 
@@ -86,8 +86,8 @@
         <circle cx="12" cy="8" r="1" fill="currentColor" />
       </svg>
       <div class="media-card-stats__tooltip" :class="{ 'is-visible': tooltipVisible }">
-        <p><strong>Total</strong> is the overall count.</p>
-        <p><strong>(+x)</strong> shows the increase during the last hour.</p>
+        <p>{{ localeStore.t('media.stats.tooltipTotal') }}</p>
+        <p>{{ localeStore.t('media.stats.tooltipDelta') }}</p>
       </div>
     </div>
     </div>
@@ -98,12 +98,14 @@
 import { computed, h, onMounted, watch, type Component, ref, onBeforeUnmount } from 'vue'
 import type { Media } from '@/types/api'
 import { useMediaStatsStore, type ClassificationGroupKey } from '@/stores/mediaStats'
+import { useLocaleStore } from '@/stores/locale'
 
 const props = defineProps<{
   media: Media
 }>()
 
 const mediaStatsStore = useMediaStatsStore()
+const localeStore = useLocaleStore()
 
 const statsState = computed(() => mediaStatsStore.getStats(props.media.id))
 
@@ -111,7 +113,7 @@ const isLoading = computed(() => statsState.value.loading)
 const error = computed(() => statsState.value.error)
 
 const likesTotal = computed(() => props.media.like_count ?? 0)
-const infoTooltipLabel = 'Stats legend: total count and (+) last-hour increase.'
+const infoTooltipLabel = computed(() => localeStore.t('media.stats.legendLabel'))
 const tooltipVisible = ref(false)
 const infoTrigger = ref<HTMLElement | null>(null)
 let autoHideTimer: ReturnType<typeof setTimeout> | null = null
@@ -132,42 +134,42 @@ const classificationItems = computed<StatChip[]>(() => {
     {
       key: 'likes',
       icon: LikeIcon,
-      title: 'Likes total',
+      title: localeStore.t('media.stats.titles.likes'),
       total: likesTotal.value,
       lastHour: null
     },
     {
       key: 'questions',
       icon: QuestionIcon,
-      title: 'Questions total / last hour',
+      title: localeStore.t('media.stats.titles.questions'),
       total: groups?.questions.total ?? 0,
       lastHour: groups?.questions.lastHour ?? 0
     },
     {
       key: 'negative',
       icon: NegativeIcon,
-      title: 'Negative feedback total / last hour',
+      title: localeStore.t('media.stats.titles.negative'),
       total: groups?.negative.total ?? 0,
       lastHour: groups?.negative.lastHour ?? 0
     },
     {
       key: 'positive',
       icon: PositiveIcon,
-      title: 'Positive feedback total / last hour',
+      title: localeStore.t('media.stats.titles.positive'),
       total: groups?.positive.total ?? 0,
       lastHour: groups?.positive.lastHour ?? 0
     },
     {
       key: 'urgent',
       icon: UrgentIcon,
-      title: 'Urgent issues total / last hour',
+      title: localeStore.t('media.stats.titles.urgent'),
       total: groups?.urgent.total ?? 0,
       lastHour: groups?.urgent.lastHour ?? 0
     },
     {
       key: 'other',
       icon: OtherIcon,
-      title: 'Other classifications total / last hour',
+      title: localeStore.t('media.stats.titles.other'),
       total: groups?.other.total ?? 0,
       lastHour: groups?.other.lastHour ?? 0
     }

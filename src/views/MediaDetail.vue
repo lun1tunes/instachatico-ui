@@ -19,14 +19,17 @@
                 stroke-linejoin="round"
               />
             </svg>
-            Back to Media
+            {{ localeStore.t('media.detail.back') }}
           </BaseButton>
         </div>
 
-        <h2 class="comments-heading">Comments</h2>
+        <h2 class="comments-heading">{{ localeStore.t('media.detail.comments') }}</h2>
       </div>
 
-      <LoadingSpinner v-if="mediaStore.loading && !mediaStore.currentMedia" message="Loading media..." />
+      <LoadingSpinner
+        v-if="mediaStore.loading && !mediaStore.currentMedia"
+        :message="localeStore.t('media.detail.loading')"
+      />
 
       <div v-else-if="mediaStore.currentMedia" class="media-detail">
         <div class="media-detail__content">
@@ -54,10 +57,12 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import MediaDetailCard from '@/components/media/MediaDetailCard.vue'
 import CommentsSection from '@/components/comments/CommentsSection.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 const route = useRoute()
 const router = useRouter()
 const mediaStore = useMediaStore()
+const localeStore = useLocaleStore()
 
 // Setup async action for media updates with duplicate prevention
 const { execute: updateMedia, loading: updateLoading } = useAsyncAction(

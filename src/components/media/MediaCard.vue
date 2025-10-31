@@ -15,7 +15,7 @@
           class="carousel-preview-btn carousel-preview-btn--prev"
           :disabled="currentImageIndex === 0"
           @click.stop="previousImage"
-          aria-label="Previous image"
+          :aria-label="localeStore.t('media.card.a11y.previousImage')"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -30,7 +30,7 @@
           class="carousel-preview-btn carousel-preview-btn--next"
           :disabled="currentImageIndex === totalImages - 1"
           @click.stop="nextImage"
-          aria-label="Next image"
+          :aria-label="localeStore.t('media.card.a11y.nextImage')"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -56,7 +56,7 @@
               class="checkbox-input"
             />
             <span class="checkbox-custom"></span>
-            <span class="checkbox-text">AI processing</span>
+            <span class="checkbox-text">{{ localeStore.t('media.card.aiProcessing') }}</span>
           </label>
         </div>
 
@@ -77,6 +77,7 @@ import BaseBadge from '@/components/ui/BaseBadge.vue'
 import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
 import MediaCardStats from '@/components/media/MediaCardStats.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   media: Media
@@ -95,6 +96,7 @@ const currentImageIndex = ref(0)
 const imageUrl = ref<string>('')
 const isLoadingImage = ref(true)
 let abortController: AbortController | null = null
+const localeStore = useLocaleStore()
 
 // Check if this is a carousel
 const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
@@ -138,7 +140,8 @@ async function loadImage() {
     }
     console.error('Failed to load image:', error)
     imageError.value = true
-    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+    const label = localeStore.t('common.placeholders.image')
+    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
   } finally {
     isLoadingImage.value = false
     abortController = null
@@ -167,7 +170,8 @@ onBeforeUnmount(() => {
 
 function handleImageError() {
   imageError.value = true
-  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent('Image')}`
+  const label = localeStore.t('common.placeholders.image')
+  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
 }
 
 // Carousel navigation (prevents card click when navigating)
@@ -212,13 +216,13 @@ const truncatedCaption = computed(() => {
 const mediaTypeLabel = computed(() => {
   switch (props.media.type) {
     case MediaType.IMAGE:
-      return 'Post'
+      return localeStore.t('media.card.types.image')
     case MediaType.VIDEO:
-      return 'Video'
+      return localeStore.t('media.card.types.video')
     case MediaType.CAROUSEL:
-      return 'Carousel'
+      return localeStore.t('media.card.types.carousel')
     default:
-      return 'Unknown'
+      return localeStore.t('media.card.types.unknown')
   }
 })
 
@@ -237,7 +241,8 @@ const formattedPostedAt = computed(() => {
   if (!props.media.posted_at) return ''
   try {
     const date = parseISO(props.media.posted_at)
-    return format(date, 'MMM d, yyyy')
+    const pattern = localeStore.t('formats.date.short')
+    return format(date, pattern, { locale: localeStore.dateLocale })
   } catch (error) {
     return props.media.posted_at
   }

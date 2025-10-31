@@ -3,7 +3,7 @@
     <div class="filters-row">
       <!-- Visibility Filter -->
       <div class="filter-section">
-        <span class="filter-label">Visibility:</span>
+        <span class="filter-label">{{ localeStore.t('comments.filters.visibility') }}:</span>
         <div class="filter-chips">
           <button
             :class="['filter-chip', { active: visibilityFilter === 'all' }]"
@@ -12,7 +12,7 @@
             <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
             </svg>
-            All
+            {{ localeStore.t('comments.filters.visibilityOptions.all') }}
           </button>
           <button
             :class="['filter-chip', { active: visibilityFilter === 'visible' }]"
@@ -22,7 +22,7 @@
               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            Visible
+            {{ localeStore.t('comments.filters.visibilityOptions.visible') }}
           </button>
           <button
             :class="['filter-chip', { active: visibilityFilter === 'hidden' }]"
@@ -34,14 +34,14 @@
               <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
               <line x1="2" y1="2" x2="22" y2="22" />
             </svg>
-            Hidden
+            {{ localeStore.t('comments.filters.visibilityOptions.hidden') }}
           </button>
         </div>
       </div>
 
       <!-- Deleted Filter -->
       <div class="filter-section">
-        <span class="filter-label">Deleted:</span>
+        <span class="filter-label">{{ localeStore.t('comments.filters.deleted') }}:</span>
         <div class="filter-chips">
           <button
             :class="['filter-chip', { active: deletedFilter === 'all' }]"
@@ -50,7 +50,7 @@
             <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
             </svg>
-            All
+            {{ localeStore.t('comments.filters.deletedOptions.all') }}
           </button>
           <button
             :class="['filter-chip', { active: deletedFilter === 'active' }]"
@@ -59,7 +59,7 @@
             <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Active
+            {{ localeStore.t('comments.filters.deletedOptions.active') }}
           </button>
           <button
             :class="['filter-chip', { active: deletedFilter === 'deleted' }]"
@@ -70,14 +70,14 @@
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
               <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
-            Deleted
+            {{ localeStore.t('comments.filters.deletedOptions.deleted') }}
           </button>
         </div>
       </div>
 
       <!-- Status Filter -->
       <div class="filter-section">
-        <span class="filter-label">Status:</span>
+        <span class="filter-label">{{ localeStore.t('comments.filters.status') }}:</span>
         <div class="filter-chips">
           <button
             v-for="status in processingStatuses"
@@ -92,7 +92,7 @@
 
       <!-- Classification Filter -->
       <div class="filter-section filter-section--full">
-        <span class="filter-label">Type:</span>
+        <span class="filter-label">{{ localeStore.t('comments.filters.type') }}:</span>
         <div class="filter-chips filter-chips--wrap">
           <button
             v-for="classification in classificationOptions"
@@ -110,7 +110,7 @@
       v-if="hasActiveFilters"
       class="clear-button"
       @click="clearFilters"
-      title="Clear all filters"
+      :title="localeStore.t('comments.filters.clear')"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="18" y1="6" x2="6" y2="18" />
@@ -122,7 +122,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ProcessingStatus, ClassificationType, ClassificationTypeLabels } from '@/types/api'
+import { ProcessingStatus, ClassificationType } from '@/types/api'
+import { useLocaleStore } from '@/stores/locale'
 
 type VisibilityFilter = 'all' | 'visible' | 'hidden'
 type DeletedFilter = 'all' | 'active' | 'deleted'
@@ -150,52 +151,53 @@ const emit = defineEmits<{
 
 const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
 const deletedFilter = ref<DeletedFilter>(props.deletedFilter)
+const localeStore = useLocaleStore()
 
-const processingStatuses = [
-  { value: ProcessingStatus.PENDING, label: 'Pending' },
-  { value: ProcessingStatus.PROCESSING, label: 'Processing' },
-  { value: ProcessingStatus.COMPLETED, label: 'Completed' },
-  { value: ProcessingStatus.FAILED, label: 'Failed' },
-  { value: ProcessingStatus.RETRY, label: 'Retry' }
-]
+const processingStatuses = computed(() => [
+  { value: ProcessingStatus.PENDING, label: localeStore.t('comments.statusLabels.pending') },
+  { value: ProcessingStatus.PROCESSING, label: localeStore.t('comments.statusLabels.processing') },
+  { value: ProcessingStatus.COMPLETED, label: localeStore.t('comments.statusLabels.completed') },
+  { value: ProcessingStatus.FAILED, label: localeStore.t('comments.statusLabels.failed') },
+  { value: ProcessingStatus.RETRY, label: localeStore.t('comments.statusLabels.retry') }
+])
 
-const classificationOptions = [
+const classificationOptions = computed(() => [
   {
     value: ClassificationType.POSITIVE_FEEDBACK,
-    shortLabel: 'Positive',
+    shortLabel: localeStore.t('comments.classificationLabels.positive'),
     variant: 'positive'
   },
   {
     value: ClassificationType.CRITICAL_FEEDBACK,
-    shortLabel: 'Critical',
+    shortLabel: localeStore.t('comments.classificationLabels.critical'),
     variant: 'critical'
   },
   {
     value: ClassificationType.URGENT_ISSUE,
-    shortLabel: 'Urgent',
+    shortLabel: localeStore.t('comments.classificationLabels.urgent'),
     variant: 'urgent'
   },
   {
     value: ClassificationType.QUESTION_INQUIRY,
-    shortLabel: 'Question',
+    shortLabel: localeStore.t('comments.classificationLabels.question'),
     variant: 'question'
   },
   {
     value: ClassificationType.PARTNERSHIP_PROPOSAL,
-    shortLabel: 'Partnership',
+    shortLabel: localeStore.t('comments.classificationLabels.partnership'),
     variant: 'partnership'
   },
   {
     value: ClassificationType.TOXIC_ABUSIVE,
-    shortLabel: 'Toxic',
+    shortLabel: localeStore.t('comments.classificationLabels.toxic'),
     variant: 'toxic'
   },
   {
     value: ClassificationType.SPAM_IRRELEVANT,
-    shortLabel: 'Spam',
+    shortLabel: localeStore.t('comments.classificationLabels.spam'),
     variant: 'spam'
   }
-]
+])
 
 const hasActiveFilters = computed(() => {
   return props.statusFilters.length > 0 ||

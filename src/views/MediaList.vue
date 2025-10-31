@@ -2,15 +2,20 @@
   <div class="media-list-page">
     <div class="container">
       <div class="page-header">
-        <h1>Media Posts</h1>
-        <p class="page-subtitle">Manage Instagram posts and comments</p>
+        <h1>{{ localeStore.t('media.list.title') }}</h1>
+        <p class="page-subtitle">{{ localeStore.t('media.list.subtitle') }}</p>
       </div>
 
-      <LoadingSpinner v-if="mediaStore.loading && !mediaStore.mediaList.length" message="Loading media..." />
+      <LoadingSpinner
+        v-if="mediaStore.loading && !mediaStore.mediaList.length"
+        :message="localeStore.t('media.list.loading')"
+      />
 
       <div v-else-if="mediaStore.error" class="error-state">
         <p>{{ mediaStore.error }}</p>
-        <BaseButton @click="loadMedia">Retry</BaseButton>
+        <BaseButton @click="loadMedia">
+          {{ localeStore.t('common.actions.retry') }}
+        </BaseButton>
       </div>
 
       <div v-else class="media-grid">
@@ -41,6 +46,7 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
+import { useLocaleStore } from '@/stores/locale'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
@@ -48,6 +54,7 @@ import MediaCard from '@/components/media/MediaCard.vue'
 
 const router = useRouter()
 const mediaStore = useMediaStore()
+const localeStore = useLocaleStore()
 
 onMounted(() => {
   loadMedia()

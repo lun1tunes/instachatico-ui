@@ -30,32 +30,32 @@
               </linearGradient>
             </defs>
           </svg>
-          <h1>Instachatico</h1>
-          <p class="login-subtitle">Comment Bot Moderator</p>
+          <h1>{{ localeStore.t('auth.title') }}</h1>
+          <p class="login-subtitle">{{ localeStore.t('auth.subtitle') }}</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
-            <label for="username" class="form-label">Username</label>
+            <label for="username" class="form-label">{{ localeStore.t('auth.username') }}</label>
             <input
               id="username"
               v-model="username"
               type="text"
               class="form-input"
-              placeholder="Enter your username"
+              :placeholder="localeStore.t('auth.usernamePlaceholder')"
               required
               autocomplete="username"
             />
           </div>
 
           <div class="form-group">
-            <label for="password" class="form-label">Password</label>
+            <label for="password" class="form-label">{{ localeStore.t('auth.password') }}</label>
             <input
               id="password"
               v-model="password"
               type="password"
               class="form-input"
-              placeholder="Enter your password"
+              :placeholder="localeStore.t('auth.passwordPlaceholder')"
               required
               autocomplete="current-password"
             />
@@ -72,11 +72,11 @@
             full-width
             :loading="loading"
           >
-            Login
+            {{ localeStore.t('auth.login') }}
           </BaseButton>
 
           <p class="login-hint">
-            Default credentials: admin / admin123
+            {{ localeStore.t('auth.hint') }}
           </p>
         </form>
       </BaseCard>
@@ -90,9 +90,11 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const localeStore = useLocaleStore()
 
 const username = ref('')
 const password = ref('')

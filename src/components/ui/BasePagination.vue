@@ -6,7 +6,7 @@
       :disabled="currentPage === 1"
       @click="emit('prev')"
     >
-      Previous
+      {{ localeStore.t('pagination.previous') }}
     </BaseButton>
 
     <div class="pagination__pages">
@@ -21,7 +21,7 @@
         :disabled="page === -1"
         @click="page !== -1 && emit('goto', page)"
       >
-        {{ page === -1 ? '...' : page }}
+        {{ page === -1 ? localeStore.t('pagination.ellipsis') : page }}
       </button>
     </div>
 
@@ -31,7 +31,7 @@
       :disabled="currentPage === totalPages"
       @click="emit('next')"
     >
-      Next
+      {{ localeStore.t('pagination.next') }}
     </BaseButton>
   </div>
 </template>
@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BaseButton from './BaseButton.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   currentPage: number
@@ -56,6 +57,7 @@ const emit = defineEmits<{
   goto: [page: number]
 }>()
 
+const localeStore = useLocaleStore()
 const displayPages = computed(() => {
   const pages: number[] = []
   const total = props.totalPages

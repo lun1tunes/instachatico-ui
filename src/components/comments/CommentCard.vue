@@ -15,7 +15,7 @@
             size="sm"
             class="meta-badge"
           >
-            Deleted
+            {{ localeStore.t('comments.card.deletedBadge') }}
           </BaseBadge>
           <BaseBadge
             v-if="comment.is_hidden && !comment.is_deleted"
@@ -23,7 +23,7 @@
             size="sm"
             class="meta-badge"
           >
-            Hidden
+            {{ localeStore.t('comments.card.hiddenBadge') }}
           </BaseBadge>
           <BaseBadge
             :variant="statusBadgeVariant"
@@ -81,7 +81,7 @@
               <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
               <line x1="2" y1="2" x2="22" y2="22" />
             </svg>
-            <span>{{ isHiding ? 'Unhide' : 'Hide' }}</span>
+            <span>{{ hideButtonLabel }}</span>
           </BaseButton>
         <BaseButton
           v-if="!comment.is_deleted"
@@ -106,12 +106,12 @@
             <path d="M10 11v6" />
             <path d="M14 11v6" />
           </svg>
-          <span>Delete</span>
+          <span>{{ localeStore.t('common.actions.delete') }}</span>
         </BaseButton>
         <div
           v-else
           class="deleted-badge-button"
-          title="This comment has been permanently deleted from Instagram"
+          :title="localeStore.t('comments.card.checkInstagram')"
         >
           <svg
             class="action-icon"
@@ -127,7 +127,7 @@
             <path d="M19 6 18 20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
             <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
           </svg>
-          <span>Deleted</span>
+          <span>{{ localeStore.t('comments.card.deletedBadge') }}</span>
           <svg
             class="check-icon"
             viewBox="0 0 24 24"
@@ -154,16 +154,16 @@
             <span
               v-if="comment.isNew"
               class="new-badge new-badge--inline"
-              title="Mark as read"
+              :title="localeStore.t('comments.card.markAsRead')"
               @click="clearNewFlag"
-            >NEW</span>
+            >{{ localeStore.t('comments.card.newBadge') }}</span>
           </div>
           <BaseBadge
             v-if="comment.parent_id"
             variant="info"
             size="sm"
           >
-            Reply
+            {{ localeStore.t('comments.card.replyBadge') }}
           </BaseBadge>
         </div>
       </div>
@@ -185,13 +185,13 @@
         role="button"
         tabindex="0"
         :aria-expanded="isClassificationExpanded ? 'true' : 'false'"
-        title="Click to toggle classification details"
+        :title="localeStore.t('comments.card.toggleClassification')"
         @click="toggleClassificationExpanded"
         @keydown.enter.prevent="toggleClassificationExpanded"
         @keydown.space.prevent="toggleClassificationExpanded"
       >
         <h4 class="classification-header-title">
-          Classification details
+          {{ localeStore.t('comments.card.classificationTitle') }}
           <svg
             class="expand-icon"
             :class="{ 'expand-icon--expanded': isClassificationExpanded }"
@@ -227,20 +227,20 @@
               <path d="M12 20h9" />
               <path d="m16.5 3.5 4 4-11 11H5.5v-6.5l11-11Z" />
             </svg>
-            Edit
+            {{ localeStore.t('common.actions.edit') }}
           </BaseButton>
         </div>
       </div>
 
       <div v-show="isClassificationExpanded" class="classification-content">
         <div v-if="!isClassificationFailed && comment.classification.processing_completed_at" class="classification-timestamp">
-        <span class="timestamp-label">Processed at:</span>
+        <span class="timestamp-label">{{ localeStore.t('comments.card.processedAt') }}</span>
         <time class="timestamp-value">{{ formattedProcessingCompletedAt }}</time>
       </div>
 
       <div v-if="!isClassificationFailed" class="classification-info">
         <div v-if="comment.classification.confidence !== null" class="confidence">
-          <span class="confidence-label">Confidence:</span>
+          <span class="confidence-label">{{ localeStore.t('comments.card.confidence') }}</span>
           <div class="confidence-bar">
             <div
               class="confidence-fill"
@@ -252,12 +252,12 @@
       </div>
 
       <div v-if="!isClassificationFailed && comment.classification.reasoning" class="classification-reasoning">
-        <span class="reasoning-label">Reasoning:</span>
+        <span class="reasoning-label">{{ localeStore.t('comments.card.reasoning') }}</span>
         <p>{{ comment.classification.reasoning }}</p>
       </div>
 
       <div v-if="isClassificationFailed && comment.classification.last_error" class="classification-error">
-        <div class="error-header">Error while classification</div>
+        <div class="error-header">{{ localeStore.t('comments.card.errorTitle') }}</div>
         <div class="error-details">{{ comment.classification.last_error }}</div>
       </div>
       </div>
@@ -283,12 +283,12 @@
           <path d="M3 20v-6l13-13 6 6-13 13H3z" />
           <path d="m16 5 3 3" />
         </svg>
-        Create Answer
+        {{ localeStore.t('comments.card.createAnswer') }}
       </BaseButton>
     </div>
 
     <div v-if="comment.answers.length > 0" class="comment-answers">
-      <h4>Answers</h4>
+      <h4>{{ localeStore.t('comments.card.answersTitle') }}</h4>
       <AnswerCard
         v-for="answer in comment.answers"
         :key="answer.id"
@@ -305,17 +305,17 @@
       <div v-if="isCreatingAnswer" class="loading-overlay">
         <div class="loading-content">
           <div class="loading-spinner"></div>
-          <div class="loading-text">Creating answer...</div>
+          <div class="loading-text">{{ localeStore.t('comments.card.loadingAnswer') }}</div>
         </div>
       </div>
     </Transition>
     </BaseCard>
 
-    <BaseModal
-      v-model="showClassificationModal"
-      title="Update Classification"
-      size="md"
-    >
+  <BaseModal
+    v-model="showClassificationModal"
+    :title="localeStore.t('comments.card.updateClassificationTitle')"
+    size="md"
+  >
       <ClassificationForm
         :current-type="comment.classification.classification_type"
         :current-reasoning="comment.classification.reasoning"
@@ -324,14 +324,14 @@
       />
     </BaseModal>
 
-    <FullScreenMarkdownEditor
-      v-model="showCreateAnswerModal"
-      title="Create Answer for Comment"
-      :initial-content="''"
-      placeholder="Write your answer to this question/inquiry. Markdown formatting is supported..."
-      save-button-text="Create Answer"
-      @save="handleCreateAnswer"
-    />
+  <FullScreenMarkdownEditor
+    v-model="showCreateAnswerModal"
+    :title="localeStore.t('comments.card.createAnswerTitle')"
+    :initial-content="''"
+    :placeholder="localeStore.t('comments.card.answerPlaceholder')"
+    :save-button-text="localeStore.t('comments.card.createAnswer')"
+    @save="handleCreateAnswer"
+  />
   </div>
 </template>
 
@@ -346,9 +346,10 @@ import type {
   ProcessingStatus,
   ClassificationType
 } from '@/types/api'
-import { ClassificationTypeLabels, ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
+import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
 import { format, parseISO } from 'date-fns'
 import { useCommentsStore } from '@/stores/comments'
+import { useLocaleStore } from '@/stores/locale'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -365,6 +366,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const commentsStore = useCommentsStore()
+const localeStore = useLocaleStore()
 
 const emit = defineEmits<{
   delete: [id: string]
@@ -393,6 +395,12 @@ const userInitial = computed(() => {
   return props.comment.username.charAt(0).toUpperCase()
 })
 
+const hideButtonLabel = computed(() =>
+  localeStore.t(
+    isHiding.value ? 'comments.card.settings.hide.unhide' : 'comments.card.settings.hide.hide'
+  )
+)
+
 // Check if we should show "Create Answer" button
 const shouldShowCreateAnswerButton = computed(() => {
   return (
@@ -405,7 +413,8 @@ const formattedCreatedAt = computed(() => {
   if (!props.comment.created_at) return ''
   try {
     const date = parseISO(props.comment.created_at)
-    return format(date, 'MMM d, yyyy HH:mm')
+    const pattern = localeStore.t('formats.date.withTime')
+    return format(date, pattern, { locale: localeStore.dateLocale })
   } catch (error) {
     console.error('Failed to parse created_at date:', error)
     return props.comment.created_at
@@ -416,7 +425,8 @@ const formattedProcessingCompletedAt = computed(() => {
   if (!props.comment.classification.processing_completed_at) return ''
   try {
     const date = parseISO(props.comment.classification.processing_completed_at)
-    return format(date, 'MMM d, yyyy HH:mm')
+    const pattern = localeStore.t('formats.date.withTime')
+    return format(date, pattern, { locale: localeStore.dateLocale })
   } catch (error) {
     console.error('Failed to parse processing_completed_at date:', error)
     return props.comment.classification.processing_completed_at
@@ -452,20 +462,29 @@ const isClassificationFailed = computed(() => {
 
 function getClassificationLabel(type: ClassificationType | null): string {
   if (type === null || type === undefined) {
-    return 'Pending Classification'
+    return localeStore.t('comments.card.pendingClassification')
   }
-  return ClassificationTypeLabels[type] || 'Unknown'
+  const labels: Record<ClassificationType, string> = {
+    [ClassificationTypeEnum.POSITIVE_FEEDBACK]: localeStore.t('comments.classificationLabels.positive'),
+    [ClassificationTypeEnum.CRITICAL_FEEDBACK]: localeStore.t('comments.classificationLabels.critical'),
+    [ClassificationTypeEnum.URGENT_ISSUE]: localeStore.t('comments.classificationLabels.urgent'),
+    [ClassificationTypeEnum.QUESTION_INQUIRY]: localeStore.t('comments.classificationLabels.question'),
+    [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: localeStore.t('comments.classificationLabels.partnership'),
+    [ClassificationTypeEnum.TOXIC_ABUSIVE]: localeStore.t('comments.classificationLabels.toxic'),
+    [ClassificationTypeEnum.SPAM_IRRELEVANT]: localeStore.t('comments.classificationLabels.spam')
+  }
+  return labels[type] || localeStore.t('comments.card.pendingClassification')
 }
 
 function getProcessingStatusLabel(status: ProcessingStatus): string {
   const labels: Record<number, string> = {
-    [ProcessingStatusEnum.PENDING]: 'Pending',
-    [ProcessingStatusEnum.PROCESSING]: 'Processing',
-    [ProcessingStatusEnum.COMPLETED]: 'Completed',
-    [ProcessingStatusEnum.FAILED]: 'Failed',
-    [ProcessingStatusEnum.RETRY]: 'Retry'
+    [ProcessingStatusEnum.PENDING]: localeStore.t('comments.statusLabels.pending'),
+    [ProcessingStatusEnum.PROCESSING]: localeStore.t('comments.statusLabels.processing'),
+    [ProcessingStatusEnum.COMPLETED]: localeStore.t('comments.statusLabels.completed'),
+    [ProcessingStatusEnum.FAILED]: localeStore.t('comments.statusLabels.failed'),
+    [ProcessingStatusEnum.RETRY]: localeStore.t('comments.statusLabels.retry')
   }
-  return labels[status] || 'Unknown'
+  return labels[status] || localeStore.t('comments.statusLabels.pending')
 }
 
 function getProcessingStatusVariant(status: ProcessingStatus): 'warning' | 'info' | 'success' | 'error' | 'default' {

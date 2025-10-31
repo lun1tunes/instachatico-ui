@@ -5,13 +5,13 @@
         <div class="fullscreen-editor">
           <!-- Header -->
           <div class="editor-header">
-            <h2 class="editor-title">{{ title }}</h2>
+            <h2 class="editor-title">{{ resolvedTitle }}</h2>
             <div class="editor-actions">
               <button
                 class="view-toggle"
                 :class="{ active: viewMode === 'edit' }"
                 @click="viewMode = 'edit'"
-                title="Edit Only"
+                :title="localeStore.t('editor.viewModes.edit')"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -22,7 +22,7 @@
                 class="view-toggle"
                 :class="{ active: viewMode === 'split' }"
                 @click="viewMode = 'split'"
-                title="Split View"
+                :title="localeStore.t('editor.viewModes.split')"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -33,14 +33,14 @@
                 class="view-toggle"
                 :class="{ active: viewMode === 'preview' }"
                 @click="viewMode = 'preview'"
-                title="Preview Only"
+                :title="localeStore.t('editor.viewModes.preview')"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               </button>
-              <button class="close-btn" @click="handleClose" title="Close (ESC)">
+              <button class="close-btn" @click="handleClose" :title="localeStore.t('editor.closeHint')">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -51,21 +51,21 @@
 
           <!-- Toolbar -->
           <div class="editor-toolbar">
-            <button @click="insertMarkdown('**', '**')" title="Bold (Ctrl+B)" class="toolbar-btn">
+            <button @click="insertMarkdown('**', '**')" :title="localeStore.t('editor.toolbar.bold')" class="toolbar-btn">
               <strong>B</strong>
             </button>
-            <button @click="insertMarkdown('*', '*')" title="Italic (Ctrl+I)" class="toolbar-btn">
+            <button @click="insertMarkdown('*', '*')" :title="localeStore.t('editor.toolbar.italic')" class="toolbar-btn">
               <em>I</em>
             </button>
-            <button @click="insertMarkdown('`', '`')" title="Code" class="toolbar-btn">
+            <button @click="insertMarkdown('`', '`')" :title="localeStore.t('editor.toolbar.code')" class="toolbar-btn">
               <code>&lt;/&gt;</code>
             </button>
             <div class="toolbar-divider"></div>
-            <button @click="insertMarkdown('# ', '')" title="Heading 1" class="toolbar-btn">H1</button>
-            <button @click="insertMarkdown('## ', '')" title="Heading 2" class="toolbar-btn">H2</button>
-            <button @click="insertMarkdown('### ', '')" title="Heading 3" class="toolbar-btn">H3</button>
+            <button @click="insertMarkdown('# ', '')" :title="localeStore.t('editor.toolbar.heading1')" class="toolbar-btn">H1</button>
+            <button @click="insertMarkdown('## ', '')" :title="localeStore.t('editor.toolbar.heading2')" class="toolbar-btn">H2</button>
+            <button @click="insertMarkdown('### ', '')" :title="localeStore.t('editor.toolbar.heading3')" class="toolbar-btn">H3</button>
             <div class="toolbar-divider"></div>
-            <button @click="insertMarkdown('- ', '')" title="Unordered List" class="toolbar-btn">
+            <button @click="insertMarkdown('- ', '')" :title="localeStore.t('editor.toolbar.unorderedList')" class="toolbar-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="8" y1="6" x2="21" y2="6" />
                 <line x1="8" y1="12" x2="21" y2="12" />
@@ -75,7 +75,7 @@
                 <line x1="3" y1="18" x2="3.01" y2="18" />
               </svg>
             </button>
-            <button @click="insertMarkdown('1. ', '')" title="Ordered List" class="toolbar-btn">
+            <button @click="insertMarkdown('1. ', '')" :title="localeStore.t('editor.toolbar.orderedList')" class="toolbar-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="10" y1="6" x2="21" y2="6" />
                 <line x1="10" y1="12" x2="21" y2="12" />
@@ -86,14 +86,14 @@
               </svg>
             </button>
             <div class="toolbar-divider"></div>
-            <button @click="insertMarkdown('[', '](url)')" title="Link" class="toolbar-btn">
+            <button @click="insertMarkdown('[', '](url)')" :title="localeStore.t('editor.toolbar.link')" class="toolbar-btn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
               </svg>
             </button>
             <div class="toolbar-spacer"></div>
-            <span class="char-count">{{ content.length }} characters</span>
+            <span class="char-count">{{ characterCountLabel }}</span>
           </div>
 
           <!-- Content Area -->
@@ -104,14 +104,14 @@
                 ref="textareaRef"
                 v-model="content"
                 class="editor-textarea"
-                :placeholder="placeholder"
+                :placeholder="placeholderText"
                 @keydown="handleKeydown"
               ></textarea>
             </div>
 
             <!-- Preview Panel -->
             <div v-if="viewMode === 'preview' || viewMode === 'split'" class="preview-panel">
-              <div class="preview-label">Preview</div>
+              <div class="preview-label">{{ localeStore.t('editor.preview') }}</div>
               <div class="preview-content markdown-body" v-html="renderedMarkdown"></div>
             </div>
           </div>
@@ -124,14 +124,14 @@
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
               </svg>
-              <span>Supports Markdown formatting. Press ESC to cancel.</span>
+              <span>{{ localeStore.t('common.hints.markdown') }}</span>
             </div>
             <div class="footer-actions">
               <BaseButton variant="ghost" @click="handleClose">
-                Cancel
+                {{ localeStore.t('common.actions.cancel') }}
               </BaseButton>
               <BaseButton variant="primary" @click="handleSave">
-                {{ saveButtonText }}
+                {{ saveButtonLabel }}
               </BaseButton>
             </div>
           </div>
@@ -146,6 +146,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { useConfirm } from '@/composables/useConfirm'
 import BaseButton from './BaseButton.vue'
+import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   modelValue: boolean
@@ -155,12 +156,9 @@ interface Props {
   saveButtonText?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  title: 'Edit Content',
-  initialContent: '',
-  placeholder: 'Write your content here... Markdown is supported.',
-  saveButtonText: 'Save Changes'
-})
+const localeStore = useLocaleStore()
+
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -171,14 +169,18 @@ const { parseMarkdown } = useMarkdown()
 const { confirm } = useConfirm()
 
 const textareaRef = ref<HTMLTextAreaElement>()
-const content = ref(props.initialContent)
+const content = ref(props.initialContent ?? '')
 const viewMode = ref<'edit' | 'preview' | 'split'>('edit')
 
 const renderedMarkdown = computed(() => parseMarkdown(content.value))
+const characterCountLabel = computed(() => localeStore.t('comments.form.characters', { count: content.value.length }))
+const resolvedTitle = computed(() => props.title ?? localeStore.t('editor.defaultTitle'))
+const placeholderText = computed(() => props.placeholder ?? localeStore.t('editor.defaultPlaceholder'))
+const saveButtonLabel = computed(() => props.saveButtonText ?? localeStore.t('editor.saveChanges'))
 
 // Watch for prop changes
 watch(() => props.initialContent, (newValue) => {
-  content.value = newValue
+  content.value = newValue ?? ''
 }, { immediate: true })
 
 watch(() => props.modelValue, (isOpen) => {
@@ -243,11 +245,11 @@ async function handleClose() {
 
   if (hasChanges) {
     const confirmed = await confirm({
-      title: 'Unsaved Changes',
-      message: 'You have unsaved changes. Are you sure you want to close without saving?',
+      title: localeStore.t('editor.unsaved.title'),
+      message: localeStore.t('editor.unsaved.message'),
       variant: 'warning',
-      confirmText: 'Discard Changes',
-      cancelText: 'Continue Editing'
+      confirmText: localeStore.t('editor.unsaved.confirm'),
+      cancelText: localeStore.t('editor.unsaved.cancel')
     })
     if (!confirmed) {
       return // Don't close, user wants to continue editing
