@@ -14,11 +14,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="app">
+  <v-app>
     <AppHeader v-if="authStore.isAuthenticated" />
-    <main class="main-content">
+
+    <v-main class="py-8">
       <router-view />
-    </main>
+    </v-main>
 
     <!-- Global Confirm Dialog -->
     <ConfirmDialog
@@ -32,12 +33,5 @@ onMounted(() => {
       @confirm="handleConfirm"
       @cancel="handleCancel"
     />
-  </div>
+  </v-app>
 </template>
-
-<style scoped>
-.main-content {
-  flex: 1;
-  padding: var(--spacing-xl) 0;
-}
-</style>

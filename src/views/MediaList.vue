@@ -1,45 +1,68 @@
 <template>
-  <div class="media-list-page">
-    <div class="container">
-      <div class="page-header">
-        <h1>{{ localeStore.t('media.list.title') }}</h1>
-        <p class="page-subtitle">{{ localeStore.t('media.list.subtitle') }}</p>
-      </div>
+  <v-container class="py-10 media-list-page" max-width="1280">
+    <v-row>
+      <v-col cols="12">
+        <div class="d-flex flex-column gap-2 mb-8">
+          <h1 class="text-h4 font-weight-semibold">
+            {{ localeStore.t('media.list.title') }}
+          </h1>
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            {{ localeStore.t('media.list.subtitle') }}
+          </p>
+        </div>
+      </v-col>
+    </v-row>
 
-      <LoadingSpinner
-        v-if="mediaStore.loading && !mediaStore.mediaList.length"
-        :message="localeStore.t('media.list.loading')"
-      />
+    <v-row v-if="mediaStore.loading && !mediaStore.mediaList.length" justify="center">
+      <v-col cols="12">
+        <LoadingSpinner :message="localeStore.t('media.list.loading')" />
+      </v-col>
+    </v-row>
 
-      <div v-else-if="mediaStore.error" class="error-state">
-        <p>{{ mediaStore.error }}</p>
+    <v-row v-else-if="mediaStore.error" justify="center">
+      <v-col cols="12" md="8" class="text-center">
+        <v-alert
+          border="start"
+          density="compact"
+          type="error"
+          variant="tonal"
+          class="mb-6"
+        >
+          {{ mediaStore.error }}
+        </v-alert>
         <BaseButton @click="loadMedia">
           {{ localeStore.t('common.actions.retry') }}
         </BaseButton>
-      </div>
+      </v-col>
+    </v-row>
 
-      <div v-else class="media-grid">
+    <v-row v-else class="media-grid-row">
+      <v-col
+        v-for="media in mediaStore.mediaList"
+        :key="media.id"
+        cols="12"
+        sm="6"
+        lg="4"
+      >
         <MediaCard
-          v-for="media in mediaStore.mediaList"
-          :key="media.id"
           :media="media"
           @click="goToMedia(media.id)"
           @update:comments="(enabled) => handleUpdateSettings(media.id, { is_comment_enabled: enabled })"
           @update:processing="(enabled) => handleUpdateSettings(media.id, { is_processing_enabled: enabled })"
         />
-      </div>
+      </v-col>
+    </v-row>
 
-      <div v-if="mediaStore.totalPages > 1" class="pagination-wrapper">
+    <v-row v-if="mediaStore.totalPages > 1" class="mt-8" justify="center">
+      <v-col cols="12" class="d-flex justify-center">
         <BasePagination
           :current-page="mediaStore.currentPage"
           :total-pages="mediaStore.totalPages"
-          @prev="mediaStore.prevPage"
-          @next="mediaStore.nextPage"
           @goto="mediaStore.goToPage"
         />
-      </div>
-    </div>
-  </div>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
@@ -86,40 +109,8 @@ async function handleUpdateSettings(id: string, settings: { is_comment_enabled?:
   min-height: calc(100vh - 4rem);
 }
 
-.page-header {
-  margin-bottom: var(--spacing-xl);
-}
-
-.page-header h1 {
-  margin-bottom: var(--spacing-sm);
-}
-
-.page-subtitle {
-  color: var(--navy-600);
-  font-size: 1rem;
-  margin: 0;
-}
-
-.media-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
-}
-
-.error-state {
-  text-align: center;
-  padding: var(--spacing-2xl);
-}
-
-.error-state p {
-  color: var(--error);
-  margin-bottom: var(--spacing-lg);
-}
-
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: var(--spacing-xl) 0;
+.media-grid-row {
+  row-gap: 24px;
+  column-gap: 24px;
 }
 </style>

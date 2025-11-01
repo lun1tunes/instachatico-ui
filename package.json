@@ -13,14 +13,19 @@
     "date-fns": "^4.1.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "@mdi/font": "^7.4.47",
+    "@mdi/js": "^7.4.47",
+    "vuetify": "^3.7.4"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
+    "sass": "^1.81.0",
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
+    "vite-plugin-vuetify": "^2.0.4",
     "vue-tsc": "^3.1.0"
   }
 }

@@ -76,7 +76,12 @@
     <div class="media-detail-card__context">
       <div class="context-header">
         <h4>{{ localeStore.t('media.card.aiContext') }}</h4>
-        <BaseButton variant="ghost" size="sm" @click="showContextModal = true">
+        <BaseButton
+          variant="ghost"
+          size="sm"
+          :disabled="loading"
+          @click="showContextModal = true"
+        >
           <svg
             class="action-icon"
             viewBox="0 0 24 24"
@@ -99,26 +104,28 @@
     <div class="media-detail-card__settings">
       <h4>{{ localeStore.t('media.card.settings') }}</h4>
       <div class="settings-group">
-        <label class="checkbox-label checkbox-label--danger">
-          <input
-            type="checkbox"
-            :checked="media.is_processing_enabled"
-            @change="toggleProcessing"
-          />
-          <span>{{ localeStore.t('media.detail.enableProcessing') }}</span>
-        </label>
+        <v-switch
+          :model-value="media.is_processing_enabled"
+          :disabled="loading"
+          color="primary"
+          density="comfortable"
+          hide-details
+          :label="localeStore.t('media.detail.enableProcessing')"
+          inset
+          @update:model-value="toggleProcessing"
+        />
 
-        <label class="checkbox-label checkbox-label--danger">
-          <input
-            type="checkbox"
-            :checked="media.is_comment_enabled"
-            @change="confirmToggleComments"
-          />
-          <div class="checkbox-content">
-            <span>{{ localeStore.t('media.card.allowComments') }}</span>
-            <small>{{ localeStore.t('media.card.allowCommentsWarning') }}</small>
-          </div>
-        </label>
+        <v-switch
+          :model-value="media.is_comment_enabled"
+          :disabled="loading"
+          color="primary"
+          density="comfortable"
+          hide-details="auto"
+          :label="localeStore.t('media.card.allowComments')"
+          :messages="[localeStore.t('media.card.allowCommentsWarning')]"
+          inset
+          @update:model-value="confirmToggleComments"
+        />
       </div>
     </div>
 
@@ -150,9 +157,12 @@ import { useLocaleStore } from '@/stores/locale'
 
 interface Props {
   media: Media
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
 
 const emit = defineEmits<{
   update: [data: UpdateMediaRequest]
@@ -296,10 +306,7 @@ function toggleComments(enabled: boolean) {
   emit('update', { is_comment_enabled: enabled })
 }
 
-async function confirmToggleComments(event: Event) {
-  const target = event.target as HTMLInputElement
-  const nextValue = target.checked
-
+async function confirmToggleComments(nextValue: boolean) {
   if (!nextValue) {
     const confirmed = await confirm({
       title: localeStore.t('comments.confirmations.disableComments.title'),
@@ -310,7 +317,6 @@ async function confirmToggleComments(event: Event) {
     })
 
     if (!confirmed) {
-      target.checked = true
       return
     }
   }
@@ -318,9 +324,8 @@ async function confirmToggleComments(event: Event) {
   toggleComments(nextValue)
 }
 
-function toggleProcessing(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update', { is_processing_enabled: target.checked })
+function toggleProcessing(enabled: boolean) {
+  emit('update', { is_processing_enabled: enabled })
 }
 
 function saveContext(content: string) {
@@ -628,46 +633,16 @@ function openPermalink() {
   gap: var(--spacing-md);
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-  cursor: pointer;
-  font-size: 0.875rem;
+.settings-group :deep(.v-switch .v-label) {
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--navy-700);
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-fast);
 }
 
-.checkbox-label input[type="checkbox"] {
-  width: 1.125rem;
-  height: 1.125rem;
-  cursor: pointer;
-}
-
-.checkbox-label:hover {
-  background-color: var(--slate-100);
-}
-
-.checkbox-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.checkbox-label--danger {
-  border: 1px solid rgba(239, 68, 68, 0.15);
-}
-
-.checkbox-label--danger:hover {
-  background-color: rgba(239, 68, 68, 0.08);
-}
-
-.checkbox-label--danger small {
-  color: var(--error);
+.settings-group :deep(.v-messages__message) {
   font-size: 0.75rem;
-  line-height: 1.2;
+  color: var(--error);
+  margin-top: 0.25rem;
 }
 
 .media-detail-card__link {

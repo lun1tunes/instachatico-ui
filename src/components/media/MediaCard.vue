@@ -48,16 +48,29 @@
 
       <div class="media-card__footer">
         <div class="media-card__settings">
-          <label class="checkbox-label" @click.stop>
-            <input
-              type="checkbox"
-              :checked="media.is_processing_enabled"
-              @change="handleToggleProcessing"
-              class="checkbox-input"
+          <div class="media-card__toggle" @click.stop>
+            <v-switch
+              :model-value="media.is_processing_enabled"
+              color="primary"
+              density="compact"
+              hide-details
+              inset
+              :label="localeStore.t('media.card.aiProcessing')"
+              @update:model-value="handleProcessingSwitch"
             />
-            <span class="checkbox-custom"></span>
-            <span class="checkbox-text">{{ localeStore.t('media.card.aiProcessing') }}</span>
-          </label>
+          </div>
+          <div class="media-card__toggle" @click.stop>
+            <v-switch
+              :model-value="media.is_comment_enabled"
+              color="primary"
+              density="compact"
+              hide-details="auto"
+              inset
+              :label="localeStore.t('media.card.allowComments')"
+              :messages="[localeStore.t('media.card.allowCommentsWarning')]"
+              @update:model-value="handleCommentsSwitch"
+            />
+          </div>
         </div>
 
         <div v-if="formattedPostedAt" class="media-card__date">
@@ -195,14 +208,12 @@ function handleCardClick() {
 }
 
 // Handle checkbox toggles
-function handleToggleComments(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update:comments', target.checked)
+function handleCommentsSwitch(enabled: boolean) {
+  emit('update:comments', enabled)
 }
 
-function handleToggleProcessing(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update:processing', target.checked)
+function handleProcessingSwitch(enabled: boolean) {
+  emit('update:processing', enabled)
 }
 
 const truncatedCaption = computed(() => {
@@ -406,77 +417,9 @@ const formattedPostedAt = computed(() => {
 
 .media-card__settings {
   display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-}
-
-/* Checkbox styling - Pineapple style */
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: all var(--transition-fast);
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-}
-
-.checkbox-label:hover {
-  background-color: rgba(100, 116, 139, 0.05);
-}
-
-.checkbox-input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.checkbox-custom {
-  position: relative;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #cbd5e1;
-  border-radius: 5px;
-  background-color: white;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.checkbox-label:hover .checkbox-custom {
-  border-color: #94a3b8;
-}
-
-.checkbox-input:checked + .checkbox-custom {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-  border-color: #3b82f6;
-}
-
-.checkbox-input:checked + .checkbox-custom::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 4px;
-  height: 8px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: translate(-50%, -60%) rotate(45deg);
-}
-
-.checkbox-input:focus + .checkbox-custom {
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
-  outline: none;
-}
-
-.checkbox-text {
-  font-size: 0.75rem;
-  color: var(--navy-600);
-  font-weight: 500;
-  line-height: 1;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  align-items: flex-start;
+  width: 100%;
 }
 </style>

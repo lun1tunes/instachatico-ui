@@ -49,8 +49,6 @@
       <BasePagination
         :current-page="commentsStore.currentPage"
         :total-pages="commentsStore.totalPages"
-        @prev="commentsStore.prevPage(mediaId)"
-        @next="commentsStore.nextPage(mediaId)"
         @goto="(page) => handlePageChange(page)"
       />
     </div>

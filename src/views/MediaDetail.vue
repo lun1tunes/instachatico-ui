@@ -1,50 +1,45 @@
 <template>
-  <div class="media-detail-page">
-    <div class="container">
-      <div class="page-header">
-        <div class="back-button-wrapper">
-          <BaseButton variant="ghost" @click="goBackToMedia">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10 12L6 8L10 4"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            {{ localeStore.t('media.detail.back') }}
-          </BaseButton>
+  <v-container class="py-8 media-detail-page" max-width="1280">
+    <v-row class="mb-6" align="center">
+      <v-col cols="12" md="4">
+        <BaseButton variant="ghost" @click="goBackToMedia">
+          <v-icon start icon="mdi-arrow-left" />
+          {{ localeStore.t('media.detail.back') }}
+        </BaseButton>
+      </v-col>
+
+      <v-col cols="12" md="8">
+        <div class="d-flex justify-center justify-md-end align-center w-100">
+          <h2 class="text-h5 font-weight-semibold mb-0">
+            {{ localeStore.t('media.detail.comments') }}
+          </h2>
         </div>
+      </v-col>
+    </v-row>
 
-        <h2 class="comments-heading">{{ localeStore.t('media.detail.comments') }}</h2>
-      </div>
+    <LoadingSpinner
+      v-if="mediaStore.loading && !mediaStore.currentMedia"
+      :message="localeStore.t('media.detail.loading')"
+    />
 
-      <LoadingSpinner
-        v-if="mediaStore.loading && !mediaStore.currentMedia"
-        :message="localeStore.t('media.detail.loading')"
-      />
+    <v-row
+      v-else-if="mediaStore.currentMedia"
+      class="media-detail-grid"
+      align="stretch"
+    >
+      <v-col cols="12" lg="4">
+        <MediaDetailCard
+          :loading="updateLoading"
+          :media="mediaStore.currentMedia"
+          @update="handleUpdateMedia"
+        />
+      </v-col>
 
-      <div v-else-if="mediaStore.currentMedia" class="media-detail">
-        <div class="media-detail__content">
-          <MediaDetailCard
-            :media="mediaStore.currentMedia"
-            @update="handleUpdateMedia"
-          />
-        </div>
-
-        <div class="media-detail__comments">
-          <CommentsSection :media-id="mediaStore.currentMedia.id" />
-        </div>
-      </div>
-    </div>
-  </div>
+      <v-col cols="12" lg="8">
+        <CommentsSection :media-id="mediaStore.currentMedia.id" />
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
@@ -64,7 +59,6 @@ const router = useRouter()
 const mediaStore = useMediaStore()
 const localeStore = useLocaleStore()
 
-// Setup async action for media updates with duplicate prevention
 const { execute: updateMedia, loading: updateLoading } = useAsyncAction(
   async (data: UpdateMediaRequest) => {
     const id = String(route.params.id)
@@ -108,41 +102,8 @@ function handleUpdateMedia(data: UpdateMediaRequest) {
   min-height: calc(100vh - 4rem);
 }
 
-.page-header {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  align-items: center;
-}
-
-.back-button-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.comments-heading {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--navy-800);
-  text-align: center;
-}
-
-.media-detail {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: var(--spacing-xl);
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .page-header {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
-  }
-
-  .media-detail {
-    grid-template-columns: 1fr;
-  }
+.media-detail-grid {
+  row-gap: 32px;
+  column-gap: 32px;
 }
 </style>

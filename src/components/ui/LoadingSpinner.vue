@@ -1,73 +1,37 @@
 <template>
-  <div :class="['spinner-container', `spinner-container--${size}`]">
-    <div class="spinner"></div>
-    <p v-if="message" class="spinner-message">{{ message }}</p>
+  <div class="d-flex flex-column align-center justify-center ga-4 py-10">
+    <v-progress-circular
+      :size="sizeMap"
+      color="primary"
+      indeterminate
+    />
+    <p v-if="message" class="text-body-2 text-medium-emphasis mb-0 text-center">
+      {{ message }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 interface Props {
   size?: 'sm' | 'md' | 'lg'
   message?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   message: ''
 })
-</script>
 
-<style scoped>
-.spinner-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-xl);
-}
-
-.spinner-container--sm {
-  padding: var(--spacing-md);
-}
-
-.spinner-container--lg {
-  padding: var(--spacing-2xl);
-}
-
-.spinner {
-  border: 3px solid var(--slate-200);
-  border-radius: 50%;
-  border-top-color: var(--blue-500);
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner-container--sm .spinner {
-  width: 24px;
-  height: 24px;
-  border-width: 2px;
-}
-
-.spinner-container--md .spinner {
-  width: 40px;
-  height: 40px;
-}
-
-.spinner-container--lg .spinner {
-  width: 60px;
-  height: 60px;
-  border-width: 4px;
-}
-
-.spinner-message {
-  color: var(--navy-600);
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+const sizeMap = computed(() => {
+  switch (props.size) {
+    case 'sm':
+      return 32
+    case 'lg':
+      return 72
+    default:
+      return 48
   }
-}
-</style>
+})
+</script>

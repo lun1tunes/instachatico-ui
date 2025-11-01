@@ -1,13 +1,16 @@
 <template>
-  <button
-    :class="buttonClasses"
-    :disabled="disabled || loading"
+  <v-btn
+    :block="fullWidth"
+    :color="color"
+    :disabled="disabled"
+    :loading="loading"
+    :size="sizeMap"
+    :variant="variantMap"
     :type="type"
     @click="handleClick"
   >
-    <span v-if="loading" class="loading"></span>
-    <slot v-else />
-  </button>
+    <slot />
+  </v-btn>
 </template>
 
 <script setup lang="ts">
@@ -35,16 +38,43 @@ const emit = defineEmits<{
   click: [event: MouseEvent]
 }>()
 
-const buttonClasses = computed(() => {
-  return [
-    'base-button',
-    `base-button--${props.variant}`,
-    `base-button--${props.size}`,
-    {
-      'base-button--disabled': props.disabled || props.loading,
-      'base-button--full-width': props.fullWidth
-    }
-  ]
+const color = computed(() => {
+  switch (props.variant) {
+    case 'secondary':
+      return 'secondary'
+    case 'success':
+      return 'success'
+    case 'danger':
+      return 'error'
+    case 'ghost':
+      return 'secondary'
+    default:
+      return 'primary'
+  }
+})
+
+const variantMap = computed(() => {
+  if (props.variant === 'ghost') {
+    return 'text'
+  }
+  if (props.variant === 'secondary') {
+    return 'tonal'
+  }
+  if (props.variant === 'danger') {
+    return 'outlined'
+  }
+  return 'elevated'
+})
+
+const sizeMap = computed(() => {
+  switch (props.size) {
+    case 'sm':
+      return 'small'
+    case 'lg':
+      return 'large'
+    default:
+      return 'default'
+  }
 })
 
 function handleClick(event: MouseEvent) {
@@ -53,118 +83,3 @@ function handleClick(event: MouseEvent) {
   }
 }
 </script>
-
-<style scoped>
-.base-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  outline: none;
-  user-select: none;
-}
-
-.base-button:focus-visible {
-  outline: 2px solid var(--blue-500);
-  outline-offset: 2px;
-}
-
-/* Sizes */
-.base-button--sm {
-  padding: 0.5rem 0.875rem;
-  font-size: 0.875rem;
-  border-radius: var(--radius-sm);
-  gap: 0.375rem;
-}
-
-.base-button--md {
-  padding: 0.625rem 1.125rem;
-  font-size: 0.9375rem;
-  border-radius: var(--radius-md);
-  gap: 0.5rem;
-}
-
-.base-button--lg {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border-radius: var(--radius-md);
-  gap: 0.625rem;
-}
-
-/* Variants */
-.base-button--primary {
-  background-color: var(--blue-500);
-  color: white;
-}
-
-.base-button--primary:hover:not(.base-button--disabled) {
-  background-color: var(--blue-400);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.base-button--primary:active:not(.base-button--disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
-}
-
-.base-button--secondary {
-  background-color: var(--slate-200);
-  color: var(--navy-800);
-}
-
-.base-button--secondary:hover:not(.base-button--disabled) {
-  background-color: var(--slate-300);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.base-button--success {
-  background-color: var(--success);
-  color: white;
-}
-
-.base-button--success:hover:not(.base-button--disabled) {
-  background-color: #0ea574;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.base-button--danger {
-  background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
-  color: #dc2626;
-}
-
-.base-button--danger:hover:not(.base-button--disabled) {
-  background: linear-gradient(90deg, #fee2e2 0%, #fecaca 100%);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.base-button--ghost {
-  background-color: transparent;
-  color: var(--navy-700);
-  border: 1px solid var(--slate-300);
-}
-
-.base-button--ghost:hover:not(.base-button--disabled) {
-  background-color: var(--slate-100);
-  border-color: var(--slate-400);
-}
-
-/* States */
-.base-button--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.base-button--full-width {
-  width: 100%;
-}
-</style>
