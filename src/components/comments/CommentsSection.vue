@@ -36,6 +36,7 @@
         :comment="comment"
         :updating-answer-id="updatingAnswerId"
         :is-creating-answer="creatingAnswerForCommentId === comment.id"
+        :show-media-info="isGlobalScope"
         @delete="handleDelete"
         @update="handleUpdate"
         @update-classification="handleUpdateClassification"
@@ -89,6 +90,7 @@ const localeStore = useLocaleStore()
 
 const scope = computed(() => props.scope ?? (props.mediaId ? 'media' : 'global'))
 const isMediaScope = computed(() => scope.value === 'media')
+const isGlobalScope = computed(() => scope.value === 'global')
 const targetMediaId = computed(() => (isMediaScope.value ? props.mediaId : undefined))
 
 // Track which answer is currently being updated
@@ -212,7 +214,7 @@ watch([targetMediaId, scope], () => {
   commentsStore.clearComments()
   commentsStore.clearFilters()
   loadComments()
-})
+}, { immediate: false })
 
 async function loadComments() {
   if (isMediaScope.value && !targetMediaId.value) {

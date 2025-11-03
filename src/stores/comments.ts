@@ -10,7 +10,9 @@ import type {
   CreateAnswerRequest,
   ProcessingStatus,
   ClassificationType,
-  Classification
+  Classification,
+  Media,
+  CommentMediaSummary
 } from '@/types/api'
 import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
 
@@ -46,6 +48,185 @@ function normalizeComment(comment: Comment): Comment {
     ...comment,
     classification: normalizeClassification(comment.classification)
   }
+}
+
+const mediaSummaryCache = new Map<string, CommentMediaSummary>()
+const mediaSummaryPromises = new Map<string, Promise<CommentMediaSummary | null>>()
+
+function normalizeMediaId(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+  return null
+}
+
+async function resolveMediaPreview(mediaId: string, summary: CommentMediaSummary): Promise<string | null> {
+  const childUrls = summary.children_urls ?? []
+  const attempts: Array<number | undefined> = []
+
+  if (childUrls.length > 0) {
+    for (let index = 0; index < childUrls.length; index += 1) {
+      attempts.push(index)
+    }
+    attempts.push(undefined)
+  } else {
+    attempts.push(undefined)
+  }
+
+  for (const attempt of attempts) {
+    try {
+      const preview = await apiService.fetchMediaImage(
+        mediaId,
+        typeof attempt === 'number' ? attempt : undefined
+      )
+      if (preview) {
+        return preview
+      }
+    } catch (error) {
+      console.warn('[Comments Store] Failed to load media preview', error)
+    }
+  }
+
+  return null
+}
+
+function buildMediaSummary(media: Media): CommentMediaSummary {
+  const normalizedId = normalizeMediaId(media.id) ?? String(media.id ?? '')
+  const raw = media as unknown as Record<string, unknown>
+
+  const previewCandidates = [
+    raw.preview_url,
+    raw.previewUrl,
+    raw.thumbnail_url,
+    raw.thumbnailUrl,
+    raw.image_url,
+    raw.imageUrl,
+    raw.media_url,
+    raw.mediaUrl,
+    media.url
+  ]
+    .map(candidate => (typeof candidate === 'string' && candidate.trim().length > 0 ? candidate : null))
+    .filter((candidate): candidate is string => candidate !== null)
+
+  const childUrls = Array.isArray(raw.children_urls)
+    ? (raw.children_urls as string[])
+    : Array.isArray(raw.children)
+      ? (raw.children as string[])
+      : media.children_urls
+
+  return {
+    id: normalizedId,
+    caption: media.caption,
+    url: media.url,
+    children_urls: childUrls,
+    thumbnail_url: childUrls?.[0] ?? (typeof raw.thumbnail_url === 'string' ? raw.thumbnail_url : undefined),
+    preview_url: previewCandidates[0] ?? undefined,
+    type: media.type,
+    shortcode: media.shortcode,
+    posted_at: media.posted_at
+  }
+}
+
+function extractMediaId(comment: Comment): string | null {
+  const raw = comment as Record<string, unknown>
+
+  const direct =
+    normalizeMediaId((comment as any)?.media?.id) ??
+    normalizeMediaId((comment as any)?.media?.media_id) ??
+    normalizeMediaId((comment as any)?.media?.mediaId)
+
+  if (direct) {
+    return direct
+  }
+
+  const snake = normalizeMediaId(raw.media_id)
+  if (snake) {
+    return snake
+  }
+
+  const camel = normalizeMediaId(raw.mediaId)
+  if (camel) {
+    return camel
+  }
+
+  return null
+}
+
+async function getMediaSummary(id: string): Promise<CommentMediaSummary | null> {
+  if (mediaSummaryCache.has(id)) {
+    return mediaSummaryCache.get(id) ?? null
+  }
+
+  if (mediaSummaryPromises.has(id)) {
+    return mediaSummaryPromises.get(id) ?? null
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const response = await apiService.getMediaById(id)
+      const summary = buildMediaSummary(response.payload)
+      const preview = await resolveMediaPreview(summary.id, summary)
+      if (preview) {
+        summary.preview_url = preview
+      }
+      mediaSummaryCache.set(id, summary)
+      return summary
+    } catch (error) {
+      console.warn('[Comments Store] Failed to fetch media summary', id, error)
+      return null
+    } finally {
+      mediaSummaryPromises.delete(id)
+    }
+  })()
+
+  mediaSummaryPromises.set(id, fetchPromise)
+  return fetchPromise
+}
+
+async function hydrateMediaSummaries(comments: Comment[]) {
+  const uniqueIds = Array.from(
+    new Set(
+      comments
+        .map(extractMediaId)
+        .filter((id): id is string => !!id)
+    )
+  )
+
+  if (uniqueIds.length === 0) {
+    return
+  }
+
+  const summaries = await Promise.all(uniqueIds.map(id => getMediaSummary(id)))
+
+  const summaryById = new Map<string, CommentMediaSummary>()
+  uniqueIds.forEach((id, index) => {
+    const summary = summaries[index]
+    if (summary) {
+      summaryById.set(id, summary)
+    }
+  })
+
+  if (summaryById.size === 0) {
+    return
+  }
+
+  comments.forEach(comment => {
+    const id = extractMediaId(comment)
+    if (!id) return
+
+    const summary = summaryById.get(id)
+    if (!summary) return
+
+    comment.media = summary
+    ;(comment as unknown as Record<string, unknown>).media_id = summary.id
+  })
 }
 
 export const useCommentsStore = defineStore('comments', () => {
@@ -112,7 +293,13 @@ export const useCommentsStore = defineStore('comments', () => {
         ? await apiService.getComments(mediaId, requestQuery)
         : await apiService.getAllComments(requestQuery)
 
-      allComments.value = response.payload.map(normalizeComment)
+      const normalizedComments = response.payload.map(normalizeComment)
+
+      if (!mediaId) {
+        await hydrateMediaSummaries(normalizedComments)
+      }
+
+      allComments.value = normalizedComments
 
       if (response.meta.page) currentPage.value = response.meta.page
       if (response.meta.per_page) perPage.value = response.meta.per_page
@@ -164,6 +351,10 @@ export const useCommentsStore = defineStore('comments', () => {
           updatedComments.push(normalized)
         }
       })
+
+      if (!mediaId) {
+        await hydrateMediaSummaries([...newComments, ...updatedComments])
+      }
 
       // Update existing comments in place (preserves order, no animation)
       if (updatedComments.length > 0) {

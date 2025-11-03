@@ -148,6 +148,13 @@ const ru = {
       toxic: 'Токсично',
       spam: 'Спам'
     },
+    media: {
+      noCaption: 'Без подписи',
+      loading: 'Загрузка медиа...',
+      unavailable: 'Медиа недоступно',
+      noPreview: 'Нет превью',
+      openDetails: 'Открыть карточку публикации'
+    },
     card: {
       newBadge: 'НОВОЕ',
       replyBadge: 'Ответ',

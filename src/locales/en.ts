@@ -148,6 +148,13 @@ const en = {
       toxic: 'Toxic',
       spam: 'Spam'
     },
+    media: {
+      noCaption: 'No caption',
+      loading: 'Loading media...',
+      unavailable: 'Media unavailable',
+      noPreview: 'No preview',
+      openDetails: 'Open media details'
+    },
     card: {
       newBadge: 'NEW',
       replyBadge: 'Reply',

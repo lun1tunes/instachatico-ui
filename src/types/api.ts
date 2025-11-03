@@ -101,6 +101,18 @@ export interface Answer {
   author: number
 }
 
+export interface CommentMediaSummary {
+  id: string
+  caption?: string
+  url?: string
+  thumbnail_url?: string
+  preview_url?: string
+  children_urls?: string[]
+  type?: MediaType
+  shortcode?: string
+  posted_at?: string
+}
+
 export interface Comment {
   id: string
   parent_id: string | null
@@ -112,6 +124,8 @@ export interface Comment {
   created_at?: string
   classification: Classification
   answers: Answer[]
+  media?: CommentMediaSummary
+  media_id?: string
   // Client-side only property for entrance animation
   isNew?: boolean
 }

@@ -6,9 +6,14 @@
       padding="sm"
       @mouseenter="handleInteraction"
     >
-    <div class="comment-header">
-      <div class="comment-header-top">
-        <div class="comment-meta">
+    <div
+      class="comment-card-grid"
+      :class="{ 'comment-card-grid--has-media': showMediaInfo }"
+    >
+      <div class="comment-card-main">
+        <div class="comment-header">
+          <div class="comment-header-top">
+            <div class="comment-meta" :class="{ 'comment-meta--compact': showMediaInfo }">
           <BaseBadge
             v-if="comment.is_deleted"
             variant="error"
@@ -309,6 +314,35 @@
         </div>
       </div>
     </Transition>
+      </div>
+
+      <aside v-if="showMediaInfo" class="comment-card-media">
+        <div class="comment-media-summary">
+          <component
+            :is="mediaLinkComponent"
+            v-bind="mediaLinkProps"
+            class="comment-media-summary__link"
+            :class="{ 'is-disabled': !mediaRoute }"
+            :title="mediaLinkTitle"
+          >
+            <div class="comment-media-summary__thumb">
+              <div v-if="mediaPreviewLoading || mediaSummaryLoading" class="comment-media-summary__thumb-skeleton" />
+              <img
+                v-else-if="mediaPreviewUrl"
+                :src="mediaPreviewUrl"
+                :alt="mediaCaption"
+              />
+              <span v-else class="comment-media-summary__thumb-placeholder">
+                {{ localeStore.t('comments.media.noPreview') }}
+              </span>
+            </div>
+            <div class="comment-media-summary__caption">
+              {{ truncatedMediaCaption }}
+            </div>
+          </component>
+        </div>
+      </aside>
+    </div>
     </BaseCard>
 
   <BaseModal
@@ -337,8 +371,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import type {
   Comment,
+  CommentMediaSummary,
   UpdateCommentRequest,
   UpdateClassificationRequest,
   UpdateAnswerRequest,
@@ -350,6 +386,7 @@ import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as Classif
 import { format, parseISO } from 'date-fns'
 import { useCommentsStore } from '@/stores/comments'
 import { useLocaleStore } from '@/stores/locale'
+import { apiService } from '@/services/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -358,10 +395,28 @@ import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.v
 import AnswerCard from './AnswerCard.vue'
 import ClassificationForm from './ClassificationForm.vue'
 
+const mediaPreviewCache = new Map<string, string>()
+const mediaDetailsCache = new Map<string, CommentMediaSummary>()
+
+function normalizeMediaId(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+  return null
+}
+
 interface Props {
   comment: Comment
   updatingAnswerId?: string | null
   isCreatingAnswer?: boolean
+  showMediaInfo?: boolean
 }
 
 const props = defineProps<Props>()
@@ -382,6 +437,32 @@ const hideLoading = ref(false)
 const showClassificationModal = ref(false)
 const showCreateAnswerModal = ref(false)
 const isClassificationExpanded = ref(false)
+
+const initialSummaryId = normalizeMediaId(props.comment.media?.id)
+const mediaSummary = ref<CommentMediaSummary | null>(
+  initialSummaryId
+    ? { ...props.comment.media!, id: initialSummaryId }
+    : props.comment.media ?? null
+)
+const mediaSummaryLoading = ref(false)
+
+if (initialSummaryId && mediaSummary.value) {
+  mediaDetailsCache.set(initialSummaryId, mediaSummary.value)
+}
+
+watch(() => props.comment.media, (newMedia) => {
+  if (newMedia) {
+    const normalizedId = normalizeMediaId(newMedia.id)
+    const normalized = normalizedId ? { ...newMedia, id: normalizedId } : newMedia
+    mediaSummary.value = normalized
+    if (normalizedId) {
+      mediaDetailsCache.set(normalizedId, normalized)
+    }
+  } else {
+    mediaSummary.value = null
+  }
+  mediaSummaryLoading.value = false
+})
 
 // Local state for optimistic UI updates
 const isHiding = ref(props.comment.is_hidden)
@@ -453,6 +534,237 @@ const statusBadgeVariant = computed(() =>
 
 const statusBadgeLabel = computed(() =>
   getProcessingStatusLabel(props.comment.classification.processing_status)
+)
+
+const showMediaInfo = computed(() => props.showMediaInfo ?? false)
+
+const resolvedMediaId = computed(() => {
+  if (!showMediaInfo.value) return null
+
+  const summaryId = normalizeMediaId(mediaSummary.value?.id)
+  if (summaryId) {
+    return summaryId
+  }
+
+  const raw = props.comment as Record<string, unknown>
+
+  const embedded = raw.media as CommentMediaSummary | undefined
+  const embeddedId = embedded ? normalizeMediaId(embedded.id) : null
+  if (embeddedId) {
+    return embeddedId
+  }
+
+  const snakeId = normalizeMediaId(raw.media_id)
+  if (snakeId) {
+    return snakeId
+  }
+
+  const camelId = normalizeMediaId(raw.mediaId)
+  if (camelId) {
+    return camelId
+  }
+
+  return null
+})
+
+const directMediaPreview = computed(() => {
+  if (!showMediaInfo.value) return null
+
+  if (mediaSummary.value) {
+    return (
+      mediaSummary.value.preview_url ??
+      mediaSummary.value.thumbnail_url ??
+      mediaSummary.value.url ??
+      null
+    )
+  }
+
+  const media = (props.comment as Record<string, any>).media
+  if (media) {
+    return media.preview_url ?? media.thumbnail_url ?? media.url ?? null
+  }
+
+  return null
+})
+
+const shouldShowMediaSummary = computed(() => {
+  if (!showMediaInfo.value) return false
+  return !!resolvedMediaId.value || !!directMediaPreview.value || !!mediaSummary.value
+})
+
+const mediaCaption = computed(() => {
+  if (!shouldShowMediaSummary.value) {
+    return ''
+  }
+
+  const caption = mediaSummary.value?.caption
+  if (typeof caption === 'string' && caption.trim().length > 0) {
+    return caption
+  }
+
+  if (mediaSummaryLoading.value) {
+    return localeStore.t('comments.media.loading')
+  }
+
+  if (mediaSummary.value) {
+    return localeStore.t('comments.media.noCaption')
+  }
+
+  return localeStore.t('comments.media.unavailable')
+})
+
+const truncatedMediaCaption = computed(() => {
+  const caption = mediaCaption.value
+  const limit = 80
+  if (caption.length > limit) {
+    return `${caption.slice(0, limit - 3)}...`
+  }
+  return caption
+})
+
+const mediaRoute = computed(() => {
+  const mediaId = resolvedMediaId.value
+  if (!mediaId) return null
+  return {
+    name: 'MediaDetail',
+    params: { id: mediaId }
+  }
+})
+
+const mediaLinkComponent = computed(() => (mediaRoute.value ? RouterLink : 'div'))
+
+const mediaLinkProps = computed(() => (mediaRoute.value ? { to: mediaRoute.value } : {}))
+
+const mediaLinkTitle = computed(() =>
+  mediaRoute.value
+    ? localeStore.t('comments.media.openDetails')
+    : localeStore.t('comments.media.unavailable')
+)
+
+const mediaPreviewUrl = ref<string | null>(null)
+const mediaPreviewLoading = ref(false)
+
+async function ensureMediaSummary(mediaId: string) {
+  if (mediaSummary.value && mediaSummary.value.id === mediaId) {
+    mediaSummaryLoading.value = false
+    return
+  }
+
+  if (mediaDetailsCache.has(mediaId)) {
+    mediaSummary.value = mediaDetailsCache.get(mediaId) ?? null
+    mediaSummaryLoading.value = false
+    return
+  }
+
+  mediaSummaryLoading.value = true
+
+  try {
+    const response = await apiService.getMediaById(mediaId)
+    const payload = response.payload
+    const normalizedId = normalizeMediaId(payload.id) ?? mediaId
+    const summary: CommentMediaSummary = {
+      id: normalizedId,
+      caption: payload.caption,
+      url: payload.url,
+      children_urls: payload.children_urls,
+      thumbnail_url: payload.children_urls?.[0],
+      preview_url: payload.url,
+      type: payload.type,
+      shortcode: payload.shortcode,
+      posted_at: payload.posted_at
+    }
+    mediaDetailsCache.set(mediaId, summary)
+    mediaSummary.value = summary
+  } catch (error) {
+    console.warn('[CommentCard] Failed to load media details:', error)
+  } finally {
+    mediaSummaryLoading.value = false
+  }
+}
+
+async function ensureMediaPreview() {
+  if (!showMediaInfo.value) {
+    mediaPreviewLoading.value = false
+    mediaPreviewUrl.value = null
+    return
+  }
+
+  const mediaId = resolvedMediaId.value
+  const direct = directMediaPreview.value
+
+  if (!mediaId) {
+    mediaPreviewLoading.value = false
+    mediaPreviewUrl.value = direct ?? null
+    return
+  }
+
+  if (mediaPreviewCache.has(mediaId)) {
+    mediaPreviewUrl.value = mediaPreviewCache.get(mediaId) ?? null
+    mediaPreviewLoading.value = false
+    return
+  }
+
+  if (direct) {
+    mediaPreviewUrl.value = direct
+  } else {
+    mediaPreviewUrl.value = null
+  }
+
+  mediaPreviewLoading.value = true
+
+  const childUrls = mediaSummary.value?.children_urls ?? []
+  const attempts: Array<number | undefined> = []
+  if (childUrls.length > 0) {
+    for (let index = 0; index < childUrls.length; index += 1) {
+      attempts.push(index)
+    }
+    attempts.push(undefined)
+  } else {
+    attempts.push(undefined)
+  }
+
+  for (const attempt of attempts) {
+    try {
+      const preview = await apiService.fetchMediaImage(
+        mediaId,
+        typeof attempt === 'number' ? attempt : undefined
+      )
+      if (preview) {
+        mediaPreviewCache.set(mediaId, preview)
+        mediaPreviewUrl.value = preview
+        mediaPreviewLoading.value = false
+        return
+      }
+    } catch (error) {
+      console.warn('[CommentCard] Failed to load media preview:', {
+        mediaId,
+        attempt,
+        error
+      })
+    }
+  }
+
+  mediaPreviewLoading.value = false
+  if (direct) {
+    mediaPreviewCache.set(mediaId, direct)
+    mediaPreviewUrl.value = direct
+  }
+}
+
+watch(resolvedMediaId, (mediaId) => {
+  if (!showMediaInfo.value || !mediaId) {
+    mediaSummaryLoading.value = false
+    return
+  }
+  void ensureMediaSummary(mediaId)
+}, { immediate: true })
+
+watch(
+  [showMediaInfo, resolvedMediaId, directMediaPreview, () => mediaSummary.value?.children_urls?.length],
+  () => {
+    void ensureMediaPreview()
+  },
+  { immediate: true }
 )
 
 // Hide confidence and reasoning when classification status is FAILED
@@ -581,6 +893,27 @@ function toggleClassificationExpanded() {
   border-left: 3px solid var(--blue-300);
 }
 
+.comment-card-grid {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.comment-card-grid--has-media {
+  align-items: flex-start;
+}
+
+.comment-card-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.comment-card-media {
+  flex: 0 0 20%;
+  max-width: 20%;
+}
+
 /* New comment card with blinking background */
 .comment-card--new {
   animation: background-pulse 2s ease-in-out infinite;
@@ -609,6 +942,7 @@ function toggleClassificationExpanded() {
 
 .comment-header-top {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--spacing-sm);
@@ -620,6 +954,7 @@ function toggleClassificationExpanded() {
   align-items: flex-end;
   gap: var(--spacing-xs);
   flex-shrink: 0;
+  order: 3;
 }
 
 /* NEW badge styling - positioned under Hide/Delete buttons */
@@ -659,6 +994,133 @@ function toggleClassificationExpanded() {
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   flex: 1;
+  order: 1;
+}
+
+.comment-meta--compact .meta-badge {
+  min-width: auto;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.comment-media-summary {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  background-color: var(--slate-50);
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.comment-media-summary__link,
+.comment-media-summary__body {
+  display: flex;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+}
+
+.comment-media-summary__link:hover .comment-media-summary__caption,
+.comment-media-summary__link:focus-visible .comment-media-summary__caption {
+  color: var(--navy-900);
+}
+
+.comment-media-summary__link.is-disabled {
+  cursor: default;
+  text-decoration: none;
+}
+
+.comment-media-summary__link.is-disabled .comment-media-summary__caption {
+  color: var(--slate-500);
+}
+
+.comment-media-summary__thumb {
+  width: 120px;
+  flex: 0 0 120px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--slate-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.comment-media-summary__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-media-summary__thumb-placeholder {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.comment-media-summary__thumb-skeleton {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.8) 25%, rgba(226, 232, 240, 0.3) 50%, rgba(226, 232, 240, 0.8) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+.comment-media-summary__caption {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--navy-700);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  align-self: center;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .comment-card-grid {
+    flex-direction: column;
+  }
+
+  .comment-card-media {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
+  }
+
+  .comment-media-summary {
+    width: 100%;
+    max-width: none;
+  }
+
+  .comment-actions-wrapper {
+    order: 2;
+    width: 100%;
+  }
+
+  .comment-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 }
 
 .comment-user {
