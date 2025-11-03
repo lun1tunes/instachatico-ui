@@ -14,6 +14,7 @@ const en = {
   },
   navigation: {
     media: 'Media',
+    comments: 'Comments',
     logout: 'Logout'
   },
   auth: {
@@ -108,6 +109,10 @@ const en = {
     }
   },
   comments: {
+    page: {
+      title: 'All Comments',
+      subtitle: 'Monitor the latest comments from every media post'
+    },
     loading: 'Loading comments...',
     empty: 'No comments found',
     filters: {

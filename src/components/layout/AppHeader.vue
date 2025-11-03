@@ -14,6 +14,13 @@
           >
             {{ localeStore.t('navigation.media') }}
           </router-link>
+          <router-link
+            :to="{ name: 'Comments' }"
+            class="app-header__nav-link"
+            active-class="app-header__nav-link--active"
+          >
+            {{ localeStore.t('navigation.comments') }}
+          </router-link>
         </nav>
 
         <div class="app-header__actions">

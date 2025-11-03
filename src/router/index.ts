@@ -13,6 +13,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/comments',
+    name: 'Comments',
+    component: () => import('@/views/Comments.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/media/:id',
     name: 'MediaDetail',
     component: () => import('@/views/MediaDetail.vue'),

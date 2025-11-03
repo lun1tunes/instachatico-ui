@@ -94,13 +94,12 @@ export const useCommentsStore = defineStore('comments', () => {
   const hasNextPage = computed(() => currentPage.value < totalPages.value)
   const hasPrevPage = computed(() => currentPage.value > 1)
 
-  async function fetchComments(mediaId: string, query?: CommentsQuery) {
+  async function fetchComments(mediaId?: string, query?: CommentsQuery) {
     loading.value = true
     error.value = null
 
     try {
-      const response = await apiService.getComments(
-        mediaId,
+      const requestQuery =
         query || {
           page: currentPage.value,
           per_page: perPage.value,
@@ -108,7 +107,10 @@ export const useCommentsStore = defineStore('comments', () => {
           classification_type:
             classificationFilter.value.length > 0 ? classificationFilter.value : undefined
         }
-      )
+
+      const response = mediaId
+        ? await apiService.getComments(mediaId, requestQuery)
+        : await apiService.getAllComments(requestQuery)
 
       allComments.value = response.payload.map(normalizeComment)
 
@@ -127,15 +129,19 @@ export const useCommentsStore = defineStore('comments', () => {
    * Fetch comments in background for polling (no loading spinner)
    * Merges new comments AND updates existing ones (badges, classification, answers)
    */
-  async function fetchCommentsInBackground(mediaId: string) {
+  async function fetchCommentsInBackground(mediaId?: string) {
     try {
-      const response = await apiService.getComments(mediaId, {
+      const requestQuery = {
         page: currentPage.value,
         per_page: perPage.value,
         status: statusFilter.value.length > 0 ? statusFilter.value : undefined,
         classification_type:
           classificationFilter.value.length > 0 ? classificationFilter.value : undefined
-      })
+      }
+
+      const response = mediaId
+        ? await apiService.getComments(mediaId, requestQuery)
+        : await apiService.getAllComments(requestQuery)
 
       // Create a Map of existing comments by ID for O(1) lookup
       const existingCommentsMap = new Map(
@@ -290,14 +296,14 @@ export const useCommentsStore = defineStore('comments', () => {
     error.value = null
   }
 
-  function nextPage(mediaId: string) {
+  function nextPage(mediaId?: string) {
     if (hasNextPage.value) {
       currentPage.value++
       fetchComments(mediaId)
     }
   }
 
-  function prevPage(mediaId: string) {
+  function prevPage(mediaId?: string) {
     if (hasPrevPage.value) {
       currentPage.value--
       fetchComments(mediaId)

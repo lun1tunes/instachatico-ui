@@ -11,7 +11,8 @@ import type {
   UpdateCommentRequest,
   UpdateClassificationRequest,
   UpdateAnswerRequest,
-  CreateAnswerRequest
+  CreateAnswerRequest,
+  ClassificationType
 } from '@/types/api'
 
 class ApiService {
@@ -97,19 +98,19 @@ class ApiService {
     return response.data
   }
 
-  // Comments endpoints
-  async getComments(mediaId: string, query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
-    const params: any = { ...query }
+  private formatCommentsQuery(query?: CommentsQuery) {
+    if (!query) return undefined
 
-    // Convert status array to multiple status query params (no brackets)
-    if (query?.status && query.status.length > 0) {
+    const params: Record<string, unknown> = { ...query }
+
+    if (query.status && query.status.length > 0) {
       delete params.status
-      // Backend expects comma-delimited values rather than repeated query keys
       params.status = query.status.join(',')
     }
 
     const classificationFilter =
-      (query as any)?.classification_type ?? (query as any)?.classification
+      (query as Record<string, ClassificationType[] | undefined>)?.classification_type ??
+      (query as Record<string, ClassificationType[] | undefined>)?.classification
 
     if (classificationFilter && classificationFilter.length > 0) {
       delete params.classification_type
@@ -117,8 +118,25 @@ class ApiService {
       params.classification_type = classificationFilter.join(',')
     }
 
+    return params
+  }
+
+  // Comments endpoints
+  async getComments(mediaId: string, query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
+    const params = this.formatCommentsQuery(query)
+
     const response = await this.client.get<ApiResponse<Comment[]>>(
       `/media/${mediaId}/comments`,
+      { params }
+    )
+    return response.data
+  }
+
+  async getAllComments(query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
+    const params = this.formatCommentsQuery(query)
+
+    const response = await this.client.get<ApiResponse<Comment[]>>(
+      '/comments',
       { params }
     )
     return response.data

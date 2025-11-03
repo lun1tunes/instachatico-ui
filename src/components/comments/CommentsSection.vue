@@ -49,9 +49,9 @@
       <BasePagination
         :current-page="commentsStore.currentPage"
         :total-pages="commentsStore.totalPages"
-        @prev="commentsStore.prevPage(mediaId)"
-        @next="commentsStore.nextPage(mediaId)"
-        @goto="(page) => handlePageChange(page)"
+        @prev="handlePrevPage"
+        @next="handleNextPage"
+        @goto="handlePageChange"
       />
     </div>
   </div>
@@ -78,13 +78,18 @@ import CommentFilters from './CommentFilters.vue'
 import CommentCard from './CommentCard.vue'
 
 interface Props {
-  mediaId: string
+  mediaId?: string
+  scope?: 'media' | 'global'
 }
 
 const props = defineProps<Props>()
 
 const commentsStore = useCommentsStore()
 const localeStore = useLocaleStore()
+
+const scope = computed(() => props.scope ?? (props.mediaId ? 'media' : 'global'))
+const isMediaScope = computed(() => scope.value === 'media')
+const targetMediaId = computed(() => (isMediaScope.value ? props.mediaId : undefined))
 
 // Track which answer is currently being updated
 const updatingAnswerId = ref<string | null>(null)
@@ -103,7 +108,7 @@ const shouldPoll = computed(() => {
 const { pause: pausePolling, resume: resumePolling } = usePolling(
   async () => {
     if (shouldPoll.value) {
-      await commentsStore.fetchCommentsInBackground(props.mediaId)
+      await commentsStore.fetchCommentsInBackground(targetMediaId.value)
     }
   },
   {
@@ -197,19 +202,25 @@ onMounted(() => {
 
 // Reset filters when leaving the media detail page
 onUnmounted(() => {
+  pausePolling()
   commentsStore.clearComments()
   commentsStore.clearFilters()
 })
 
-watch(() => props.mediaId, () => {
+watch([targetMediaId, scope], () => {
+  pausePolling()
   commentsStore.clearComments()
   commentsStore.clearFilters()
   loadComments()
 })
 
 async function loadComments() {
+  if (isMediaScope.value && !targetMediaId.value) {
+    return
+  }
+
   try {
-    await commentsStore.fetchComments(props.mediaId)
+    await commentsStore.fetchComments(targetMediaId.value)
     // Start polling after successful initial load
     if (shouldPoll.value) {
       resumePolling()
@@ -240,6 +251,14 @@ function handleFilterUpdate(filters: FilterUpdatePayload) {
 function handlePageChange(page: number) {
   commentsStore.currentPage = page
   loadComments()
+}
+
+function handlePrevPage() {
+  commentsStore.prevPage(targetMediaId.value)
+}
+
+function handleNextPage() {
+  commentsStore.nextPage(targetMediaId.value)
 }
 
 // All handlers now use the actions composable which prevents duplicate calls

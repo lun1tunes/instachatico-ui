@@ -14,6 +14,7 @@ const ru = {
   },
   navigation: {
     media: 'Медиа',
+    comments: 'Комментарии',
     logout: 'Выйти'
   },
   auth: {
@@ -108,6 +109,10 @@ const ru = {
     }
   },
   comments: {
+    page: {
+      title: 'Все комментарии',
+      subtitle: 'Отслеживайте последние комментарии со всех публикаций'
+    },
     loading: 'Загрузка комментариев...',
     empty: 'Комментарии не найдены',
     filters: {
