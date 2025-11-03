@@ -18,10 +18,14 @@ import type {
 class ApiService {
   private client: AxiosInstance
   private bearerToken: string = ''
+  private baseUrl: string
+  private readonly defaultBaseUrl: string
 
   constructor() {
+    this.defaultBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+    this.baseUrl = this.defaultBaseUrl
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
+      baseURL: this.baseUrl,
       headers: {
         'Content-Type': 'application/json'
       }
@@ -49,11 +53,6 @@ class ApiService {
         throw error
       }
     )
-
-    const bootstrapToken = import.meta.env.VITE_BEARER_TOKEN
-    if (bootstrapToken) {
-      this.setAuthToken(bootstrapToken)
-    }
   }
 
   setAuthToken(token: string) {
@@ -63,6 +62,16 @@ class ApiService {
     } else {
       delete this.client.defaults.headers.common.Authorization
     }
+  }
+
+  setBaseUrl(url?: string | null) {
+    const resolved = url && url.trim().length > 0 ? url.trim().replace(/\/+$/, '') : this.defaultBaseUrl
+    this.baseUrl = resolved
+    this.client.defaults.baseURL = resolved
+  }
+
+  getBaseUrl(): string {
+    return this.baseUrl
   }
 
   getAuthToken(): string {

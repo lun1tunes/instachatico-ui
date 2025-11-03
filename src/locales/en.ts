@@ -25,7 +25,7 @@ const en = {
     usernamePlaceholder: 'Enter your username',
     passwordPlaceholder: 'Enter your password',
     login: 'Login',
-    hint: 'Default credentials: admin / admin123'
+    hint: 'Sign in with your workspace credentials.'
   },
   common: {
     actions: {

@@ -1,85 +1,168 @@
+import axios from 'axios'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { apiService } from '@/services/api'
 
 interface User {
   username: string
 }
 
-// Simple in-memory credentials for UI access
-// TODO: Move to environment variables or backend
-const UI_CREDENTIALS = {
-  username: import.meta.env.VITE_UI_USERNAME || 'admin',
-  password: import.meta.env.VITE_UI_PASSWORD || 'admin123'
+interface AuthResponse {
+  access_token: string
+  token_type: string
+  base_url: string | null
+  scopes?: string[]
 }
 
-// Static API Bearer token (unchanged)
-const API_BEARER_TOKEN = import.meta.env.VITE_BEARER_TOKEN || ''
+interface StoredAuth {
+  username: string
+  accessToken: string
+  tokenType: string
+  baseUrl: string | null
+  scopes: string[]
+}
+
+const STORAGE_KEY = 'instachatico_auth'
+const DEFAULT_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const TOKEN_ENDPOINT = import.meta.env.VITE_AUTH_TOKEN_URL || 'http://localhost:8100/token'
+
+function normalizeBaseUrl(baseUrl: string | null): string | null {
+  if (!baseUrl) return null
+  return baseUrl.replace(/\/+$/, '')
+}
+
+function resolveApiBaseUrl(authBaseUrl: string | null): string {
+  const normalized = normalizeBaseUrl(authBaseUrl)
+  return normalized ?? DEFAULT_BASE_URL
+}
+
+function parseAuthError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const detail = (error.response?.data as any)?.detail
+    if (typeof detail === 'string') {
+      return detail
+    }
+    if (Array.isArray(detail) && detail.length > 0 && typeof detail[0]?.msg === 'string') {
+      return detail[0].msg
+    }
+    return error.response?.status === 401 ? 'Invalid username or password' : 'Authentication failed'
+  }
+  return 'Authentication failed'
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const isAuthenticated = ref<boolean>(false)
+  const accessToken = ref<string | null>(null)
+  const tokenType = ref<string | null>(null)
+  const baseUrl = ref<string | null>(null)
+  const scopes = ref<string[]>([])
   const error = ref<string | null>(null)
 
-  // Check if user is logged into the UI
-  function checkUIAuth(): boolean {
-    const savedUser = localStorage.getItem('ui_user')
-    if (savedUser) {
-      user.value = JSON.parse(savedUser)
-      isAuthenticated.value = true
+  const isAuthenticated = computed(() => !!accessToken.value)
 
-      // Set API token (static bearer token for API requests)
-      apiService.setAuthToken(API_BEARER_TOKEN)
-
-      return true
+  function persist() {
+    if (!accessToken.value) {
+      localStorage.removeItem(STORAGE_KEY)
+      return
     }
-    return false
+
+    const payload: StoredAuth = {
+      username: user.value?.username ?? '',
+      accessToken: accessToken.value,
+      tokenType: tokenType.value ?? 'bearer',
+      baseUrl: baseUrl.value,
+      scopes: scopes.value
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   }
 
-  // Login to UI (username/password)
-  function loginUI(username: string, password: string): boolean {
+  function applySession({ username, accessToken: token, tokenType: type, baseUrl: apiBase, scopes: scopeList }: StoredAuth) {
+    user.value = username ? { username } : null
+    accessToken.value = token
+    tokenType.value = type
+    baseUrl.value = apiBase
+    scopes.value = scopeList
+
+    apiService.setAuthToken(token)
+    apiService.setBaseUrl(resolveApiBaseUrl(apiBase))
+  }
+
+  async function login(username: string, password: string): Promise<boolean> {
     error.value = null
 
-    // Validate UI credentials
-    if (username === UI_CREDENTIALS.username && password === UI_CREDENTIALS.password) {
-      const userData: User = { username }
+    try {
+      const body = new URLSearchParams()
+      body.append('username', username)
+      body.append('password', password)
 
-      // Save user to localStorage
-      localStorage.setItem('ui_user', JSON.stringify(userData))
-      user.value = userData
-      isAuthenticated.value = true
+      const response = await axios.post<AuthResponse>(TOKEN_ENDPOINT, body, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
 
-      // Set static API bearer token for all API requests
-      apiService.setAuthToken(API_BEARER_TOKEN)
+      const data = response.data
+      const stored: StoredAuth = {
+        username,
+        accessToken: data.access_token,
+        tokenType: data.token_type ?? 'bearer',
+        baseUrl: normalizeBaseUrl(data.base_url),
+        scopes: data.scopes ?? []
+      }
 
+      applySession(stored)
+      persist()
       return true
-    } else {
-      error.value = 'Invalid username or password'
+    } catch (err) {
+      logout()
+      error.value = parseAuthError(err)
       return false
     }
   }
 
-  // Logout from UI
   function logout() {
-    localStorage.removeItem('ui_user')
     user.value = null
-    isAuthenticated.value = false
+    accessToken.value = null
+    tokenType.value = null
+    baseUrl.value = null
+    scopes.value = []
     error.value = null
+
+    localStorage.removeItem(STORAGE_KEY)
     apiService.setAuthToken('')
+    apiService.setBaseUrl(DEFAULT_BASE_URL)
   }
 
-  // Initialize on app load
   function initialize() {
-    checkUIAuth()
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) {
+      apiService.setBaseUrl(DEFAULT_BASE_URL)
+      return
+    }
+
+    try {
+      const stored = JSON.parse(raw) as StoredAuth
+      if (stored.accessToken) {
+        applySession(stored)
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+        apiService.setBaseUrl(DEFAULT_BASE_URL)
+      }
+    } catch (_error) {
+      localStorage.removeItem(STORAGE_KEY)
+      apiService.setBaseUrl(DEFAULT_BASE_URL)
+    }
   }
 
   return {
     user,
-    isAuthenticated,
+    accessToken,
+    tokenType,
+    baseUrl,
+    scopes,
     error,
-    loginUI,
+    isAuthenticated,
+    login,
     logout,
-    initialize,
-    checkUIAuth
+    initialize
   }
 })

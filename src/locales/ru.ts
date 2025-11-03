@@ -25,7 +25,7 @@ const ru = {
     usernamePlaceholder: 'Введите имя пользователя',
     passwordPlaceholder: 'Введите пароль',
     login: 'Войти',
-    hint: 'Стандартные учетные данные: admin / admin123'
+    hint: 'Войдите с помощью своих учетных данных рабочей среды.'
   },
   common: {
     actions: {

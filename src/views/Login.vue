@@ -103,8 +103,7 @@ const loading = ref(false)
 async function handleLogin() {
   loading.value = true
 
-  // Login to UI (validates username/password)
-  const success = authStore.loginUI(username.value, password.value)
+  const success = await authStore.login(username.value, password.value)
 
   if (success) {
     // Redirect to media page
