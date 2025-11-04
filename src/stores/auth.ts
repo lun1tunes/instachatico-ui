@@ -35,6 +35,12 @@ function isAbsoluteUrl(url: string): boolean {
   return /^https?:\/\//i.test(url)
 }
 
+function isLoopbackHost(hostname: string | null): boolean {
+  if (!hostname) return false
+  const lower = hostname.toLowerCase()
+  return lower === 'localhost' || lower === '127.0.0.1' || lower === '::1'
+}
+
 function normalizePath(value: string): string {
   if (!value) return ''
   const trimmed = value.replace(/\/+$/, '')
@@ -73,6 +79,16 @@ function resolveApiBaseUrl(authBaseUrl: string | null): string {
 
   try {
     const url = new URL(normalized)
+    if (typeof window !== 'undefined') {
+      const currentHost = window.location.hostname
+      const baseIsLoopback = isLoopbackHost(url.hostname)
+      const currentIsLoopback = isLoopbackHost(currentHost)
+
+      if (baseIsLoopback && !currentIsLoopback) {
+        return DEFAULT_BASE_URL
+      }
+    }
+
     if (DEFAULT_API_PATH) {
       const merged = mergePath(url.pathname, DEFAULT_API_PATH)
       url.pathname = merged || '/'
