@@ -614,12 +614,7 @@ const mediaCaption = computed(() => {
 })
 
 const truncatedMediaCaption = computed(() => {
-  const caption = mediaCaption.value
-  const limit = 80
-  if (caption.length > limit) {
-    return `${caption.slice(0, limit - 3)}...`
-  }
-  return caption
+  return mediaCaption.value
 })
 
 const mediaRoute = computed(() => {
@@ -910,8 +905,10 @@ function toggleClassificationExpanded() {
 }
 
 .comment-card-media {
-  flex: 0 0 20%;
-  max-width: 20%;
+  flex: 0 0 260px;
+  max-width: 260px;
+  display: flex;
+  align-self: flex-start;
 }
 
 /* New comment card with blinking background */
@@ -1005,24 +1002,24 @@ function toggleClassificationExpanded() {
 
 .comment-media-summary {
   display: flex;
-  align-items: stretch;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm);
   border: 1px solid var(--slate-200);
   border-radius: var(--radius-md);
   background-color: var(--slate-50);
   width: 100%;
-  flex-shrink: 0;
 }
 
 .comment-media-summary__link,
 .comment-media-summary__body {
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   gap: var(--spacing-sm);
   text-decoration: none;
   color: inherit;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .comment-media-summary__link:hover .comment-media-summary__caption,
@@ -1040,8 +1037,9 @@ function toggleClassificationExpanded() {
 }
 
 .comment-media-summary__thumb {
-  width: 120px;
-  flex: 0 0 120px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
   border-radius: var(--radius-sm);
   overflow: hidden;
   background-color: var(--slate-200);
@@ -1076,15 +1074,16 @@ function toggleClassificationExpanded() {
 
 .comment-media-summary__caption {
   font-size: 0.875rem;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--navy-700);
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 15;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  align-self: center;
+  flex: 1 1 auto;
+  white-space: normal;
+  min-height: 0;
 }
 
 @keyframes shimmer {
