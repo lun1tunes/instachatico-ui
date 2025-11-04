@@ -24,7 +24,22 @@ interface StoredAuth {
 
 const STORAGE_KEY = 'instachatico_auth'
 const DEFAULT_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
-const TOKEN_ENDPOINT = import.meta.env.VITE_AUTH_TOKEN_URL || 'http://localhost:8100/token'
+const TOKEN_ENDPOINT = (() => {
+  const raw = (import.meta.env.VITE_AUTH_TOKEN_URL as string | undefined) ?? ''
+  const trimmed = raw.trim()
+
+  if (!trimmed) {
+    return 'http://localhost:8100/token'
+  }
+
+  if (isAbsoluteUrl(trimmed)) {
+    return trimmed.replace(/\/+$/, '')
+  }
+
+  const base = normalizeBaseUrl(DEFAULT_BASE_URL) || '/api'
+  const path = normalizePath(trimmed || '/token') || '/token'
+  return `${base}${path}`
+})()
 
 function normalizeBaseUrl(baseUrl: string | null): string | null {
   if (!baseUrl) return null
