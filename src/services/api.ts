@@ -15,14 +15,18 @@ import type {
   ClassificationType
 } from '@/types/api'
 
+const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
+
 class ApiService {
   private client: AxiosInstance
   private bearerToken: string = ''
+  private bearerType: string = 'Bearer'
   private baseUrl: string
   private readonly defaultBaseUrl: string
+  private tokenExpiredHandler?: (error: { code: number; message: string }) => void
 
   constructor() {
-    this.defaultBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+    this.defaultBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '') || '/api'
     this.baseUrl = this.defaultBaseUrl
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -46,8 +50,18 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError<ApiResponse<null>>) => {
-        if (error.response?.data?.meta?.error) {
-          const apiError = error.response.data.meta.error
+        const apiError = error.response?.data?.meta?.error
+        if (apiError) {
+          if (AUTH_FAILURE_CODES.has(apiError.code)) {
+            try {
+              this.tokenExpiredHandler?.({
+                code: apiError.code,
+                message: apiError.message
+              })
+            } catch (_handlerError) {
+              // swallow handler errors to avoid masking original error
+            }
+          }
           throw new Error(`API Error ${apiError.code}: ${apiError.message}`)
         }
         throw error
@@ -55,19 +69,30 @@ class ApiService {
     )
   }
 
-  setAuthToken(token: string) {
+  setAuthToken(token: string, type?: string) {
     this.bearerToken = token
+    const normalizedType = (type ?? 'Bearer').trim()
+    this.bearerType = normalizedType
+      ? normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1).toLowerCase()
+      : 'Bearer'
     if (token) {
-      this.client.defaults.headers.common.Authorization = `Bearer ${token}`
+      this.client.defaults.headers.common.Authorization = `${this.bearerType} ${token}`
     } else {
       delete this.client.defaults.headers.common.Authorization
     }
   }
 
   setBaseUrl(url?: string | null) {
-    const resolved = url && url.trim().length > 0 ? url.trim().replace(/\/+$/, '') : this.defaultBaseUrl
-    this.baseUrl = resolved
-    this.client.defaults.baseURL = resolved
+    const candidate = (url ?? '').toString().trim()
+    const resolved =
+      candidate.length > 0 ? candidate.replace(/\/+$/, '') : this.defaultBaseUrl
+
+    this.baseUrl = resolved || this.defaultBaseUrl
+    this.client.defaults.baseURL = this.baseUrl
+  }
+
+  setTokenExpiredHandler(handler?: (error: { code: number; message: string }) => void) {
+    this.tokenExpiredHandler = handler
   }
 
   getBaseUrl(): string {
@@ -76,6 +101,10 @@ class ApiService {
 
   getAuthToken(): string {
     return this.bearerToken
+  }
+
+  getAuthTokenType(): string {
+    return this.bearerType
   }
 
   // Authentication endpoints

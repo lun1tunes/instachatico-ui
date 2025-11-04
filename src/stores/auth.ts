@@ -23,7 +23,7 @@ interface StoredAuth {
 }
 
 const STORAGE_KEY = 'instachatico_auth'
-const DEFAULT_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const DEFAULT_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
 const TOKEN_ENDPOINT = import.meta.env.VITE_AUTH_TOKEN_URL || 'http://localhost:8100/token'
 
 function normalizeBaseUrl(baseUrl: string | null): string | null {
@@ -31,9 +31,56 @@ function normalizeBaseUrl(baseUrl: string | null): string | null {
   return baseUrl.replace(/\/+$/, '')
 }
 
+function isAbsoluteUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url)
+}
+
+function normalizePath(value: string): string {
+  if (!value) return ''
+  const trimmed = value.replace(/\/+$/, '')
+  if (!trimmed) return ''
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+}
+
+const DEFAULT_API_PATH = normalizePath(
+  isAbsoluteUrl(DEFAULT_BASE_URL) ? new URL(DEFAULT_BASE_URL).pathname : DEFAULT_BASE_URL
+)
+
+function mergePath(basePath: string, defaultPath: string): string {
+  const base = normalizePath(basePath)
+  const fallback = normalizePath(defaultPath)
+
+  if (!fallback) return base || ''
+  if (!base || base === '/') return fallback
+  if (base === fallback || base.endsWith(fallback)) return base
+  if (fallback.startsWith(base)) {
+    const remainder = fallback.slice(base.length)
+    if (!remainder || remainder.startsWith('/')) {
+      return fallback
+    }
+  }
+  return base
+}
+
 function resolveApiBaseUrl(authBaseUrl: string | null): string {
   const normalized = normalizeBaseUrl(authBaseUrl)
-  return normalized ?? DEFAULT_BASE_URL
+  if (!normalized) return DEFAULT_BASE_URL
+
+  if (!isAbsoluteUrl(normalized)) {
+    const relative = normalizePath(normalized)
+    return relative || DEFAULT_BASE_URL || '/'
+  }
+
+  try {
+    const url = new URL(normalized)
+    if (DEFAULT_API_PATH) {
+      const merged = mergePath(url.pathname, DEFAULT_API_PATH)
+      url.pathname = merged || '/'
+    }
+    return url.toString().replace(/\/+$/, '')
+  } catch (_error) {
+    return normalized
+  }
 }
 
 function parseAuthError(error: unknown): string {
@@ -84,8 +131,17 @@ export const useAuthStore = defineStore('auth', () => {
     baseUrl.value = apiBase
     scopes.value = scopeList
 
-    apiService.setAuthToken(token)
-    apiService.setBaseUrl(resolveApiBaseUrl(apiBase))
+    apiService.setAuthToken(token, type)
+    const resolvedBase = resolveApiBaseUrl(apiBase)
+    apiService.setBaseUrl(resolvedBase)
+
+    // Update runtime env reference so other modules reading VITE_API_BASE_URL
+    // after authentication see the backend-provided value.
+    try {
+      ;(import.meta as any).env.VITE_API_BASE_URL = resolvedBase
+    } catch (_error) {
+      // ignore when running in environments that prevent reassignment
+    }
   }
 
   async function login(username: string, password: string): Promise<boolean> {
@@ -119,23 +175,33 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  function logout(reason?: string) {
     user.value = null
     accessToken.value = null
     tokenType.value = null
     baseUrl.value = null
     scopes.value = []
-    error.value = null
+    error.value = reason ?? null
 
     localStorage.removeItem(STORAGE_KEY)
     apiService.setAuthToken('')
     apiService.setBaseUrl(DEFAULT_BASE_URL)
+    try {
+      ;(import.meta as any).env.VITE_API_BASE_URL = DEFAULT_BASE_URL
+    } catch (_error) {
+      // ignore when running in environments that prevent reassignment
+    }
   }
 
   function initialize() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) {
       apiService.setBaseUrl(DEFAULT_BASE_URL)
+      try {
+        ;(import.meta as any).env.VITE_API_BASE_URL = DEFAULT_BASE_URL
+      } catch (_error) {
+        // ignore when running in environments that prevent reassignment
+      }
       return
     }
 
@@ -146,10 +212,20 @@ export const useAuthStore = defineStore('auth', () => {
       } else {
         localStorage.removeItem(STORAGE_KEY)
         apiService.setBaseUrl(DEFAULT_BASE_URL)
+        try {
+          ;(import.meta as any).env.VITE_API_BASE_URL = DEFAULT_BASE_URL
+        } catch (_error) {
+          // ignore when running in environments that prevent reassignment
+        }
       }
     } catch (_error) {
       localStorage.removeItem(STORAGE_KEY)
       apiService.setBaseUrl(DEFAULT_BASE_URL)
+      try {
+        ;(import.meta as any).env.VITE_API_BASE_URL = DEFAULT_BASE_URL
+      } catch (_error) {
+        // ignore when running in environments that prevent reassignment
+      }
     }
   }
 
