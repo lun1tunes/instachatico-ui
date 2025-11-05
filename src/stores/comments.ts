@@ -271,6 +271,29 @@ export const useCommentsStore = defineStore('comments', () => {
     })
   })
 
+  const classificationCounts = computed(() => {
+    const baseCounts: Record<ClassificationType, number> = {
+      [ClassificationTypeEnum.POSITIVE_FEEDBACK]: 0,
+      [ClassificationTypeEnum.CRITICAL_FEEDBACK]: 0,
+      [ClassificationTypeEnum.URGENT_ISSUE]: 0,
+      [ClassificationTypeEnum.QUESTION_INQUIRY]: 0,
+      [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: 0,
+      [ClassificationTypeEnum.TOXIC_ABUSIVE]: 0,
+      [ClassificationTypeEnum.SPAM_IRRELEVANT]: 0
+    }
+
+    for (const comment of comments.value) {
+      const type = comment.classification?.classification_type as ClassificationType | null | undefined
+      if (!type) continue
+      const key = type as ClassificationType
+      if (Object.prototype.hasOwnProperty.call(baseCounts, key)) {
+        baseCounts[key] += 1
+      }
+    }
+
+    return baseCounts
+  })
+
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
   const hasNextPage = computed(() => currentPage.value < totalPages.value)
   const hasPrevPage = computed(() => currentPage.value > 1)
@@ -590,6 +613,7 @@ export const useCommentsStore = defineStore('comments', () => {
     classificationFilter,
     visibilityFilter,
     deletedFilter,
+    classificationCounts,
     fetchComments,
     fetchCommentsInBackground,
     deleteComment,

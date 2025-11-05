@@ -100,7 +100,8 @@
             :class="['filter-chip', `filter-chip--${classification.variant}`, { active: isClassificationActive(classification.value) }]"
             @click="toggleClassification(classification.value)"
           >
-            {{ classification.shortLabel }}
+            <span class="filter-chip__label">{{ classification.shortLabel }}</span>
+            <span class="filter-chip__count">{{ getClassificationCount(classification.value) }}</span>
           </button>
         </div>
       </div>
@@ -133,11 +134,13 @@ interface Props {
   classificationFilters: ClassificationType[]
   visibilityFilter?: VisibilityFilter
   deletedFilter?: DeletedFilter
+  classificationCounts?: Partial<Record<ClassificationType, number>>
 }
 
 const props = withDefaults(defineProps<Props>(), {
   visibilityFilter: 'all',
-  deletedFilter: 'all'
+  deletedFilter: 'all',
+  classificationCounts: () => ({})
 })
 
 const emit = defineEmits<{
@@ -152,6 +155,7 @@ const emit = defineEmits<{
 const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
 const deletedFilter = ref<DeletedFilter>(props.deletedFilter)
 const localeStore = useLocaleStore()
+const classificationCounts = computed(() => props.classificationCounts ?? {})
 
 const processingStatuses = computed(() => [
   { value: ProcessingStatus.PENDING, label: localeStore.t('comments.statusLabels.pending') },
@@ -212,6 +216,10 @@ function isStatusActive(status: ProcessingStatus): boolean {
 
 function isClassificationActive(classification: ClassificationType): boolean {
   return props.classificationFilters.includes(classification)
+}
+
+function getClassificationCount(classification: ClassificationType): number {
+  return classificationCounts.value[classification] ?? 0
 }
 
 function setVisibilityFilter(filter: VisibilityFilter) {
@@ -338,6 +346,25 @@ function clearFilters() {
   white-space: nowrap;
 }
 
+.filter-chip__label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.filter-chip__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background-color: rgba(59, 130, 246, 0.12);
+  color: var(--blue-600);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .chip-icon {
   width: 0.875rem;
   height: 0.875rem;
@@ -359,6 +386,11 @@ function clearFilters() {
 .filter-chip.active:hover {
   background-color: var(--blue-400);
   border-color: var(--blue-400);
+}
+
+.filter-chip.active .filter-chip__count {
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
 }
 
 /* Classification type color variants */

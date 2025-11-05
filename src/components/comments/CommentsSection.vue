@@ -5,6 +5,7 @@
       :classification-filters="commentsStore.classificationFilter"
       :visibility-filter="commentsStore.visibilityFilter"
       :deleted-filter="commentsStore.deletedFilter"
+      :classification-counts="commentsStore.classificationCounts"
       @update="handleFilterUpdate"
     />
 
