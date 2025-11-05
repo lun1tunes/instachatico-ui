@@ -271,8 +271,8 @@ export const useCommentsStore = defineStore('comments', () => {
     })
   })
 
-  const classificationCounts = computed(() => {
-    const baseCounts: Record<ClassificationType, number> = {
+  function createClassificationCountMap(): Record<ClassificationType, number> {
+    return {
       [ClassificationTypeEnum.POSITIVE_FEEDBACK]: 0,
       [ClassificationTypeEnum.CRITICAL_FEEDBACK]: 0,
       [ClassificationTypeEnum.URGENT_ISSUE]: 0,
@@ -281,17 +281,40 @@ export const useCommentsStore = defineStore('comments', () => {
       [ClassificationTypeEnum.TOXIC_ABUSIVE]: 0,
       [ClassificationTypeEnum.SPAM_IRRELEVANT]: 0
     }
+  }
+
+  const classificationCounts = computed(() => {
+    const totals = createClassificationCountMap()
 
     for (const comment of comments.value) {
       const type = comment.classification?.classification_type as ClassificationType | null | undefined
       if (!type) continue
       const key = type as ClassificationType
-      if (Object.prototype.hasOwnProperty.call(baseCounts, key)) {
-        baseCounts[key] += 1
-      }
+      totals[key] = (totals[key] ?? 0) + 1
     }
 
-    return baseCounts
+    return totals
+  })
+
+  const lastHourClassificationCounts = computed(() => {
+    const recentCounts = createClassificationCountMap()
+    const cutoff = Date.now() - 60 * 60 * 1000
+
+    for (const comment of comments.value) {
+      const type = comment.classification?.classification_type as ClassificationType | null | undefined
+      if (!type) continue
+      if (!comment.created_at) continue
+
+      const timestamp = new Date(comment.created_at).getTime()
+      if (!Number.isFinite(timestamp) || timestamp < cutoff) {
+        continue
+      }
+
+      const key = type as ClassificationType
+      recentCounts[key] = (recentCounts[key] ?? 0) + 1
+    }
+
+    return recentCounts
   })
 
   const totalPages = computed(() => Math.ceil(totalItems.value / perPage.value))
@@ -614,6 +637,7 @@ export const useCommentsStore = defineStore('comments', () => {
     visibilityFilter,
     deletedFilter,
     classificationCounts,
+    lastHourClassificationCounts,
     fetchComments,
     fetchCommentsInBackground,
     deleteComment,

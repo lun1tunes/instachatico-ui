@@ -101,7 +101,14 @@
             @click="toggleClassification(classification.value)"
           >
             <span class="filter-chip__label">{{ classification.shortLabel }}</span>
-            <span class="filter-chip__count">{{ getClassificationCount(classification.value) }}</span>
+            <span class="filter-chip__metrics">
+              <span class="filter-chip__metric filter-chip__metric--total">
+                {{ getClassificationTotal(classification.value) }}
+              </span>
+              <span class="filter-chip__metric filter-chip__metric--delta">
+                +{{ getClassificationLastHour(classification.value) }}
+              </span>
+            </span>
           </button>
         </div>
       </div>
@@ -135,12 +142,14 @@ interface Props {
   visibilityFilter?: VisibilityFilter
   deletedFilter?: DeletedFilter
   classificationCounts?: Partial<Record<ClassificationType, number>>
+  lastHourClassificationCounts?: Partial<Record<ClassificationType, number>>
 }
 
 const props = withDefaults(defineProps<Props>(), {
   visibilityFilter: 'all',
   deletedFilter: 'all',
-  classificationCounts: () => ({})
+  classificationCounts: () => ({}),
+  lastHourClassificationCounts: () => ({})
 })
 
 const emit = defineEmits<{
@@ -156,6 +165,7 @@ const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
 const deletedFilter = ref<DeletedFilter>(props.deletedFilter)
 const localeStore = useLocaleStore()
 const classificationCounts = computed(() => props.classificationCounts ?? {})
+const lastHourClassificationCounts = computed(() => props.lastHourClassificationCounts ?? {})
 
 const processingStatuses = computed(() => [
   { value: ProcessingStatus.PENDING, label: localeStore.t('comments.statusLabels.pending') },
@@ -218,8 +228,12 @@ function isClassificationActive(classification: ClassificationType): boolean {
   return props.classificationFilters.includes(classification)
 }
 
-function getClassificationCount(classification: ClassificationType): number {
+function getClassificationTotal(classification: ClassificationType): number {
   return classificationCounts.value[classification] ?? 0
+}
+
+function getClassificationLastHour(classification: ClassificationType): number {
+  return lastHourClassificationCounts.value[classification] ?? 0
 }
 
 function setVisibilityFilter(filter: VisibilityFilter) {
@@ -351,18 +365,39 @@ function clearFilters() {
   align-items: center;
 }
 
-.filter-chip__count {
+.filter-chip__metrics {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  height: 1.25rem;
-  padding: 0 0.375rem;
+  padding: 0.1rem 0 0.1rem 0.18rem;
+  margin-left: 0.375rem;
   border-radius: 9999px;
-  background-color: rgba(59, 130, 246, 0.12);
-  color: var(--blue-600);
-  font-size: 0.7rem;
+  background-color: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  gap: 0.08rem;
+  overflow: hidden;
+}
+
+.filter-chip__metric {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.05rem;
+  padding: 0 0.45rem;
+  font-size: 0.68rem;
   font-weight: 600;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--blue-800);
+}
+
+.filter-chip__metric--delta {
+  background-color: rgba(76, 132, 255, 0.22);
+  color: var(--blue-700);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+  margin-right: -0.1rem;
+  padding-right: 0.6rem;
 }
 
 .chip-icon {
@@ -388,9 +423,22 @@ function clearFilters() {
   border-color: var(--blue-400);
 }
 
-.filter-chip.active .filter-chip__count {
-  background-color: rgba(255, 255, 255, 0.25);
+.filter-chip.active .filter-chip__metrics {
+  background-color: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-chip.active .filter-chip__metric {
   color: white;
+}
+
+.filter-chip.active .filter-chip__metric--total {
+  background-color: transparent;
+}
+
+.filter-chip.active .filter-chip__metric--delta {
+  background-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 /* Classification type color variants */
