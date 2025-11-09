@@ -231,22 +231,31 @@ class ApiService {
     return response.data
   }
 
-  // Image proxy endpoint - fetch as blob with auth header
-  async fetchMediaImage(mediaId: string, childIndex?: number): Promise<string> {
+  // Image proxy endpoint - resolves a CDN URL via backend (used when direct URL fails)
+  async fetchMediaImage(
+    mediaId: string,
+    childIndex?: number,
+    options?: { signal?: AbortSignal }
+  ): Promise<string> {
     const endpoint = `/media/${mediaId}/image`
     const params = childIndex !== undefined ? { child_index: childIndex } : {}
 
-    const response = await this.client.get(endpoint, {
+    const response = await this.client.get<ApiResponse<{ url?: string | null }>>(endpoint, {
       params,
-      responseType: 'blob',
+      signal: options?.signal,
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       }
     })
 
-    // Create object URL from blob
-    return URL.createObjectURL(response.data)
+    const resolvedUrl = response.data?.payload?.url
+
+    if (typeof resolvedUrl !== 'string' || resolvedUrl.trim().length === 0) {
+      throw new Error('Media image URL unavailable')
+    }
+
+    return resolvedUrl
   }
 }
 

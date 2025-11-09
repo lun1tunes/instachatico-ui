@@ -2,7 +2,13 @@
   <BaseCard ref="cardRef" hover class="media-card" @click="handleCardClick">
     <div class="media-card__image">
       <div v-if="isLoadingImage && !imageUrl" class="image-skeleton"></div>
-      <img v-else :src="imageUrl" :alt="media.caption" @error="handleImageError" />
+      <img
+        v-else
+        :src="imageUrl"
+        :alt="media.caption"
+        @error="handleImageError"
+        @load="handleImageLoad"
+      />
       <div class="media-card__type-badge">
         <BaseBadge :variant="mediaTypeBadge">
           {{ mediaTypeLabel }}
@@ -96,6 +102,8 @@ const currentImageIndex = ref(0)
 const imageUrl = ref<string>('')
 const isLoadingImage = ref(true)
 let abortController: AbortController | null = null
+let currentImageRequestId = 0
+let usedProxyForCurrentImage = false
 const localeStore = useLocaleStore()
 
 // Check if this is a carousel
@@ -109,69 +117,108 @@ const totalImages = computed(() => {
   return 1
 })
 
-// Fetch image as blob with auth header
-async function loadImage() {
-  // Cancel previous request if still pending
+function getDirectImageSource(): string | null {
+  if (isCarousel.value) {
+    return props.media.children_urls[currentImageIndex.value] ?? null
+  }
+  return props.media.url ?? null
+}
+
+function createPlaceholderUrl() {
+  const label = localeStore.t('common.placeholders.image')
+  return `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
+}
+
+async function loadImage(forceProxy = false) {
+  currentImageRequestId += 1
+  const requestId = currentImageRequestId
+
   if (abortController) {
     abortController.abort()
+    abortController = null
   }
 
+  const directSource = forceProxy ? null : getDirectImageSource()
+
+  if (directSource) {
+    usedProxyForCurrentImage = false
+    imageError.value = false
+    isLoadingImage.value = true
+    imageUrl.value = directSource
+    return
+  }
+
+  await loadImageViaProxy(requestId)
+}
+
+async function loadImageViaProxy(requestId: number) {
   abortController = new AbortController()
-  isLoadingImage.value = true
+  usedProxyForCurrentImage = true
   imageError.value = false
+  isLoadingImage.value = true
 
   try {
-    const childIndex = isCarousel.value && props.media.children_urls.length > 0
-      ? currentImageIndex.value
-      : undefined
+    const childIndex =
+      isCarousel.value && props.media.children_urls.length > 0
+        ? currentImageIndex.value
+        : undefined
 
-    const blobUrl = await apiService.fetchMediaImage(props.media.id, childIndex)
+    const resolvedUrl = await apiService.fetchMediaImage(
+      props.media.id,
+      childIndex,
+      { signal: abortController.signal }
+    )
 
-    // Revoke old URL to prevent memory leaks
-    if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
-      URL.revokeObjectURL(imageUrl.value)
+    if (requestId !== currentImageRequestId) {
+      return
     }
 
-    imageUrl.value = blobUrl
+    imageUrl.value = resolvedUrl
   } catch (error) {
-    // Ignore abort errors
     if (error instanceof Error && error.name === 'AbortError') {
       return
     }
-    console.error('Failed to load image:', error)
-    imageError.value = true
-    const label = localeStore.t('common.placeholders.image')
-    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
-  } finally {
+    console.error('Failed to load image via proxy:', error)
+    setPlaceholderImage()
     isLoadingImage.value = false
+  } finally {
     abortController = null
   }
 }
 
+function setPlaceholderImage() {
+  imageError.value = true
+  imageUrl.value = createPlaceholderUrl()
+  isLoadingImage.value = false
+}
+
 // Load image on mount
 onMounted(() => {
-  loadImage()
+  void loadImage()
 })
 
 // Watch for carousel index changes
 watch(currentImageIndex, () => {
-  loadImage()
+  void loadImage()
 })
 
-// Cleanup blob URLs on unmount
+// Cleanup pending requests on unmount
 onBeforeUnmount(() => {
-  if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
-    URL.revokeObjectURL(imageUrl.value)
-  }
   if (abortController) {
     abortController.abort()
   }
 })
 
 function handleImageError() {
-  imageError.value = true
-  const label = localeStore.t('common.placeholders.image')
-  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
+  if (!usedProxyForCurrentImage) {
+    void loadImage(true)
+    return
+  }
+  setPlaceholderImage()
+}
+
+function handleImageLoad() {
+  isLoadingImage.value = false
 }
 
 // Carousel navigation (prevents card click when navigating)

@@ -331,6 +331,7 @@
                 v-else-if="mediaPreviewUrl"
                 :src="mediaPreviewUrl"
                 :alt="mediaCaption"
+                @error="handlePreviewError"
               />
               <span v-else class="comment-media-summary__thumb-placeholder">
                 {{ localeStore.t('comments.media.noPreview') }}
@@ -678,45 +679,43 @@ async function ensureMediaSummary(mediaId: string) {
 }
 
 async function ensureMediaPreview() {
+  await resolveMediaPreview()
+}
+
+async function resolveMediaPreview(forceProxy = false): Promise<boolean> {
   if (!showMediaInfo.value) {
     mediaPreviewLoading.value = false
     mediaPreviewUrl.value = null
-    return
+    return false
   }
 
   const mediaId = resolvedMediaId.value
   const direct = directMediaPreview.value
 
+  if (!forceProxy && direct) {
+    mediaPreviewUrl.value = direct
+    mediaPreviewLoading.value = false
+    return true
+  }
+
   if (!mediaId) {
     mediaPreviewLoading.value = false
-    mediaPreviewUrl.value = direct ?? null
-    return
-  }
-
-  if (mediaPreviewCache.has(mediaId)) {
-    mediaPreviewUrl.value = mediaPreviewCache.get(mediaId) ?? null
-    mediaPreviewLoading.value = false
-    return
-  }
-
-  if (direct) {
-    mediaPreviewUrl.value = direct
-  } else {
     mediaPreviewUrl.value = null
+    return false
+  }
+
+  const cached = mediaPreviewCache.get(mediaId)
+  if (cached) {
+    mediaPreviewUrl.value = cached
+    mediaPreviewLoading.value = false
+    return true
   }
 
   mediaPreviewLoading.value = true
 
   const childUrls = mediaSummary.value?.children_urls ?? []
-  const attempts: Array<number | undefined> = []
-  if (childUrls.length > 0) {
-    for (let index = 0; index < childUrls.length; index += 1) {
-      attempts.push(index)
-    }
-    attempts.push(undefined)
-  } else {
-    attempts.push(undefined)
-  }
+  const attempts: Array<number | undefined> =
+    childUrls.length > 0 ? [...childUrls.keys(), undefined] : [undefined]
 
   for (const attempt of attempts) {
     try {
@@ -724,12 +723,10 @@ async function ensureMediaPreview() {
         mediaId,
         typeof attempt === 'number' ? attempt : undefined
       )
-      if (preview) {
-        mediaPreviewCache.set(mediaId, preview)
-        mediaPreviewUrl.value = preview
-        mediaPreviewLoading.value = false
-        return
-      }
+      mediaPreviewCache.set(mediaId, preview)
+      mediaPreviewUrl.value = preview
+      mediaPreviewLoading.value = false
+      return true
     } catch (error) {
       console.warn('[CommentCard] Failed to load media preview:', {
         mediaId,
@@ -740,10 +737,12 @@ async function ensureMediaPreview() {
   }
 
   mediaPreviewLoading.value = false
-  if (direct) {
-    mediaPreviewCache.set(mediaId, direct)
-    mediaPreviewUrl.value = direct
-  }
+  mediaPreviewUrl.value = null
+  return false
+}
+
+function handlePreviewError() {
+  void resolveMediaPreview(true)
 }
 
 watch(resolvedMediaId, (mediaId) => {
