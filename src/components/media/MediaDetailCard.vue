@@ -1,7 +1,7 @@
 <template>
   <BaseCard class="media-detail-card">
     <div class="media-detail-card__image">
-      <img :src="imageUrl" :alt="media.caption" @error="handleImageError" />
+      <img :src="imageUrl" :alt="media.caption" @error="handleImageError" @load="handleImageLoad" />
 
       <!-- Carousel Navigation -->
       <div v-if="isCarousel && media.children_urls.length > 1" class="carousel-controls">
@@ -147,6 +147,7 @@ import { format, parseISO } from 'date-fns'
 import { useConfirm } from '@/composables/useConfirm'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { useLocaleStore } from '@/stores/locale'
+import { createImagePlaceholder } from '@/utils/placeholders'
 
 interface Props {
   media: Media
@@ -167,6 +168,9 @@ const imageError = ref(false)
 const currentImageIndex = ref(0)
 const imageUrl = ref<string>('')
 const isLoadingImage = ref(true)
+let abortController: AbortController | null = null
+let currentImageRequestId = 0
+let usedProxyForCurrentImage = false
 
 // Check if this is a carousel
 const isCarousel = computed(() => props.media.type === MediaType.CAROUSEL)
@@ -179,52 +183,109 @@ const totalImages = computed(() => {
   return 1
 })
 
-// Fetch image as blob with auth header
-async function loadImage() {
-  isLoadingImage.value = true
+function getDirectImageSource(): string | null {
+  if (isCarousel.value) {
+    return props.media.children_urls[currentImageIndex.value] ?? null
+  }
+  return props.media.url ?? null
+}
+
+function updateImageUrl(newUrl: string) {
+  const previous = imageUrl.value
+  if (previous && previous.startsWith('blob:') && previous !== newUrl) {
+    URL.revokeObjectURL(previous)
+  }
+  imageUrl.value = newUrl
+}
+
+function setPlaceholderImage() {
+  imageError.value = true
+  const label = localeStore.t('common.placeholders.image')
+  updateImageUrl(createImagePlaceholder(label, { width: 400, height: 400 }))
+  isLoadingImage.value = false
+}
+
+async function loadImage(forceProxy = false) {
+  currentImageRequestId += 1
+  const requestId = currentImageRequestId
+
+  if (abortController) {
+    abortController.abort()
+    abortController = null
+  }
+
+  const directSource = forceProxy ? null : getDirectImageSource()
+
+  if (directSource) {
+    usedProxyForCurrentImage = false
+    imageError.value = false
+    isLoadingImage.value = true
+    updateImageUrl(directSource)
+    return
+  }
+
+  await loadImageViaProxy(requestId)
+}
+
+async function loadImageViaProxy(requestId: number) {
+  abortController = new AbortController()
+  usedProxyForCurrentImage = true
   imageError.value = false
+  isLoadingImage.value = true
 
   try {
-    const childIndex = isCarousel.value && props.media.children_urls.length > 0
-      ? currentImageIndex.value
-      : undefined
+    const childIndex =
+      isCarousel.value && props.media.children_urls.length > 0
+        ? currentImageIndex.value
+        : undefined
 
-    const blobUrl = await apiService.fetchMediaImage(props.media.id, childIndex)
+    const resolvedUrl = await apiService.fetchMediaImage(
+      props.media.id,
+      childIndex,
+      { signal: abortController.signal }
+    )
 
-    // Store old URL before replacing
-    const oldUrl = imageUrl.value
-
-    // Set new blob URL
-    imageUrl.value = blobUrl
-
-    // Revoke old URL after setting new one to prevent memory leaks
-    if (oldUrl && oldUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(oldUrl)
+    if (requestId !== currentImageRequestId) {
+      return
     }
+
+    updateImageUrl(resolvedUrl)
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return
+    }
     console.error('Failed to load image:', error)
-    imageError.value = true
-    const label = localeStore.t('common.placeholders.image')
-    imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
+    setPlaceholderImage()
   } finally {
-    isLoadingImage.value = false
+    abortController = null
   }
 }
 
 // Load image on mount and when index changes
-watch([() => props.media.id, currentImageIndex], loadImage, { immediate: true })
+watch([() => props.media.id, currentImageIndex], () => {
+  void loadImage()
+}, { immediate: true })
 
 // Cleanup blob URLs on unmount
 onBeforeUnmount(() => {
+  if (abortController) {
+    abortController.abort()
+  }
   if (imageUrl.value && imageUrl.value.startsWith('blob:')) {
     URL.revokeObjectURL(imageUrl.value)
   }
 })
 
 function handleImageError() {
-  imageError.value = true
-  const label = localeStore.t('common.placeholders.image')
-  imageUrl.value = `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
+  if (!usedProxyForCurrentImage) {
+    void loadImage(true)
+    return
+  }
+  setPlaceholderImage()
+}
+
+function handleImageLoad() {
+  isLoadingImage.value = false
 }
 
 // Carousel navigation
@@ -266,13 +327,39 @@ const mediaTypeBadge = computed(() => {
   }
 })
 
+function resolveSafeExternalUrl(raw?: string | null): string {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+
+  try {
+    const fallbackOrigin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://localhost'
+    const parsed = new URL(trimmed, fallbackOrigin)
+    const protocol = parsed.protocol.toLowerCase()
+
+    if (protocol === 'http:' || protocol === 'https:') {
+      return parsed.toString()
+    }
+  } catch (_error) {
+    return ''
+  }
+
+  return ''
+}
+
 const instagramUrl = computed(() => {
-  if (props.media.permalink) {
-    return props.media.permalink
+  const fromPermalink = resolveSafeExternalUrl(props.media.permalink)
+  if (fromPermalink) {
+    return fromPermalink
   }
+
   if (props.media.shortcode) {
-    return `https://www.instagram.com/p/${props.media.shortcode}/`
+    return resolveSafeExternalUrl(`https://www.instagram.com/p/${props.media.shortcode}/`)
   }
+
   return ''
 })
 
@@ -328,8 +415,14 @@ function saveContext(content: string) {
 }
 
 function openPermalink() {
-  if (instagramUrl.value) {
-    window.open(instagramUrl.value, '_blank')
+  const url = instagramUrl.value
+  if (!url || typeof window === 'undefined') {
+    return
+  }
+
+  const newTab = window.open(url, '_blank', 'noopener,noreferrer')
+  if (newTab) {
+    newTab.opener = null
   }
 }
 </script>

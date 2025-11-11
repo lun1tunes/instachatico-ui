@@ -12,7 +12,8 @@ import type {
   ClassificationType,
   Classification,
   Media,
-  CommentMediaSummary
+  CommentMediaSummary,
+  CommentsClassificationStats
 } from '@/types/api'
 import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
 
@@ -68,17 +69,23 @@ function normalizeMediaId(value: unknown): string | null {
 }
 
 async function resolveMediaPreview(mediaId: string, summary: CommentMediaSummary): Promise<string | null> {
-  const childUrls = summary.children_urls ?? []
-  const attempts: Array<number | undefined> = []
+  const directCandidates = [
+    summary.preview_url,
+    summary.thumbnail_url,
+    summary.url,
+    ...(summary.children_urls ?? [])
+  ].filter((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0)
 
-  if (childUrls.length > 0) {
-    for (let index = 0; index < childUrls.length; index += 1) {
-      attempts.push(index)
-    }
-    attempts.push(undefined)
-  } else {
-    attempts.push(undefined)
+  if (directCandidates.length > 0) {
+    return directCandidates[0]
   }
+
+  const childUrls = summary.children_urls ?? []
+  if (childUrls.length === 0) {
+    return null
+  }
+
+  const attempts: Array<number | undefined> = [...childUrls.keys(), undefined]
 
   for (const attempt of attempts) {
     try {
@@ -90,7 +97,7 @@ async function resolveMediaPreview(mediaId: string, summary: CommentMediaSummary
         return preview
       }
     } catch (error) {
-      console.warn('[Comments Store] Failed to load media preview', error)
+      console.debug('[Comments Store] Failed to load media preview', { mediaId, attempt, error })
     }
   }
 
@@ -172,9 +179,11 @@ async function getMediaSummary(id: string): Promise<CommentMediaSummary | null> 
     try {
       const response = await apiService.getMediaById(id)
       const summary = buildMediaSummary(response.payload)
-      const preview = await resolveMediaPreview(summary.id, summary)
-      if (preview) {
-        summary.preview_url = preview
+      if (!summary.preview_url) {
+        const preview = await resolveMediaPreview(summary.id, summary)
+        if (preview) {
+          summary.preview_url = preview
+        }
       }
       mediaSummaryCache.set(id, summary)
       return summary
@@ -229,6 +238,93 @@ async function hydrateMediaSummaries(comments: Comment[]) {
   })
 }
 
+function createClassificationCountMap(): Record<ClassificationType, number> {
+  return {
+    [ClassificationTypeEnum.POSITIVE_FEEDBACK]: 0,
+    [ClassificationTypeEnum.CRITICAL_FEEDBACK]: 0,
+    [ClassificationTypeEnum.URGENT_ISSUE]: 0,
+    [ClassificationTypeEnum.QUESTION_INQUIRY]: 0,
+    [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: 0,
+    [ClassificationTypeEnum.TOXIC_ABUSIVE]: 0,
+    [ClassificationTypeEnum.SPAM_IRRELEVANT]: 0
+  }
+}
+
+const CLASSIFICATION_ORDER: ClassificationType[] = [
+  ClassificationTypeEnum.POSITIVE_FEEDBACK,
+  ClassificationTypeEnum.CRITICAL_FEEDBACK,
+  ClassificationTypeEnum.URGENT_ISSUE,
+  ClassificationTypeEnum.QUESTION_INQUIRY,
+  ClassificationTypeEnum.PARTNERSHIP_PROPOSAL,
+  ClassificationTypeEnum.TOXIC_ABUSIVE,
+  ClassificationTypeEnum.SPAM_IRRELEVANT
+]
+
+const CLASSIFICATION_STATS_KEY_MAP: Record<
+ClassificationType,
+{ total: keyof CommentsClassificationStats; increment: keyof CommentsClassificationStats }
+> = {
+  [ClassificationTypeEnum.POSITIVE_FEEDBACK]: {
+    total: 'positive_feedback_total',
+    increment: 'positive_feedback_increment'
+  },
+  [ClassificationTypeEnum.CRITICAL_FEEDBACK]: {
+    total: 'negative_feedback_total',
+    increment: 'negative_feedback_increment'
+  },
+  [ClassificationTypeEnum.URGENT_ISSUE]: {
+    total: 'urgent_issues_total',
+    increment: 'urgent_issues_increment'
+  },
+  [ClassificationTypeEnum.QUESTION_INQUIRY]: {
+    total: 'questions_total',
+    increment: 'questions_increment'
+  },
+  [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: {
+    total: 'partnership_proposals_total',
+    increment: 'partnership_proposals_increment'
+  },
+  [ClassificationTypeEnum.TOXIC_ABUSIVE]: {
+    total: 'toxic_abusive_total',
+    increment: 'toxic_abusive_increment'
+  },
+  [ClassificationTypeEnum.SPAM_IRRELEVANT]: {
+    total: 'spam_irrelevant_total',
+    increment: 'spam_irrelevant_increment'
+  }
+}
+
+function resolveStatsValue(
+  stats: CommentsClassificationStats | null | undefined,
+  key: keyof CommentsClassificationStats
+): number {
+  const value = stats?.[key]
+  if (typeof value !== 'number') {
+    return 0
+  }
+  const resolved = Number(value)
+  return Number.isFinite(resolved) ? resolved : 0
+}
+
+function mapStatsToRecord(
+  stats: CommentsClassificationStats | null | undefined,
+  valueKey: 'total' | 'increment'
+): Record<ClassificationType, number> {
+  const record = createClassificationCountMap()
+
+  if (!stats) {
+    return record
+  }
+
+  for (const classification of CLASSIFICATION_ORDER) {
+    const mapping = CLASSIFICATION_STATS_KEY_MAP[classification]
+    const statKey = mapping[valueKey]
+    record[classification] = resolveStatsValue(stats, statKey)
+  }
+
+  return record
+}
+
 export const useCommentsStore = defineStore('comments', () => {
   const allComments = ref<Comment[]>([])
   const loading = ref(false)
@@ -244,6 +340,23 @@ export const useCommentsStore = defineStore('comments', () => {
   const classificationFilter = ref<ClassificationType[]>([])
   const visibilityFilter = ref<'all' | 'visible' | 'hidden'>('all')
   const deletedFilter = ref<'all' | 'active' | 'deleted'>('all')
+  const globalClassificationTotals = ref<Record<ClassificationType, number> | null>(null)
+  const globalClassificationLastHour = ref<Record<ClassificationType, number> | null>(null)
+
+  function clearGlobalStats() {
+    globalClassificationTotals.value = null
+    globalClassificationLastHour.value = null
+  }
+
+  function applyGlobalStats(stats?: CommentsClassificationStats | null) {
+    if (!stats) {
+      clearGlobalStats()
+      return
+    }
+
+    globalClassificationTotals.value = mapStatsToRecord(stats, 'total')
+    globalClassificationLastHour.value = mapStatsToRecord(stats, 'increment')
+  }
 
   // Computed: Filter and sort comments by visibility, deleted status, and created_at (frontend-only filters)
   const comments = computed(() => {
@@ -271,19 +384,11 @@ export const useCommentsStore = defineStore('comments', () => {
     })
   })
 
-  function createClassificationCountMap(): Record<ClassificationType, number> {
-    return {
-      [ClassificationTypeEnum.POSITIVE_FEEDBACK]: 0,
-      [ClassificationTypeEnum.CRITICAL_FEEDBACK]: 0,
-      [ClassificationTypeEnum.URGENT_ISSUE]: 0,
-      [ClassificationTypeEnum.QUESTION_INQUIRY]: 0,
-      [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: 0,
-      [ClassificationTypeEnum.TOXIC_ABUSIVE]: 0,
-      [ClassificationTypeEnum.SPAM_IRRELEVANT]: 0
-    }
-  }
-
   const classificationCounts = computed(() => {
+    if (globalClassificationTotals.value) {
+      return globalClassificationTotals.value
+    }
+
     const totals = createClassificationCountMap()
 
     for (const comment of comments.value) {
@@ -297,6 +402,10 @@ export const useCommentsStore = defineStore('comments', () => {
   })
 
   const lastHourClassificationCounts = computed(() => {
+    if (globalClassificationLastHour.value) {
+      return globalClassificationLastHour.value
+    }
+
     const recentCounts = createClassificationCountMap()
     const cutoff = Date.now() - 60 * 60 * 1000
 
@@ -335,9 +444,16 @@ export const useCommentsStore = defineStore('comments', () => {
             classificationFilter.value.length > 0 ? classificationFilter.value : undefined
         }
 
-      const response = mediaId
-        ? await apiService.getComments(mediaId, requestQuery)
-        : await apiService.getAllComments(requestQuery)
+      let response: Awaited<ReturnType<typeof apiService.getComments>>
+
+      if (mediaId) {
+        response = await apiService.getComments(mediaId, requestQuery)
+        clearGlobalStats()
+      } else {
+        const globalResponse = await apiService.getAllComments(requestQuery)
+        applyGlobalStats(globalResponse.stats)
+        response = globalResponse
+      }
 
       const normalizedComments = response.payload.map(normalizeComment)
 
@@ -372,9 +488,16 @@ export const useCommentsStore = defineStore('comments', () => {
           classificationFilter.value.length > 0 ? classificationFilter.value : undefined
       }
 
-      const response = mediaId
-        ? await apiService.getComments(mediaId, requestQuery)
-        : await apiService.getAllComments(requestQuery)
+      let response: Awaited<ReturnType<typeof apiService.getComments>>
+
+      if (mediaId) {
+        response = await apiService.getComments(mediaId, requestQuery)
+        clearGlobalStats()
+      } else {
+        const globalResponse = await apiService.getAllComments(requestQuery)
+        applyGlobalStats(globalResponse.stats)
+        response = globalResponse
+      }
 
       // Create a Map of existing comments by ID for O(1) lookup
       const existingCommentsMap = new Map(
@@ -531,6 +654,7 @@ export const useCommentsStore = defineStore('comments', () => {
     currentPage.value = 1
     totalItems.value = 0
     error.value = null
+    clearGlobalStats()
   }
 
   function nextPage(mediaId?: string) {

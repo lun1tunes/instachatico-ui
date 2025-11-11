@@ -84,6 +84,7 @@ import { apiService } from '@/services/api'
 import { format, parseISO } from 'date-fns'
 import MediaCardStats from '@/components/media/MediaCardStats.vue'
 import { useLocaleStore } from '@/stores/locale'
+import { createImagePlaceholder } from '@/utils/placeholders'
 
 interface Props {
   media: Media
@@ -126,7 +127,7 @@ function getDirectImageSource(): string | null {
 
 function createPlaceholderUrl() {
   const label = localeStore.t('common.placeholders.image')
-  return `https://via.placeholder.com/400x400/3b82f6/ffffff?text=${encodeURIComponent(label)}`
+  return createImagePlaceholder(label)
 }
 
 async function loadImage(forceProxy = false) {

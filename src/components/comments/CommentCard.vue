@@ -388,6 +388,7 @@ import { format, parseISO } from 'date-fns'
 import { useCommentsStore } from '@/stores/comments'
 import { useLocaleStore } from '@/stores/locale'
 import { apiService } from '@/services/api'
+import { createImagePlaceholder } from '@/utils/placeholders'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -640,6 +641,13 @@ const mediaLinkTitle = computed(() =>
 const mediaPreviewUrl = ref<string | null>(null)
 const mediaPreviewLoading = ref(false)
 
+function getPreviewPlaceholder(): string {
+  return createImagePlaceholder(
+    localeStore.t('comments.media.noPreview'),
+    { width: 180, height: 180, fontSize: 18, background: '#1e293b' }
+  )
+}
+
 async function ensureMediaSummary(mediaId: string) {
   if (mediaSummary.value && mediaSummary.value.id === mediaId) {
     mediaSummaryLoading.value = false
@@ -728,7 +736,7 @@ async function resolveMediaPreview(forceProxy = false): Promise<boolean> {
       mediaPreviewLoading.value = false
       return true
     } catch (error) {
-      console.warn('[CommentCard] Failed to load media preview:', {
+      console.debug('[CommentCard] Failed to load media preview:', {
         mediaId,
         attempt,
         error
@@ -737,12 +745,19 @@ async function resolveMediaPreview(forceProxy = false): Promise<boolean> {
   }
 
   mediaPreviewLoading.value = false
-  mediaPreviewUrl.value = null
-  return false
+  const placeholder = getPreviewPlaceholder()
+  mediaPreviewUrl.value = placeholder
+  mediaPreviewCache.set(mediaId, placeholder)
+  return true
 }
 
 function handlePreviewError() {
-  void resolveMediaPreview(true)
+  const mediaId = resolvedMediaId.value
+  const placeholder = getPreviewPlaceholder()
+  mediaPreviewUrl.value = placeholder
+  if (mediaId) {
+    mediaPreviewCache.set(mediaId, placeholder)
+  }
 }
 
 watch(resolvedMediaId, (mediaId) => {

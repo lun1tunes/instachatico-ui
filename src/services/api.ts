@@ -2,6 +2,7 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosError } from 'axios'
 import type {
   ApiResponse,
+  ApiResponseWithStats,
   Media,
   Comment,
   Answer,
@@ -12,7 +13,8 @@ import type {
   UpdateClassificationRequest,
   UpdateAnswerRequest,
   CreateAnswerRequest,
-  ClassificationType
+  ClassificationType,
+  CommentsClassificationStats
 } from '@/types/api'
 
 const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
@@ -170,10 +172,10 @@ class ApiService {
     return response.data
   }
 
-  async getAllComments(query?: CommentsQuery): Promise<ApiResponse<Comment[]>> {
+  async getAllComments(query?: CommentsQuery): Promise<ApiResponseWithStats<Comment[], CommentsClassificationStats>> {
     const params = this.formatCommentsQuery(query)
 
-    const response = await this.client.get<ApiResponse<Comment[]>>(
+    const response = await this.client.get<ApiResponseWithStats<Comment[], CommentsClassificationStats>>(
       '/comments',
       { params }
     )

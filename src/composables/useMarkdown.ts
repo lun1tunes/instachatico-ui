@@ -1,12 +1,51 @@
 /**
- * Simple markdown parser for live preview
+ * Simple markdown parser for live preview with basic sanitization
  * Supports basic markdown syntax without external dependencies
  */
+
+const PLACEHOLDER_PREFIX = '__MD_PLACEHOLDER__'
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function escapeAttribute(value: string): string {
+  return escapeHtml(value)
+}
+
+function sanitizeUrl(raw: string): string | null {
+  if (!raw) return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  const lower = trimmed.toLowerCase()
+  if (lower.startsWith('javascript:') || lower.startsWith('data:') || lower.startsWith('vbscript:')) {
+    return null
+  }
+
+  if (
+    lower.startsWith('http://') ||
+    lower.startsWith('https://') ||
+    trimmed.startsWith('//') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('./') ||
+    trimmed.startsWith('../')
+  ) {
+    return trimmed
+  }
+
+  return null
+}
+
 export function useMarkdown() {
   function parseMarkdown(markdown: string): string {
     if (!markdown) return ''
 
-    // Split into lines for processing
     const lines = markdown.split('\n')
     const result: string[] = []
     let inList = false
@@ -21,9 +60,8 @@ export function useMarkdown() {
     }
 
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trimEnd()
+      const line = lines[i].trimEnd()
 
-      // Code blocks
       if (line.startsWith('```')) {
         flushParagraph()
         if (!inCodeBlock) {
@@ -37,11 +75,10 @@ export function useMarkdown() {
       }
 
       if (inCodeBlock) {
-        result.push(line + '\n')
+        result.push(escapeHtml(line) + '\n')
         continue
       }
 
-      // Headers
       if (line.startsWith('#')) {
         flushParagraph()
         const match = line.match(/^(#{1,6})\s+(.*)$/)
@@ -53,7 +90,6 @@ export function useMarkdown() {
         }
       }
 
-      // Lists (unordered and ordered)
       const listMatch = line.match(/^[\*\-]\s+(.*)$/) || line.match(/^\d+\.\s+(.*)$/)
       if (listMatch) {
         flushParagraph()
@@ -64,27 +100,22 @@ export function useMarkdown() {
         result.push('<li>' + processInline(listMatch[1]) + '</li>')
         continue
       } else if (inList && line.trim() === '') {
-        // Empty line ends the list
         result.push('</ul>')
         inList = false
         continue
       } else if (inList) {
-        // Non-list line ends the list
         result.push('</ul>')
         inList = false
       }
 
-      // Empty line
       if (line.trim() === '') {
         flushParagraph()
         continue
       }
 
-      // Regular paragraph text
       currentParagraph.push(processInline(line))
     }
 
-    // Flush remaining content
     if (inList) {
       result.push('</ul>')
     }
@@ -94,25 +125,55 @@ export function useMarkdown() {
   }
 
   function processInline(text: string): string {
-    let result = text
+    if (!text) return ''
 
-    // Bold and italic (order matters!)
-    result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    result = result.replace(/__(.+?)__/g, '<strong>$1</strong>')
-    result = result.replace(/\*(.+?)\*/g, '<em>$1</em>')
-    result = result.replace(/_(.+?)_/g, '<em>$1</em>')
+    const placeholders: string[] = []
+    const createPlaceholder = (html: string) => {
+      const token = `${PLACEHOLDER_PREFIX}${placeholders.length}__`
+      placeholders.push(html)
+      return token
+    }
 
-    // Links
-    result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    let working = text
 
-    // Images
-    result = result.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
+    working = working.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt = '', url) => {
+      const safeUrl = sanitizeUrl(url)
+      if (!safeUrl) {
+        return alt
+      }
+      return createPlaceholder(
+        `<img src="${escapeAttribute(safeUrl)}" alt="${escapeAttribute(alt)}" loading="lazy" referrerpolicy="no-referrer" />`
+      )
+    })
 
-    // Inline code
-    result = result.replace(/`([^`]+)`/g, '<code>$1</code>')
+    working = working.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+      const safeUrl = sanitizeUrl(url)
+      if (!safeUrl) {
+        return label
+      }
+      return createPlaceholder(
+        `<a href="${escapeAttribute(safeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`
+      )
+    })
 
-    return result
+    working = working.replace(/`([^`]+)`/g, (_match, code) => {
+      return createPlaceholder(`<code>${escapeHtml(code)}</code>`)
+    })
+
+    let escaped = escapeHtml(working)
+
+    escaped = escaped.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    escaped = escaped.replace(/__(.+?)__/g, '<strong>$1</strong>')
+    escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>')
+    escaped = escaped.replace(/_(.+?)_/g, '<em>$1</em>')
+
+    placeholders.forEach((html, index) => {
+      const token = `${PLACEHOLDER_PREFIX}${index}__`
+      escaped = escaped.split(token).join(html)
+    })
+
+    return escaped
   }
 
   return {

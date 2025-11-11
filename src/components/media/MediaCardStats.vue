@@ -2,27 +2,6 @@
   <div class="media-card-stats">
     <div class="media-card-stats__row">
       <div class="media-card-stats__chips">
-        <template v-if="isLoading">
-          <span
-            v-for="n in 5"
-            :key="`skeleton-${n}`"
-            class="chip chip--skeleton"
-        >
-          <span class="chip__icon"></span>
-          <span class="chip__numbers">
-            <span class="chip__total"></span>
-            <span class="chip__delta"></span>
-          </span>
-        </span>
-      </template>
-
-      <template v-else-if="error">
-        <button type="button" class="chip chip--error" @click.stop="handleRetry">
-          {{ localeStore.t('common.actions.retry') }}
-        </button>
-      </template>
-
-      <template v-else>
         <span
           v-for="item in classificationItems"
           :key="item.key"
@@ -40,11 +19,9 @@
             </span>
           </span>
         </span>
-      </template>
-    </div>
+      </div>
 
     <div
-      ref="infoTrigger"
       class="media-card-stats__info"
       :class="{ 'media-card-stats__info--active': tooltipVisible }"
       :aria-label="infoTooltipLabel"
@@ -52,7 +29,6 @@
       tabindex="0"
       @pointerdown.stop
       @click.stop.prevent="toggleTooltip"
-      @touchstart.stop.prevent="handleTouch"
       @mouseenter="showTooltip()"
       @mouseleave="hideTooltip"
       @focus="showTooltip()"
@@ -95,28 +71,76 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, onMounted, watch, type Component, ref, onBeforeUnmount } from 'vue'
-import type { Media } from '@/types/api'
-import { useMediaStatsStore, type ClassificationGroupKey } from '@/stores/mediaStats'
+import { computed, h, type Component, ref, onBeforeUnmount } from 'vue'
+import type { Media, MediaClassificationStats } from '@/types/api'
 import { useLocaleStore } from '@/stores/locale'
 
 const props = defineProps<{
   media: Media
 }>()
 
-const mediaStatsStore = useMediaStatsStore()
 const localeStore = useLocaleStore()
 
-const statsState = computed(() => mediaStatsStore.getStats(props.media.id))
-
-const isLoading = computed(() => statsState.value.loading)
-const error = computed(() => statsState.value.error)
+type ClassificationGroupKey = 'questions' | 'positive' | 'negative' | 'urgent' | 'other'
+type GroupedStats = Record<ClassificationGroupKey, { total: number; lastHour: number }>
 
 const likesTotal = computed(() => props.media.like_count ?? 0)
 const infoTooltipLabel = computed(() => localeStore.t('media.stats.legendLabel'))
 const tooltipVisible = ref(false)
-const infoTrigger = ref<HTMLElement | null>(null)
 let autoHideTimer: ReturnType<typeof setTimeout> | null = null
+
+function getStatValue(
+  stats: MediaClassificationStats | null | undefined,
+  key: keyof MediaClassificationStats
+): number {
+  const value = stats?.[key]
+  if (typeof value !== 'number') {
+    return 0
+  }
+  const resolved = Number(value)
+  return Number.isFinite(resolved) ? resolved : 0
+}
+
+const groupedClassificationStats = computed<GroupedStats>(() => {
+  const stats = props.media.stats
+
+  const negativeTotal =
+    getStatValue(stats, 'negative_feedback_total') +
+    getStatValue(stats, 'toxic_abusive_total')
+  const negativeIncrement =
+    getStatValue(stats, 'negative_feedback_increment') +
+    getStatValue(stats, 'toxic_abusive_increment')
+
+  const otherTotal =
+    getStatValue(stats, 'partnership_proposals_total') +
+    getStatValue(stats, 'spam_irrelevant_total')
+  const otherIncrement =
+    getStatValue(stats, 'partnership_proposals_increment') +
+    getStatValue(stats, 'spam_irrelevant_increment')
+
+  return {
+    questions: {
+      total: getStatValue(stats, 'questions_total'),
+      lastHour: getStatValue(stats, 'questions_increment')
+    },
+    positive: {
+      total: getStatValue(stats, 'positive_feedback_total'),
+      lastHour: getStatValue(stats, 'positive_feedback_increment')
+    },
+    negative: {
+      total: negativeTotal,
+      lastHour: negativeIncrement
+    },
+    urgent: {
+      total: getStatValue(stats, 'urgent_issues_total'),
+      lastHour: getStatValue(stats, 'urgent_issues_increment')
+    },
+    other: {
+      total: otherTotal,
+      lastHour: otherIncrement
+    }
+  }
+})
 
 type StatChipKey = ClassificationGroupKey | 'likes'
 
@@ -129,7 +153,7 @@ interface StatChip {
 }
 
 const classificationItems = computed<StatChip[]>(() => {
-  const groups = statsState.value.data?.classifications
+  const groups = groupedClassificationStats.value
   return [
     {
       key: 'likes',
@@ -142,58 +166,39 @@ const classificationItems = computed<StatChip[]>(() => {
       key: 'questions',
       icon: QuestionIcon,
       title: localeStore.t('media.stats.titles.questions'),
-      total: groups?.questions.total ?? 0,
-      lastHour: groups?.questions.lastHour ?? 0
+      total: groups.questions.total,
+      lastHour: groups.questions.lastHour
     },
     {
       key: 'negative',
       icon: NegativeIcon,
       title: localeStore.t('media.stats.titles.negative'),
-      total: groups?.negative.total ?? 0,
-      lastHour: groups?.negative.lastHour ?? 0
+      total: groups.negative.total,
+      lastHour: groups.negative.lastHour
     },
     {
       key: 'positive',
       icon: PositiveIcon,
       title: localeStore.t('media.stats.titles.positive'),
-      total: groups?.positive.total ?? 0,
-      lastHour: groups?.positive.lastHour ?? 0
+      total: groups.positive.total,
+      lastHour: groups.positive.lastHour
     },
     {
       key: 'urgent',
       icon: UrgentIcon,
       title: localeStore.t('media.stats.titles.urgent'),
-      total: groups?.urgent.total ?? 0,
-      lastHour: groups?.urgent.lastHour ?? 0
+      total: groups.urgent.total,
+      lastHour: groups.urgent.lastHour
     },
     {
       key: 'other',
       icon: OtherIcon,
       title: localeStore.t('media.stats.titles.other'),
-      total: groups?.other.total ?? 0,
-      lastHour: groups?.other.lastHour ?? 0
+      total: groups.other.total,
+      lastHour: groups.other.lastHour
     }
   ]
 })
-
-onMounted(() => {
-  if (!statsState.value.data && !statsState.value.loading) {
-    mediaStatsStore.fetchStats(props.media.id)
-  }
-})
-
-watch(
-  () => props.media.id,
-  (newId, oldId) => {
-    if (newId !== oldId) {
-      mediaStatsStore.fetchStats(newId)
-    }
-  }
-)
-
-function handleRetry() {
-  mediaStatsStore.fetchStats(props.media.id)
-}
 
 function formatDelta(value: number | null): string {
   if (value === null || value === undefined) {
@@ -237,10 +242,6 @@ function toggleTooltip() {
   } else {
     showTooltip(true)
   }
-}
-
-function handleTouch() {
-  showTooltip(true)
 }
 
 onBeforeUnmount(() => {

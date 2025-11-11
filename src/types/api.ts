@@ -16,6 +16,10 @@ export interface ApiResponse<T> {
   payload: T
 }
 
+export type ApiResponseWithStats<T, S> = ApiResponse<T> & {
+  stats?: S | null
+}
+
 // Processing Status Type
 export type ProcessingStatus = 1 | 2 | 3 | 4 | 5
 
@@ -51,6 +55,32 @@ export const ClassificationTypeLabels: Record<number, string> = {
   [ClassificationType.SPAM_IRRELEVANT]: 'Spam / Irrelevant'
 }
 
+export interface ClassificationStatsBreakdown {
+  positive_feedback_total?: number
+  positive_feedback_increment?: number
+
+  questions_total?: number
+  questions_increment?: number
+
+  negative_feedback_total?: number
+  negative_feedback_increment?: number
+
+  urgent_issues_total?: number
+  urgent_issues_increment?: number
+
+  partnership_proposals_total?: number
+  partnership_proposals_increment?: number
+
+  toxic_abusive_total?: number
+  toxic_abusive_increment?: number
+
+  spam_irrelevant_total?: number
+  spam_irrelevant_increment?: number
+}
+
+export type MediaClassificationStats = ClassificationStatsBreakdown
+export type CommentsClassificationStats = ClassificationStatsBreakdown
+
 // Media Type
 export type MediaType = 1 | 2 | 3
 
@@ -75,6 +105,7 @@ export interface Media {
   is_comment_enabled: boolean
   is_processing_enabled: boolean
   posted_at?: string
+  stats?: MediaClassificationStats | null
 }
 
 export interface Classification {
