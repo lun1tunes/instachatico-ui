@@ -94,7 +94,6 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   click: []
-  'update:comments': [enabled: boolean]
   'update:processing': [enabled: boolean]
 }>()
 
@@ -243,11 +242,6 @@ function handleCardClick() {
 }
 
 // Handle checkbox toggles
-function handleToggleComments(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update:comments', target.checked)
-}
-
 function handleToggleProcessing(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:processing', target.checked)

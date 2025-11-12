@@ -77,7 +77,7 @@ async function resolveMediaPreview(mediaId: string, summary: CommentMediaSummary
   ].filter((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0)
 
   if (directCandidates.length > 0) {
-    return directCandidates[0]
+    return directCandidates[0] ?? null
   }
 
   const childUrls = summary.children_urls ?? []
@@ -142,7 +142,7 @@ function buildMediaSummary(media: Media): CommentMediaSummary {
 }
 
 function extractMediaId(comment: Comment): string | null {
-  const raw = comment as Record<string, unknown>
+  const raw = comment as unknown as Record<string, unknown>
 
   const direct =
     normalizeMediaId((comment as any)?.media?.id) ??
@@ -247,7 +247,7 @@ function createClassificationCountMap(): Record<ClassificationType, number> {
     [ClassificationTypeEnum.PARTNERSHIP_PROPOSAL]: 0,
     [ClassificationTypeEnum.TOXIC_ABUSIVE]: 0,
     [ClassificationTypeEnum.SPAM_IRRELEVANT]: 0
-  }
+  } as Record<ClassificationType, number>
 }
 
 const CLASSIFICATION_ORDER: ClassificationType[] = [
@@ -261,8 +261,8 @@ const CLASSIFICATION_ORDER: ClassificationType[] = [
 ]
 
 const CLASSIFICATION_STATS_KEY_MAP: Record<
-ClassificationType,
-{ total: keyof CommentsClassificationStats; increment: keyof CommentsClassificationStats }
+  ClassificationType,
+  { total: keyof CommentsClassificationStats; increment: keyof CommentsClassificationStats }
 > = {
   [ClassificationTypeEnum.POSITIVE_FEEDBACK]: {
     total: 'positive_feedback_total',
@@ -292,7 +292,10 @@ ClassificationType,
     total: 'spam_irrelevant_total',
     increment: 'spam_irrelevant_increment'
   }
-}
+} as Record<
+  ClassificationType,
+  { total: keyof CommentsClassificationStats; increment: keyof CommentsClassificationStats }
+>
 
 function resolveStatsValue(
   stats: CommentsClassificationStats | null | undefined,
@@ -554,9 +557,14 @@ export const useCommentsStore = defineStore('comments', () => {
    */
   function markCommentAsRead(commentId: string) {
     const index = allComments.value.findIndex(c => c.id === commentId)
-    if (index !== -1 && allComments.value[index].isNew) {
-      allComments.value[index] = { ...allComments.value[index], isNew: false }
+    if (index === -1) {
+      return
     }
+    const existing = allComments.value[index]
+    if (!existing || !existing.isNew) {
+      return
+    }
+    allComments.value[index] = { ...existing, isNew: false }
   }
 
   async function deleteComment(id: string) {
@@ -679,12 +687,16 @@ export const useCommentsStore = defineStore('comments', () => {
       await apiService.deleteAnswer(answerId)
 
       const index = allComments.value.findIndex((comment) => comment.id === commentId)
-      if (index !== -1) {
-        const comment = allComments.value[index]
-        allComments.value[index] = {
-          ...comment,
-          answers: comment.answers.filter((answer) => answer.id !== answerId)
-        }
+      if (index === -1) {
+        return
+      }
+      const existing = allComments.value[index]
+      if (!existing) {
+        return
+      }
+      allComments.value[index] = {
+        ...existing,
+        answers: existing.answers.filter((answer) => answer.id !== answerId)
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete answer'
@@ -702,14 +714,18 @@ export const useCommentsStore = defineStore('comments', () => {
       const response = await apiService.updateAnswer(answerId, data)
 
       const index = allComments.value.findIndex((comment) => comment.id === commentId)
-      if (index !== -1) {
-        const comment = allComments.value[index]
-        allComments.value[index] = {
-          ...comment,
-          answers: comment.answers.map((answer) =>
-            answer.id === answerId ? response.payload : answer
-          )
-        }
+      if (index === -1) {
+        return response.payload
+      }
+      const existing = allComments.value[index]
+      if (!existing) {
+        return response.payload
+      }
+      allComments.value[index] = {
+        ...existing,
+        answers: existing.answers.map((answer) =>
+          answer.id === answerId ? response.payload : answer
+        )
       }
 
       return response.payload
@@ -729,12 +745,16 @@ export const useCommentsStore = defineStore('comments', () => {
       const response = await apiService.createAnswer(commentId, data)
 
       const index = allComments.value.findIndex((comment) => comment.id === commentId)
-      if (index !== -1) {
-        const comment = allComments.value[index]
-        allComments.value[index] = {
-          ...comment,
-          answers: [...comment.answers, response.payload]
-        }
+      if (index === -1) {
+        return response.payload
+      }
+      const existing = allComments.value[index]
+      if (!existing) {
+        return response.payload
+      }
+      allComments.value[index] = {
+        ...existing,
+        answers: [...existing.answers, response.payload]
       }
 
       return response.payload

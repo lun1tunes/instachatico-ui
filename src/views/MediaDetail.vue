@@ -65,7 +65,7 @@ const mediaStore = useMediaStore()
 const localeStore = useLocaleStore()
 
 // Setup async action for media updates with duplicate prevention
-const { execute: updateMedia, loading: updateLoading } = useAsyncAction(
+const { execute: updateMedia } = useAsyncAction(
   async (data: UpdateMediaRequest) => {
     const id = String(route.params.id)
     await mediaStore.updateMedia(id, data)

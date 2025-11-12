@@ -548,7 +548,7 @@ const resolvedMediaId = computed(() => {
     return summaryId
   }
 
-  const raw = props.comment as Record<string, unknown>
+  const raw = props.comment as unknown as Record<string, unknown>
 
   const embedded = raw.media as CommentMediaSummary | undefined
   const embeddedId = embedded ? normalizeMediaId(embedded.id) : null
@@ -785,7 +785,7 @@ function getClassificationLabel(type: ClassificationType | null): string {
   if (type === null || type === undefined) {
     return localeStore.t('comments.card.pendingClassification')
   }
-  const labels: Record<ClassificationType, string> = {
+  const labels: Partial<Record<ClassificationType, string>> = {
     [ClassificationTypeEnum.POSITIVE_FEEDBACK]: localeStore.t('comments.classificationLabels.positive'),
     [ClassificationTypeEnum.CRITICAL_FEEDBACK]: localeStore.t('comments.classificationLabels.critical'),
     [ClassificationTypeEnum.URGENT_ISSUE]: localeStore.t('comments.classificationLabels.urgent'),

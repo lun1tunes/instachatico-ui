@@ -60,7 +60,7 @@ export function useMarkdown() {
     }
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trimEnd()
+      const line = (lines[i] ?? '').trimEnd()
 
       if (line.startsWith('```')) {
         flushParagraph()
@@ -83,8 +83,9 @@ export function useMarkdown() {
         flushParagraph()
         const match = line.match(/^(#{1,6})\s+(.*)$/)
         if (match) {
-          const level = match[1].length
-          const text = processInline(match[2])
+          const [, hashes = '', headingText = ''] = match
+          const level = hashes.length
+          const text = processInline(headingText)
           result.push(`<h${level}>${text}</h${level}>`)
           continue
         }
@@ -97,7 +98,8 @@ export function useMarkdown() {
           result.push('<ul>')
           inList = true
         }
-        result.push('<li>' + processInline(listMatch[1]) + '</li>')
+        const [, listText = ''] = listMatch
+        result.push('<li>' + processInline(listText) + '</li>')
         continue
       } else if (inList && line.trim() === '') {
         result.push('</ul>')
@@ -136,7 +138,7 @@ export function useMarkdown() {
 
     let working = text
 
-    working = working.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt = '', url) => {
+    working = working.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt = '', url = '') => {
       const safeUrl = sanitizeUrl(url)
       if (!safeUrl) {
         return alt
@@ -146,7 +148,7 @@ export function useMarkdown() {
       )
     })
 
-    working = working.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, url) => {
+    working = working.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label = '', url = '') => {
       const safeUrl = sanitizeUrl(url)
       if (!safeUrl) {
         return label
@@ -156,7 +158,7 @@ export function useMarkdown() {
       )
     })
 
-    working = working.replace(/`([^`]+)`/g, (_match, code) => {
+    working = working.replace(/`([^`]+)`/g, (_match, code = '') => {
       return createPlaceholder(`<code>${escapeHtml(code)}</code>`)
     })
 

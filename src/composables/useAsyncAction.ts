@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { useConfirm } from './useConfirm'
 
 interface ConfirmOptions {
@@ -134,14 +134,18 @@ export function useAsyncActions<
   const result = {} as {
     [K in keyof TActions]: {
       execute: (...args: Parameters<TActions[K]>) => Promise<Awaited<ReturnType<TActions[K]>> | undefined>
-      loading: ReturnType<typeof ref<boolean>>
-      error: ReturnType<typeof ref<Error | null>>
+      loading: Ref<boolean>
+      error: Ref<Error | null>
     }
   }
 
   for (const key in actions) {
+    const action = actions[key]
+    if (typeof action !== 'function') {
+      continue
+    }
     const actionOptions = options?.[key]
-    result[key] = useAsyncAction(actions[key], actionOptions as any)
+    result[key] = useAsyncAction(action, actionOptions as any)
   }
 
   return result

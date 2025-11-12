@@ -24,7 +24,6 @@
           :key="media.id"
           :media="media"
           @click="goToMedia(media.id)"
-          @update:comments="(enabled) => handleUpdateSettings(media.id, { is_comment_enabled: enabled })"
           @update:processing="(enabled) => handleUpdateSettings(media.id, { is_processing_enabled: enabled })"
         />
       </div>
