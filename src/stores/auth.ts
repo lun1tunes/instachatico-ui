@@ -29,11 +29,17 @@ const TOKEN_ENDPOINT = (() => {
   const trimmed = raw.trim()
 
   if (!trimmed) {
-    return 'http://localhost:8100/token'
+    // Use /token directly (not combined with API base URL)
+    return '/token'
   }
 
   if (isAbsoluteUrl(trimmed)) {
     return trimmed.replace(/\/+$/, '')
+  }
+
+  // If path starts with /, treat it as absolute (from root), don't combine with base URL
+  if (trimmed.startsWith('/')) {
+    return normalizePath(trimmed) || '/token'
   }
 
   const base = normalizeBaseUrl(DEFAULT_BASE_URL) || '/api'
