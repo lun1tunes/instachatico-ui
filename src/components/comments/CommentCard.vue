@@ -389,6 +389,7 @@ import { useCommentsStore } from '@/stores/comments'
 import { useLocaleStore } from '@/stores/locale'
 import { apiService } from '@/services/api'
 import { createImagePlaceholder } from '@/utils/placeholders'
+import { useMediaPreviewCache, useMediaDetailsCache } from '@/utils/mediaCache'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -397,8 +398,8 @@ import FullScreenMarkdownEditor from '@/components/ui/FullScreenMarkdownEditor.v
 import AnswerCard from './AnswerCard.vue'
 import ClassificationForm from './ClassificationForm.vue'
 
-const mediaPreviewCache = new Map<string, string>()
-const mediaDetailsCache = new Map<string, CommentMediaSummary>()
+const mediaPreviewCache = useMediaPreviewCache()
+const mediaDetailsCache = useMediaDetailsCache()
 
 function normalizeMediaId(value: unknown): string | null {
   if (value === null || value === undefined) {

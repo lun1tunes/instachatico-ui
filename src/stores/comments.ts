@@ -51,6 +51,22 @@ function normalizeComment(comment: Comment): Comment {
   }
 }
 
+function mergeCommentMedia(target: Comment, previous?: Comment | null): Comment {
+  if (!previous) {
+    return target
+  }
+
+  if (!target.media && previous.media) {
+    target.media = previous.media
+  }
+
+  if (!target.media_id && previous.media_id) {
+    target.media_id = previous.media_id
+  }
+
+  return target
+}
+
 const mediaSummaryCache = new Map<string, CommentMediaSummary>()
 const mediaSummaryPromises = new Map<string, Promise<CommentMediaSummary | null>>()
 
@@ -532,7 +548,10 @@ export const useCommentsStore = defineStore('comments', () => {
       if (updatedComments.length > 0) {
         allComments.value = allComments.value.map(comment => {
           const updated = updatedComments.find(u => u.id === comment.id)
-          return updated || comment
+          if (!updated) {
+            return comment
+          }
+          return mergeCommentMedia(updated, comment)
         })
       }
 
@@ -595,7 +614,12 @@ export const useCommentsStore = defineStore('comments', () => {
       // Update in local state
       const index = allComments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        allComments.value[index] = normalizeComment(response.payload)
+        const previous = allComments.value[index]
+        const updated = mergeCommentMedia(
+          normalizeComment(response.payload),
+          previous
+        )
+        allComments.value[index] = updated
       }
 
       return response.payload
@@ -617,7 +641,12 @@ export const useCommentsStore = defineStore('comments', () => {
       // Update in local state
       const index = allComments.value.findIndex(c => c.id === id)
       if (index !== -1) {
-        allComments.value[index] = normalizeComment(response.payload)
+        const previous = allComments.value[index]
+        const updated = mergeCommentMedia(
+          normalizeComment(response.payload),
+          previous
+        )
+        allComments.value[index] = updated
       }
 
       return response.payload
