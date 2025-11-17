@@ -14,7 +14,9 @@ import type {
   UpdateAnswerRequest,
   CreateAnswerRequest,
   ClassificationType,
-  CommentsClassificationStats
+  CommentsClassificationStats,
+  InstagramInsightsPayload,
+  InsightsPeriod
 } from '@/types/api'
 
 const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
@@ -258,6 +260,13 @@ class ApiService {
     }
 
     return resolvedUrl
+  }
+
+  async getInstagramInsights(period: InsightsPeriod): Promise<ApiResponse<InstagramInsightsPayload>> {
+    const response = await this.client.get<ApiResponse<InstagramInsightsPayload>>('/stats/instagram_insights', {
+      params: { period }
+    })
+    return response.data
   }
 }
 

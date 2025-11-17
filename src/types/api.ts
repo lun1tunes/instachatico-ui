@@ -198,3 +198,51 @@ export interface CommentsQuery extends PaginationQuery {
   classification_type?: ClassificationType[]
   classification?: ClassificationType[] // legacy fallback
 }
+
+// Instagram Insights
+export type InsightsPeriod = 'last_week' | 'last_month' | 'last_3_months' | 'last_6_months'
+
+export interface InsightMetricValueBreakdownResult {
+  dimension_values: string[]
+  value: number
+}
+
+export interface InsightMetricValueBreakdown {
+  dimension_keys: string[]
+  results?: InsightMetricValueBreakdownResult[]
+}
+
+export interface InsightMetricValue {
+  value: number
+  breakdowns?: InsightMetricValueBreakdown[]
+}
+
+export interface InsightMetric {
+  name: string
+  period: string
+  title: string
+  description?: string
+  total_value?: InsightMetricValue | null
+  id: string
+}
+
+export interface InsightSection {
+  data: InsightMetric[]
+}
+
+export interface InsightsMonth {
+  month: string
+  range: {
+    since: number
+    until: number
+  }
+  insights: Record<string, InsightSection>
+  follower_count?: number | null
+  post_count?: number | null
+}
+
+export interface InstagramInsightsPayload {
+  period: InsightsPeriod
+  generated_at: string
+  months: InsightsMonth[]
+}

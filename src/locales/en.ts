@@ -15,6 +15,7 @@ const en = {
   navigation: {
     media: 'Media',
     comments: 'Comments',
+    statistics: 'Statistics',
     logout: 'Logout'
   },
   auth: {
@@ -229,6 +230,38 @@ const en = {
         confirm: 'Discard Changes',
         cancel: 'Continue Editing'
       }
+    }
+  },
+  statistics: {
+    page: {
+      title: 'Performance Insights',
+      subtitle: 'Generate engagement reports for Instagram activity'
+    },
+    controls: {
+      period: 'Select period',
+      generate: 'Generate report',
+      retry: 'Try again',
+      lastUpdated: 'Generated at {date}'
+    },
+    periods: {
+      lastWeek: 'Last week',
+      lastMonth: 'Last month',
+      last3Months: 'Last 3 months',
+      last6Months: 'Last 6 months'
+    },
+    loading: 'Collecting statistics...',
+    empty: 'No statistics available for the selected period.',
+    prompt: 'Select a period and click “Generate report” to see Instagram insights.',
+    table: {
+      metric: 'Metric'
+    },
+    metrics: {
+      erReach: 'ER Reach %',
+      likes: 'Likes',
+      comments: 'Comments',
+      saves: 'Saves',
+      shares: 'Reposts',
+      reach: 'Reach'
     }
   },
   pagination: {

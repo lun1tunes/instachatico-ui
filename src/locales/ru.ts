@@ -15,6 +15,7 @@ const ru = {
   navigation: {
     media: 'Медиа',
     comments: 'Комментарии',
+    statistics: 'Статистика',
     logout: 'Выйти'
   },
   auth: {
@@ -229,6 +230,38 @@ const ru = {
         confirm: 'Отменить и выйти',
         cancel: 'Продолжить редактирование'
       }
+    }
+  },
+  statistics: {
+    page: {
+      title: 'Отчёт по активности',
+      subtitle: 'Получите сводку вовлечённости в Instagram'
+    },
+    controls: {
+      period: 'Период отчёта',
+      generate: 'Сформировать отчёт',
+      retry: 'Повторить',
+      lastUpdated: 'Сформировано {date}'
+    },
+    periods: {
+      lastWeek: 'За неделю',
+      lastMonth: 'За месяц',
+      last3Months: 'За 3 месяца',
+      last6Months: 'За 6 месяцев'
+    },
+    loading: 'Формируем статистику...',
+    empty: 'Для выбранного периода нет данных.',
+    prompt: 'Выберите период и нажмите «Сформировать отчёт», чтобы увидеть статистику.',
+    table: {
+      metric: 'Показатель'
+    },
+    metrics: {
+      erReach: 'ER Reach %',
+      likes: 'Лайки',
+      comments: 'Комментарии',
+      saves: 'Сохранения',
+      shares: 'Репосты',
+      reach: 'Охват'
     }
   },
   pagination: {
