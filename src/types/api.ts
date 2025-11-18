@@ -246,3 +246,9 @@ export interface InstagramInsightsPayload {
   generated_at: string
   months: InsightsMonth[]
 }
+
+export interface AccountStatsPayload {
+  username?: string | null
+  follower_count?: number | null
+  followers_count?: number | null
+}

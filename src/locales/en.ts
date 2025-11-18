@@ -262,6 +262,10 @@ const en = {
       saves: 'Saves',
       shares: 'Reposts',
       reach: 'Reach'
+    },
+    followers: {
+      current: 'Current followers',
+      periodLabel: 'Period: {period}'
     }
   },
   pagination: {

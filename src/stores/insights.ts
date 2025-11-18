@@ -62,13 +62,31 @@ function getAverageEngagementsPerPost(month: InsightsMonth): number {
   return interactions / posts
 }
 
-function computeEngagementRate(month: InsightsMonth): number | null {
-  const followersMetric =
-    extractMetricValue(month, 'followers_total') ??
-    extractMetricValue(month, 'followers') ??
-    null
+function resolveFollowers(month: InsightsMonth): number | null {
+  const followerMetricNames = [
+    'followers_total',
+    'followers',
+    'total_followers',
+    'followers_count'
+  ]
 
-  const followers = followersMetric ?? month.follower_count ?? 0
+  for (const name of followerMetricNames) {
+    const value = extractMetricValue(month, name)
+    if (value !== null) {
+      return value
+    }
+  }
+
+  if (month.follower_count !== undefined && month.follower_count !== null) {
+    return month.follower_count
+  }
+
+  return null
+}
+
+function computeEngagementRate(month: InsightsMonth): number | null {
+  const followers = resolveFollowers(month)
+
   if (!followers || followers <= 0) {
     return null
   }
@@ -81,22 +99,45 @@ function computeEngagementRate(month: InsightsMonth): number | null {
   return (avgPerPost / followers) * 100
 }
 
+function determineFallbackFollowers(payload: InstagramInsightsPayload | null): number | null {
+  const months = payload?.months ?? []
+  for (let i = months.length - 1; i >= 0; i--) {
+    const resolved = resolveFollowers(months[i])
+    if (resolved !== null) {
+      return resolved
+    }
+  }
+  return null
+}
+
 export const useInsightsStore = defineStore('insights', () => {
   const selectedPeriod = ref<InsightsPeriod>(DEFAULT_PERIOD)
   const insights = ref<InstagramInsightsPayload | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasFetched = ref(false)
+  const accountFollowers = ref<number | null>(null)
 
   const months = computed<InsightsMonth[]>(() => insights.value?.months ?? [])
+  const currentFollowers = computed(() => accountFollowers.value)
 
   async function fetchInsights() {
     loading.value = true
     error.value = null
 
     try {
-      const response = await apiService.getInstagramInsights(selectedPeriod.value)
-      insights.value = response.payload
+      const [insightsResponse, accountResponse] = await Promise.all([
+        apiService.getInstagramInsights(selectedPeriod.value),
+        apiService.getAccountStats().catch(() => null)
+      ])
+
+      insights.value = insightsResponse.payload
+      const payloadFollowers = accountResponse?.payload
+      const followerValue =
+        payloadFollowers?.follower_count ??
+        payloadFollowers?.followers_count ??
+        determineFallbackFollowers(insightsResponse.payload)
+      accountFollowers.value = followerValue ?? accountFollowers.value
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load statistics'
       throw err
@@ -118,6 +159,22 @@ export const useInsightsStore = defineStore('insights', () => {
     return computeEngagementRate(month)
   }
 
+  function getFollowersForMonth(month: InsightsMonth): number | null {
+    return resolveFollowers(month)
+  }
+
+  function getFollowerDelta(month: InsightsMonth): number {
+    return extractMetricValue(month, 'follows_and_unfollows') ?? 0
+  }
+
+  function getFollowerDeltaPercent(month: InsightsMonth): number | null {
+    const delta = getFollowerDelta(month)
+    if (!delta) return 0
+    const followers = currentFollowers.value
+    if (!followers || followers <= 0) return null
+    return (delta / followers) * 100
+  }
+
   return {
     selectedPeriod,
     insights,
@@ -125,9 +182,13 @@ export const useInsightsStore = defineStore('insights', () => {
     loading,
     error,
     hasFetched,
+    currentFollowers,
     fetchInsights,
     setPeriod,
     getMetricValue,
-    getEngagementRate
+    getEngagementRate,
+    getFollowerDelta,
+    getFollowerDeltaPercent,
+    getFollowersForMonth
   }
 })

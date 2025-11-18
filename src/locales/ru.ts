@@ -262,6 +262,10 @@ const ru = {
       saves: 'Сохранения',
       shares: 'Репосты',
       reach: 'Охват'
+    },
+    followers: {
+      current: 'Текущие подписчики',
+      periodLabel: 'Период: {period}'
     }
   },
   pagination: {

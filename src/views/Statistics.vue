@@ -86,6 +86,38 @@
           </table>
         </div>
       </BaseCard>
+
+      <BaseCard v-if="followerTrend.length" class="followers-card">
+        <div class="followers-header">
+          <div>
+            <p class="followers-subtitle">{{ localeStore.t('statistics.followers.current') }}</p>
+            <h2>{{ formattedFollowerCount }}</h2>
+          </div>
+          <span class="followers-period">{{ localeStore.t('statistics.followers.periodLabel', { period: periodLabel }) }}</span>
+        </div>
+
+        <div class="followers-chart">
+          <div v-for="item in followerTrend" :key="item.id" class="followers-row">
+            <span class="followers-row__month">{{ item.label }}</span>
+            <div class="followers-row__track" :class="{ 'is-empty': item.count === 0 }">
+              <div
+                v-if="item.count > 0"
+                class="followers-row__pill"
+                :style="{ width: item.barWidth }"
+              >
+                <span>{{ item.countFormatted }}</span>
+              </div>
+              <div v-else class="followers-row__pill followers-row__pill--empty">
+                <span>{{ item.countFormatted }}</span>
+              </div>
+            </div>
+            <div class="followers-row__delta" :class="{ negative: item.delta < 0 }">
+              <span>{{ item.deltaFormatted }}</span>
+              <small v-if="item.percentFormatted">({{ item.percentFormatted }})</small>
+            </div>
+          </div>
+        </div>
+      </BaseCard>
     </div>
   </div>
 </template>
@@ -215,6 +247,97 @@ const lastUpdated = computed(() => {
 const showPromptState = computed(() => !insightsStore.hasFetched && !insightsStore.loading)
 const showEmptyState = computed(() => insightsStore.hasFetched && !monthColumns.value.length && !insightsStore.loading)
 
+const periodLabelKey = computed(() => {
+  const map: Record<string, string> = {
+    last_week: 'statistics.periods.lastWeek',
+    last_month: 'statistics.periods.lastMonth',
+    last_3_months: 'statistics.periods.last3Months',
+    last_6_months: 'statistics.periods.last6Months'
+  }
+  return map[insightsStore.selectedPeriod] || 'statistics.periods.lastMonth'
+})
+
+const periodLabel = computed(() => localeStore.t(periodLabelKey.value))
+
+const followerTrend = computed(() => {
+  if (!insightsStore.months.length) return []
+
+  const months = insightsStore.months
+  const deltas = months.map((month) => insightsStore.getFollowerDelta(month))
+
+  const hasCurrentFollowers =
+    typeof insightsStore.currentFollowers === 'number' && Number.isFinite(insightsStore.currentFollowers)
+
+  const followerCounts: number[] = []
+  const effectiveDeltas: number[] = []
+  let running = 0
+
+  for (let i = 0; i < months.length; i++) {
+    const isLast = i === months.length - 1
+    const isFirst = i === 0
+
+    if (isLast && hasCurrentFollowers) {
+      // For the first (and only) month, use the delta from data instead of calculating from currentFollowers
+      if (isFirst) {
+        followerCounts[i] = Math.max(insightsStore.currentFollowers as number, 0)
+        effectiveDeltas[i] = deltas[i]
+        running = followerCounts[i]
+      } else {
+        const previousTotal = followerCounts[i - 1] ?? running
+        const adjustedDelta = (insightsStore.currentFollowers as number) - previousTotal
+        followerCounts[i] = Math.max(insightsStore.currentFollowers as number, 0)
+        effectiveDeltas[i] = adjustedDelta
+        running = followerCounts[i]
+      }
+    } else {
+      running += deltas[i]
+      followerCounts[i] = Math.max(running, 0)
+      effectiveDeltas[i] = deltas[i]
+    }
+  }
+
+  const rows = months.map((month, index) => {
+    const followerCount = followerCounts[index]
+    const previousCount = index > 0 ? followerCounts[index - 1] : 0
+    const delta = effectiveDeltas[index]
+    const percent =
+      previousCount > 0 ? (delta / previousCount) * 100 : delta > 0 ? 100 : delta < 0 ? -100 : null
+
+    return {
+      id: month.month,
+      label: monthColumns.value.find((col) => col.id === month.month)?.label ?? month.month,
+      count: followerCount,
+      countFormatted: formatNumber(Math.round(followerCount)),
+      delta,
+      deltaFormatted: delta === 0 ? '0' : `${delta > 0 ? '+' : ''}${formatNumber(delta)}`,
+      percentFormatted: percent === null ? null : `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`,
+      barWidth: '0%'
+    }
+  })
+
+  const maxCount = Math.max(...rows.map((row) => row.count), 0)
+  rows.forEach((row) => {
+    if (row.count <= 0) {
+      row.barWidth = '0%'
+    } else {
+      const ratio = maxCount > 0 ? row.count / maxCount : 0
+      row.barWidth = `${Math.max(ratio * 100, 12)}%`
+    }
+  })
+
+  return rows
+})
+
+const formattedFollowerCount = computed(() => {
+  const current = insightsStore.currentFollowers
+  const fallback = followerTrend.value.length
+    ? followerTrend.value[followerTrend.value.length - 1].count
+    : null
+  const count = typeof current === 'number' && !Number.isNaN(current) ? current : fallback
+  if (count === null || Number.isNaN(count)) return '—'
+  return formatNumber(Math.round(count))
+})
+
 function handleGenerate() {
   return insightsStore.fetchInsights().catch(() => {
     // Error already handled in store
@@ -287,6 +410,101 @@ onMounted(() => {
 
 .stats-table-wrapper {
   overflow-x: auto;
+}
+
+.followers-card {
+  margin-top: var(--spacing-xl);
+}
+
+.followers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.followers-subtitle {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--slate-500);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.followers-period {
+  font-size: 0.85rem;
+  color: var(--slate-500);
+}
+
+.followers-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.followers-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.followers-row__month {
+  font-weight: 600;
+  color: var(--navy-700);
+}
+
+.followers-row__track {
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.followers-row__track.is-empty {
+  background: var(--slate-200);
+}
+
+.followers-row__pill {
+  background: linear-gradient(135deg, var(--blue-400), var(--blue-500));
+  color: white;
+  border-radius: 999px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  transition: width var(--transition-base);
+}
+
+.followers-row__pill--empty {
+  background: var(--slate-300);
+  color: var(--slate-600);
+}
+
+.followers-row__pill span {
+  font-weight: 600;
+}
+
+.followers-row__delta {
+  min-width: 90px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.followers-row__delta.negative {
+  color: var(--error);
+}
+
+.followers-row__delta small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .stats-table {
