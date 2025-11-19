@@ -4,7 +4,9 @@ import { apiService } from '@/services/api'
 import type {
   InstagramInsightsPayload,
   InsightsMonth,
-  InsightsPeriod
+  InsightsPeriod,
+  ModerationStatsPayload,
+  ModerationStatsMonth
 } from '@/types/api'
 
 const DEFAULT_PERIOD: InsightsPeriod = 'last_3_months'
@@ -113,12 +115,14 @@ function determineFallbackFollowers(payload: InstagramInsightsPayload | null): n
 export const useInsightsStore = defineStore('insights', () => {
   const selectedPeriod = ref<InsightsPeriod>(DEFAULT_PERIOD)
   const insights = ref<InstagramInsightsPayload | null>(null)
+  const moderationStats = ref<ModerationStatsPayload | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasFetched = ref(false)
   const accountFollowers = ref<number | null>(null)
 
   const months = computed<InsightsMonth[]>(() => insights.value?.months ?? [])
+  const moderationMonths = computed<ModerationStatsMonth[]>(() => moderationStats.value?.months ?? [])
   const currentFollowers = computed(() => accountFollowers.value)
 
   async function fetchInsights() {
@@ -126,12 +130,14 @@ export const useInsightsStore = defineStore('insights', () => {
     error.value = null
 
     try {
-      const [insightsResponse, accountResponse] = await Promise.all([
+      const [insightsResponse, accountResponse, moderationResponse] = await Promise.all([
         apiService.getInstagramInsights(selectedPeriod.value),
-        apiService.getAccountStats().catch(() => null)
+        apiService.getAccountStats().catch(() => null),
+        apiService.getModerationStats(selectedPeriod.value).catch(() => null)
       ])
 
       insights.value = insightsResponse.payload
+      moderationStats.value = moderationResponse?.payload ?? null
       const payloadFollowers = accountResponse?.payload
       const followerValue =
         payloadFollowers?.follower_count ??
@@ -179,6 +185,7 @@ export const useInsightsStore = defineStore('insights', () => {
     selectedPeriod,
     insights,
     months,
+    moderationMonths,
     loading,
     error,
     hasFetched,

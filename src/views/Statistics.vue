@@ -118,6 +118,58 @@
           </div>
         </div>
       </BaseCard>
+
+      <BaseCard v-if="moderationSummaryRows.length" class="moderation-card">
+        <div class="moderation-header">
+          <div>
+            <p class="followers-subtitle">{{ localeStore.t('statistics.moderation.title') }}</p>
+            <p class="moderation-subtitle">{{ localeStore.t('statistics.moderation.subtitle') }}</p>
+          </div>
+          <span class="followers-period">{{ localeStore.t('statistics.followers.periodLabel', { period: periodLabel }) }}</span>
+        </div>
+
+        <div class="stats-table-wrapper">
+          <table class="stats-table">
+            <thead>
+              <tr>
+                <th>{{ localeStore.t('statistics.table.metric') }}</th>
+                <th v-for="column in monthColumns" :key="`moderation-${column.id}`">
+                  {{ column.label }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in moderationSummaryRows" :key="row.key">
+                <th>{{ row.label }}</th>
+                <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
+                  {{ row.values[column.id] ?? '—' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="moderation-grid">
+          <div class="moderation-panel">
+            <h4>{{ localeStore.t('statistics.moderation.violationsTitle') }}</h4>
+            <ul>
+              <li v-for="row in moderationViolationRows" :key="row.key">
+                <span>{{ row.label }}</span>
+                <strong>{{ row.values.join(' / ') }}</strong>
+              </li>
+            </ul>
+          </div>
+          <div class="moderation-panel">
+            <h4>{{ localeStore.t('statistics.moderation.aiTitle') }}</h4>
+            <ul>
+              <li v-for="row in moderationAiRows" :key="row.key">
+                <span>{{ row.label }}</span>
+                <strong>{{ row.values.join(' / ') }}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </BaseCard>
     </div>
   </div>
 </template>
@@ -168,6 +220,15 @@ const numberFormatter = computed(() => {
 
 function formatNumber(value: number): string {
   return numberFormatter.value.format(value)
+}
+
+function formatReactionTime(seconds: number | null): string {
+  if (seconds === null || Number.isNaN(seconds)) return '—'
+  if (seconds < 60) return `${Math.round(seconds)}s`
+  const minutes = seconds / 60
+  if (minutes < 60) return `${minutes.toFixed(1)}m`
+  const hours = minutes / 60
+  return `${hours.toFixed(1)}h`
 }
 
 const metricsConfig = computed(() => ([
@@ -258,6 +319,67 @@ const periodLabelKey = computed(() => {
 })
 
 const periodLabel = computed(() => localeStore.t(periodLabelKey.value))
+
+const moderationSummaryRows = computed(() => {
+  if (!insightsStore.moderationMonths.length) return []
+  const fields = [
+    { key: 'total_verified_content', label: localeStore.t('statistics.moderation.metrics.verified'), formatter: (val: number) => formatNumber(val ?? 0) },
+    { key: 'complaints_total', label: localeStore.t('statistics.moderation.metrics.complaints'), formatter: (val: number) => formatNumber(val ?? 0) },
+    { key: 'complaints_processed', label: localeStore.t('statistics.moderation.metrics.complaintsProcessed'), formatter: (val: number) => formatNumber(val ?? 0) },
+    { key: 'average_reaction_time_seconds', label: localeStore.t('statistics.moderation.metrics.reactionTime'), formatter: (val: number | null) => formatReactionTime(val) }
+  ]
+
+  return fields.map((field) => {
+    const values: Record<string, string> = {}
+    insightsStore.moderationMonths.forEach((month) => {
+      const raw = (month.summary as any)?.[field.key]
+      values[month.month] = field.formatter(raw ?? null)
+    })
+    return { key: field.key, label: field.label, values }
+  })
+})
+
+const moderationViolationRows = computed(() => {
+  if (!insightsStore.moderationMonths.length) return []
+  const fields = [
+    { key: 'spam_advertising', label: localeStore.t('statistics.moderation.violations.spam') },
+    { key: 'adult_content', label: localeStore.t('statistics.moderation.violations.adult') },
+    { key: 'insults_toxicity', label: localeStore.t('statistics.moderation.violations.toxic') },
+    { key: 'other', label: localeStore.t('statistics.moderation.violations.other') }
+  ]
+
+  return fields.map((field) => {
+    const values: string[] = []
+    insightsStore.moderationMonths.forEach((month) => {
+      if (field.key === 'other') {
+        const other = month.violations.other
+        const examples = other.examples?.slice(0, 2).join(', ') || localeStore.t('statistics.moderation.noExamples')
+        values.push(`${formatNumber(other.count ?? 0)} (${examples})`)
+      } else {
+        const raw = month.violations[field.key as keyof typeof month.violations] as number
+        values.push(formatNumber(raw ?? 0))
+      }
+    })
+    return { key: field.key, label: field.label, values }
+  })
+})
+
+const moderationAiRows = computed(() => {
+  if (!insightsStore.moderationMonths.length) return []
+  const fields = [
+    { key: 'deleted_content', label: localeStore.t('statistics.moderation.ai.deleted') },
+    { key: 'hidden_comments', label: localeStore.t('statistics.moderation.ai.hidden') }
+  ]
+
+  return fields.map((field) => {
+    const values: string[] = []
+    insightsStore.moderationMonths.forEach((month) => {
+      const raw = month.ai_moderator[field.key as keyof typeof month.ai_moderator] as number
+      values.push(formatNumber(raw ?? 0))
+    })
+    return { key: field.key, label: field.label, values }
+  })
+})
 
 const followerTrend = computed(() => {
   if (!insightsStore.months.length) return []
@@ -484,6 +606,57 @@ onMounted(() => {
 .followers-row__pill--empty {
   background: var(--slate-300);
   color: var(--slate-600);
+}
+
+.moderation-card {
+  margin-top: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.moderation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.moderation-subtitle {
+  margin: 0;
+  color: var(--slate-500);
+  font-size: 0.875rem;
+}
+
+.moderation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.moderation-panel {
+  background: var(--slate-50);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+}
+
+.moderation-panel h4 {
+  margin-bottom: var(--spacing-sm);
+  font-size: 1rem;
+}
+
+.moderation-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.moderation-panel li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
 }
 
 .followers-row__pill span {

@@ -266,6 +266,29 @@ const ru = {
     followers: {
       current: 'Текущие подписчики',
       periodLabel: 'Период: {period}'
+    },
+    moderation: {
+      title: 'Модерация',
+      subtitle: 'Проверенный контент и обращения',
+      metrics: {
+        verified: 'Проверенный контент',
+        complaints: 'Жалобы пользователей',
+        complaintsProcessed: 'Жалобы обработаны',
+        reactionTime: 'Среднее время реакции'
+      },
+      violationsTitle: 'Нарушения',
+      violations: {
+        spam: 'Спам / реклама',
+        adult: '18+ контент',
+        toxic: 'Оскорбления / токсичность',
+        other: 'Другое'
+      },
+      aiTitle: 'AI модератор',
+      ai: {
+        deleted: 'Удалённые материалы',
+        hidden: 'Скрытые комментарии'
+      },
+      noExamples: 'примеров нет'
     }
   },
   pagination: {

@@ -252,3 +252,42 @@ export interface AccountStatsPayload {
   follower_count?: number | null
   followers_count?: number | null
 }
+
+export interface ModerationStatsSummary {
+  total_verified_content: number
+  complaints_total: number
+  complaints_processed: number
+  average_reaction_time_seconds: number | null
+}
+
+export interface ModerationStatsViolations {
+  spam_advertising: number
+  adult_content: number
+  insults_toxicity: number
+  other: {
+    count: number
+    examples: string[]
+  }
+}
+
+export interface ModerationStatsAiModerator {
+  deleted_content: number
+  hidden_comments: number
+}
+
+export interface ModerationStatsMonth {
+  month: string
+  range: {
+    since: number
+    until: number
+  }
+  summary: ModerationStatsSummary
+  violations: ModerationStatsViolations
+  ai_moderator: ModerationStatsAiModerator
+}
+
+export interface ModerationStatsPayload {
+  period: InsightsPeriod
+  generated_at: string
+  months: ModerationStatsMonth[]
+}

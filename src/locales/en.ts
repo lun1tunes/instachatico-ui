@@ -266,6 +266,29 @@ const en = {
     followers: {
       current: 'Current followers',
       periodLabel: 'Period: {period}'
+    },
+    moderation: {
+      title: 'Moderation overview',
+      subtitle: 'Content verification and complaint handling',
+      metrics: {
+        verified: 'Verified content',
+        complaints: 'Total complaints',
+        complaintsProcessed: 'Complaints processed',
+        reactionTime: 'Avg reaction time'
+      },
+      violationsTitle: 'Violations breakdown',
+      violations: {
+        spam: 'Spam / advertising',
+        adult: '18+ content',
+        toxic: 'Insults / toxicity',
+        other: 'Other'
+      },
+      aiTitle: 'AI moderator',
+      ai: {
+        deleted: 'Deleted content',
+        hidden: 'Hidden comments'
+      },
+      noExamples: 'no examples'
     }
   },
   pagination: {
