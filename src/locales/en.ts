@@ -265,28 +265,44 @@ const en = {
     },
     followers: {
       current: 'Current followers',
-      periodLabel: 'Period: {period}'
+      periodLabel: 'Period: {period}',
+      description: 'Monthly follower totals with deltas for each period.'
     },
     moderation: {
       title: 'Moderation overview',
       subtitle: 'Content verification and complaint handling',
+      section: {
+        summaryTitle: 'Content verification & complaints',
+        summaryDescription: 'Totals for verified items plus complaint handling KPIs.',
+        violationsTitle: 'Violations breakdown',
+        violationsDescription: 'Distribution of detected violation categories.',
+        aiTitle: 'AI moderator',
+        aiDescription: 'Automated moderation actions for the selected period.'
+      },
       metrics: {
         verified: 'Verified content',
         complaints: 'Total complaints',
         complaintsProcessed: 'Complaints processed',
         reactionTime: 'Avg reaction time'
       },
-      violationsTitle: 'Violations breakdown',
       violations: {
         spam: 'Spam / advertising',
         adult: '18+ content',
-        toxic: 'Insults / toxicity',
-        other: 'Other'
+        toxic: 'Insults / toxicity'
       },
-      aiTitle: 'AI moderator',
       ai: {
         deleted: 'Deleted content',
         hidden: 'Hidden comments'
+      },
+      classificationsTitle: 'Verified content classifications',
+      classifications: {
+        positive: 'Positive feedback',
+        critical: 'Critical feedback',
+        urgent: 'Urgent issue',
+        question: 'Question / inquiry',
+        partnership: 'Partnership',
+        toxic: 'Toxic / abusive',
+        spam: 'Spam / irrelevant'
       },
       noExamples: 'no examples'
     }

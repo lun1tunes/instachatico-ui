@@ -92,6 +92,7 @@
           <div>
             <p class="followers-subtitle">{{ localeStore.t('statistics.followers.current') }}</p>
             <h2>{{ formattedFollowerCount }}</h2>
+            <p class="section-description">{{ localeStore.t('statistics.followers.description') }}</p>
           </div>
           <span class="followers-period">{{ localeStore.t('statistics.followers.periodLabel', { period: periodLabel }) }}</span>
         </div>
@@ -122,53 +123,109 @@
       <BaseCard v-if="moderationSummaryRows.length" class="moderation-card">
         <div class="moderation-header">
           <div>
-            <p class="followers-subtitle">{{ localeStore.t('statistics.moderation.title') }}</p>
-            <p class="moderation-subtitle">{{ localeStore.t('statistics.moderation.subtitle') }}</p>
+            <h3 class="moderation-title">{{ localeStore.t('statistics.moderation.title') }}</h3>
           </div>
           <span class="followers-period">{{ localeStore.t('statistics.followers.periodLabel', { period: periodLabel }) }}</span>
         </div>
 
-        <div class="stats-table-wrapper">
-          <table class="stats-table">
-            <thead>
-              <tr>
-                <th>{{ localeStore.t('statistics.table.metric') }}</th>
-                <th v-for="column in monthColumns" :key="`moderation-${column.id}`">
-                  {{ column.label }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in moderationSummaryRows" :key="row.key">
-                <th>{{ row.label }}</th>
-                <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
-                  {{ row.values[column.id] ?? '—' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="moderation-section moderation-section--summary">
+          <div class="section-heading">
+            <div>
+              <h3>{{ localeStore.t('statistics.moderation.section.summaryTitle') }}</h3>
+              <p class="section-description">{{ localeStore.t('statistics.moderation.section.summaryDescription') }}</p>
+            </div>
+          </div>
+          <div class="stats-table-wrapper">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>{{ localeStore.t('statistics.table.metric') }}</th>
+                  <th v-for="column in monthColumns" :key="`moderation-summary-${column.id}`">
+                    {{ column.label }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in moderationSummaryRows" :key="row.key">
+                  <th>{{ row.label }}</th>
+                  <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
+                    <div class="summary-value">{{ (row.values[column.id]?.display ?? row.values[column.id]) || '—' }}</div>
+                    <details
+                      v-if="row.key === 'total_verified_content' && row.values[column.id]?.breakdown?.length"
+                      class="classification-details"
+                    >
+                      <summary>{{ localeStore.t('statistics.moderation.classificationsTitle') }}</summary>
+                      <div class="classification-chips">
+                        <span v-for="chip in row.values[column.id].breakdown" :key="chip.label">
+                          {{ chip.label }} {{ chip.value }}
+                        </span>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="moderation-grid">
-          <div class="moderation-panel">
-            <h4>{{ localeStore.t('statistics.moderation.violationsTitle') }}</h4>
-            <ul>
-              <li v-for="row in moderationViolationRows" :key="row.key">
-                <span>{{ row.label }}</span>
-                <strong>{{ row.values.join(' / ') }}</strong>
-              </li>
-            </ul>
+        <div class="moderation-section">
+          <div class="section-heading">
+            <div>
+              <h3>{{ localeStore.t('statistics.moderation.section.violationsTitle') }}</h3>
+              <p class="section-description">{{ localeStore.t('statistics.moderation.section.violationsDescription') }}</p>
+            </div>
           </div>
-          <div class="moderation-panel">
-            <h4>{{ localeStore.t('statistics.moderation.aiTitle') }}</h4>
-            <ul>
-              <li v-for="row in moderationAiRows" :key="row.key">
-                <span>{{ row.label }}</span>
-                <strong>{{ row.values.join(' / ') }}</strong>
-              </li>
-            </ul>
+          <div class="stats-table-wrapper">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>{{ localeStore.t('statistics.table.metric') }}</th>
+                  <th v-for="column in monthColumns" :key="`moderation-violations-${column.id}`">
+                    {{ column.label }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in moderationViolationRows" :key="row.key">
+                  <th>{{ row.label }}</th>
+                  <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
+                    {{ row.values[column.id] ?? '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
+
+        <div class="moderation-section">
+          <div class="section-heading">
+            <div>
+              <h3>{{ localeStore.t('statistics.moderation.section.aiTitle') }}</h3>
+              <p class="section-description">{{ localeStore.t('statistics.moderation.section.aiDescription') }}</p>
+            </div>
+          </div>
+          <div class="stats-table-wrapper">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>{{ localeStore.t('statistics.table.metric') }}</th>
+                  <th v-for="column in monthColumns" :key="`moderation-ai-${column.id}`">
+                    {{ column.label }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in moderationAiRows" :key="row.key">
+                  <th>{{ row.label }}</th>
+                  <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
+                    {{ row.values[column.id] ?? '—' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </BaseCard>
     </div>
   </div>
@@ -320,6 +377,32 @@ const periodLabelKey = computed(() => {
 
 const periodLabel = computed(() => localeStore.t(periodLabelKey.value))
 
+const moderationClassificationMap = computed(() => {
+  const map: Record<string, Array<{ label: string; value: string }>> = {}
+  const order = [
+    { key: 'positive', label: localeStore.t('statistics.moderation.classifications.positive') },
+    { key: 'critical', label: localeStore.t('statistics.moderation.classifications.critical') },
+    { key: 'urgent', label: localeStore.t('statistics.moderation.classifications.urgent') },
+    { key: 'question', label: localeStore.t('statistics.moderation.classifications.question') },
+    { key: 'partnership', label: localeStore.t('statistics.moderation.classifications.partnership') },
+    { key: 'toxic', label: localeStore.t('statistics.moderation.classifications.toxic') },
+    { key: 'spam', label: localeStore.t('statistics.moderation.classifications.spam') }
+  ]
+
+  insightsStore.moderationMonths.forEach((month) => {
+    const breakdown = month.summary.classification_breakdown
+    if (!breakdown) return
+    map[month.month] = order
+      .map((item) => {
+        const raw = Number(breakdown[item.key as keyof typeof breakdown] ?? 0)
+        return { label: item.label, value: raw }
+      })
+      .filter((entry) => entry.value > 0)
+      .map((entry) => ({ label: entry.label, value: formatNumber(entry.value) }))
+  })
+  return map
+})
+
 const moderationSummaryRows = computed(() => {
   if (!insightsStore.moderationMonths.length) return []
   const fields = [
@@ -330,10 +413,17 @@ const moderationSummaryRows = computed(() => {
   ]
 
   return fields.map((field) => {
-    const values: Record<string, string> = {}
+    const values: Record<string, { display: string; breakdown?: Array<{ label: string; value: string }> }> = {}
     insightsStore.moderationMonths.forEach((month) => {
       const raw = (month.summary as any)?.[field.key]
-      values[month.month] = field.formatter(raw ?? null)
+      const coerced = typeof raw === 'number' ? raw : Number(raw ?? 0)
+      const cell: { display: string; breakdown?: Array<{ label: string; value: string }> } = {
+        display: field.formatter(coerced)
+      }
+      if (field.key === 'total_verified_content') {
+        cell.breakdown = moderationClassificationMap.value[month.month] ?? []
+      }
+      values[month.month] = cell
     })
     return { key: field.key, label: field.label, values }
   })
@@ -344,21 +434,15 @@ const moderationViolationRows = computed(() => {
   const fields = [
     { key: 'spam_advertising', label: localeStore.t('statistics.moderation.violations.spam') },
     { key: 'adult_content', label: localeStore.t('statistics.moderation.violations.adult') },
-    { key: 'insults_toxicity', label: localeStore.t('statistics.moderation.violations.toxic') },
-    { key: 'other', label: localeStore.t('statistics.moderation.violations.other') }
+    { key: 'insults_toxicity', label: localeStore.t('statistics.moderation.violations.toxic') }
   ]
 
   return fields.map((field) => {
-    const values: string[] = []
+    const values: Record<string, string> = {}
     insightsStore.moderationMonths.forEach((month) => {
-      if (field.key === 'other') {
-        const other = month.violations.other
-        const examples = other.examples?.slice(0, 2).join(', ') || localeStore.t('statistics.moderation.noExamples')
-        values.push(`${formatNumber(other.count ?? 0)} (${examples})`)
-      } else {
-        const raw = month.violations[field.key as keyof typeof month.violations] as number
-        values.push(formatNumber(raw ?? 0))
-      }
+      const raw = month.violations[field.key as keyof typeof month.violations] as number
+      const coerced = typeof raw === 'number' ? raw : Number(raw ?? 0)
+      values[month.month] = formatNumber(coerced)
     })
     return { key: field.key, label: field.label, values }
   })
@@ -372,12 +456,35 @@ const moderationAiRows = computed(() => {
   ]
 
   return fields.map((field) => {
-    const values: string[] = []
+    const values: Record<string, string> = {}
     insightsStore.moderationMonths.forEach((month) => {
       const raw = month.ai_moderator[field.key as keyof typeof month.ai_moderator] as number
-      values.push(formatNumber(raw ?? 0))
+      const coerced = typeof raw === 'number' ? raw : Number(raw ?? 0)
+      values[month.month] = formatNumber(coerced)
     })
     return { key: field.key, label: field.label, values }
+  })
+})
+
+const moderationClassificationRows = computed(() => {
+  if (!insightsStore.moderationMonths.length) return []
+  const classificationOrder = [
+    { key: 'positive', label: localeStore.t('statistics.moderation.classifications.positive') },
+    { key: 'critical', label: localeStore.t('statistics.moderation.classifications.critical') },
+    { key: 'urgent', label: localeStore.t('statistics.moderation.classifications.urgent') },
+    { key: 'question', label: localeStore.t('statistics.moderation.classifications.question') },
+    { key: 'partnership', label: localeStore.t('statistics.moderation.classifications.partnership') },
+    { key: 'toxic', label: localeStore.t('statistics.moderation.classifications.toxic') },
+    { key: 'spam', label: localeStore.t('statistics.moderation.classifications.spam') }
+  ]
+
+  return classificationOrder.map((type) => {
+    const values: Record<string, string> = {}
+    insightsStore.moderationMonths.forEach((month) => {
+      const raw = month.summary.classification_breakdown?.[type.key] ?? 0
+      values[month.month] = formatNumber(raw)
+    })
+    return { key: type.key, label: type.label, values }
   })
 })
 
@@ -484,6 +591,12 @@ onMounted(() => {
   color: var(--navy-600);
   font-size: 1rem;
   margin: 0;
+}
+
+.section-description {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--slate-500);
+  font-size: 0.875rem;
 }
 
 .controls-card {
@@ -613,6 +726,9 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  border: 1px solid var(--slate-200);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
 }
 
 .moderation-header {
@@ -621,42 +737,59 @@ onMounted(() => {
   align-items: baseline;
 }
 
-.moderation-subtitle {
+.moderation-header h3 {
+  color: var(--navy-900);
+  letter-spacing: 0.03em;
+}
+
+.moderation-title {
   margin: 0;
-  color: var(--slate-500);
-  font-size: 0.875rem;
+  font-size: 1.1rem;
+  color: var(--navy-900);
 }
 
-.moderation-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--spacing-md);
-}
-
-.moderation-panel {
-  background: var(--slate-50);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-md);
-}
-
-.moderation-panel h4 {
-  margin-bottom: var(--spacing-sm);
-  font-size: 1rem;
-}
-
-.moderation-panel ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.moderation-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xl);
 }
 
-.moderation-panel li {
+.moderation-section--summary {
+  gap: 0;
+  margin-top: 0;
+}
+
+.moderation-classifications {
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.moderation-classifications summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--blue-500);
+  margin-bottom: var(--spacing-sm);
+}
+
+.moderation-classifications summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-heading {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  align-items: flex-start;
+  margin-top: var(--spacing-sm);
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--navy-900);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .followers-row__pill span {
@@ -715,6 +848,36 @@ onMounted(() => {
   border-bottom: none;
 }
 
+.summary-value {
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
+.classification-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.classification-chips span {
+  background: var(--slate-100);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--navy-700);
+}
+
+.classification-details summary {
+  cursor: pointer;
+  color: var(--blue-500);
+  font-size: 0.85rem;
+}
+
+.classification-details summary::-webkit-details-marker {
+  display: none;
+}
+
 .value {
   display: inline-flex;
   align-items: center;
@@ -750,3 +913,8 @@ onMounted(() => {
   }
 }
 </style>
+.moderation-card h3 {
+  font-size: 1.1rem;
+  color: var(--navy-900);
+  margin: 0;
+}

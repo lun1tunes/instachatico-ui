@@ -265,28 +265,44 @@ const ru = {
     },
     followers: {
       current: 'Текущие подписчики',
-      periodLabel: 'Период: {period}'
+      periodLabel: 'Период: {period}',
+      description: 'Динамика подписчиков по месяцам и изменения за период.'
     },
     moderation: {
       title: 'Модерация',
       subtitle: 'Проверенный контент и обращения',
+      section: {
+        summaryTitle: 'Проверка контента и жалобы',
+        summaryDescription: 'Итоги по проверенному контенту и работе с жалобами.',
+        violationsTitle: 'Нарушения',
+        violationsDescription: 'Распределение обнаруженных нарушений.',
+        aiTitle: 'AI модератор',
+        aiDescription: 'Действия автоматической модерации за период.'
+      },
       metrics: {
         verified: 'Проверенный контент',
         complaints: 'Жалобы пользователей',
         complaintsProcessed: 'Жалобы обработаны',
         reactionTime: 'Среднее время реакции'
       },
-      violationsTitle: 'Нарушения',
       violations: {
         spam: 'Спам / реклама',
         adult: '18+ контент',
-        toxic: 'Оскорбления / токсичность',
-        other: 'Другое'
+        toxic: 'Оскорбления / токсичность'
       },
-      aiTitle: 'AI модератор',
       ai: {
         deleted: 'Удалённые материалы',
         hidden: 'Скрытые комментарии'
+      },
+      classificationsTitle: 'Классификация проверенных комментариев',
+      classifications: {
+        positive: 'Позитив',
+        critical: 'Критика',
+        urgent: 'Срочно',
+        question: 'Вопрос',
+        partnership: 'Партнёрство',
+        toxic: 'Токсично',
+        spam: 'Спам'
       },
       noExamples: 'примеров нет'
     }

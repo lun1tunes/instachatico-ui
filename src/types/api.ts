@@ -258,6 +258,7 @@ export interface ModerationStatsSummary {
   complaints_total: number
   complaints_processed: number
   average_reaction_time_seconds: number | null
+  classification_breakdown?: Partial<Record<'positive' | 'critical' | 'urgent' | 'question' | 'partnership' | 'toxic' | 'spam', number>>
 }
 
 export interface ModerationStatsViolations {
