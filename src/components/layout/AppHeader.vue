@@ -28,6 +28,13 @@
         >
           {{ localeStore.t('navigation.statistics') }}
         </router-link>
+        <router-link
+          :to="{ name: 'YouTubeAuth' }"
+          class="app-header__nav-link app-header__nav-link--subtle"
+          active-class="app-header__nav-link--subtle-active"
+        >
+          {{ localeStore.t('navigation.youtubeAuth') }}
+        </router-link>
       </nav>
 
         <div class="app-header__actions">
@@ -122,6 +129,23 @@ function handleLogout() {
 .app-header__nav-link--active {
   background-color: var(--blue-50);
   color: var(--blue-500);
+}
+
+.app-header__nav-link--subtle {
+  font-size: 0.85rem;
+  color: #8b5a2b;
+  padding: 0.25rem 0.5rem;
+}
+
+.app-header__nav-link--subtle:hover {
+  background: transparent;
+  color: #8b4513;
+}
+
+.app-header__nav-link--subtle-active {
+  background: transparent;
+  color: #8b4513;
+  text-decoration: underline;
 }
 
 .app-header__actions {

@@ -24,22 +24,24 @@ function extractMetricValue(month: InsightsMonth, metricName: string): number | 
         }
       }
 
-      const breakdownValue = metric.total_value?.breakdowns?.reduce<number | null>((sum, breakdown) => {
-        if (!breakdown?.results) {
-          return sum
-        }
+      const breakdownValue = metric.total_value?.breakdowns
+        ? metric.total_value.breakdowns.reduce<number | null>((sum, breakdown) => {
+            if (!breakdown?.results) {
+              return sum
+            }
 
-        const resultTotal = breakdown.results.reduce((resultSum, result) => {
-          const value = Number(result?.value)
-          return Number.isFinite(value) ? resultSum + value : resultSum
-        }, 0)
+            const resultTotal = breakdown.results.reduce((resultSum, result) => {
+              const value = Number(result?.value)
+              return Number.isFinite(value) ? resultSum + value : resultSum
+            }, 0)
 
-        if (resultTotal === 0) {
-          return sum
-        }
+            if (resultTotal === 0) {
+              return sum
+            }
 
-        return (sum ?? 0) + resultTotal
-      }, null)
+            return (sum ?? 0) + resultTotal
+          }, null)
+        : null
 
       if (breakdownValue !== null) {
         return breakdownValue
@@ -102,9 +104,11 @@ function computeEngagementRate(month: InsightsMonth): number | null {
 }
 
 function determineFallbackFollowers(payload: InstagramInsightsPayload | null): number | null {
-  const months = payload?.months ?? []
+  const months: InsightsMonth[] = payload?.months ?? []
   for (let i = months.length - 1; i >= 0; i--) {
-    const resolved = resolveFollowers(months[i])
+    const month = months[i]
+    if (!month) continue
+    const resolved = resolveFollowers(month)
     if (resolved !== null) {
       return resolved
     }

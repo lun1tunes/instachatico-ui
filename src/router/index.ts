@@ -35,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Statistics',
     component: () => import('@/views/Statistics.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/youtube-auth',
+    name: 'YouTubeAuth',
+    component: () => import('@/views/YouTubeAuth.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

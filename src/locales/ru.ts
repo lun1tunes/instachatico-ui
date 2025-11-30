@@ -16,6 +16,7 @@ const ru = {
     media: 'Медиа',
     comments: 'Комментарии',
     statistics: 'Статистика',
+    youtubeAuth: 'YouTube',
     logout: 'Выйти'
   },
   auth: {
@@ -27,6 +28,27 @@ const ru = {
     passwordPlaceholder: 'Введите пароль',
     login: 'Войти',
     hint: 'Войдите с помощью своих учетных данных рабочей среды.'
+  },
+  youtubeAuth: {
+    eyebrow: 'YouTube',
+    title: 'Подключить YouTube',
+    subtitle: 'Дайте доступ Google для управления и модерации комментариев на YouTube.',
+    scopeTitle: 'Необходимый scope',
+    redirectLabel: 'Redirect URI',
+    redirectNote: 'Убедитесь, что этот URI указан в Google Cloud для текущего окружения.',
+    connectHeading: 'Авторизация',
+    connectCopy: 'Запустите OAuth, чтобы подключить ваш аккаунт YouTube.',
+    cta: 'Продолжить',
+    connectedCta: 'YouTube подключен',
+    consentHint: 'Вы будете перенаправлены в Google для выдачи доступа к управлению комментариями.',
+    exchanging: 'Завершаем вход через Google...',
+    connectedStatus: 'YouTube подключен. {{ channel }} готов.',
+    retry: 'Повторить',
+    rerunConsent: 'Запустите согласие ещё раз, если сессия истекла.',
+    stateMismatch: 'State отсутствует, устарел или не совпадает. Попробуйте снова.',
+    missingCode: 'Нет authorization code. Попробуйте снова.',
+    accessDenied: 'Доступ отклонён. Можно попробовать ещё раз.',
+    genericError: 'Не удалось завершить авторизацию. Попробуйте снова.'
   },
   common: {
     actions: {

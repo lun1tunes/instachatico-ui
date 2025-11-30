@@ -18,7 +18,9 @@ import type {
   InstagramInsightsPayload,
   InsightsPeriod,
   AccountStatsPayload,
-  ModerationStatsPayload
+  ModerationStatsPayload,
+  GoogleAuthorizeResponse,
+  GoogleAuthCallbackResponse
 } from '@/types/api'
 
 const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
@@ -279,6 +281,19 @@ class ApiService {
   async getModerationStats(period: InsightsPeriod): Promise<ApiResponse<ModerationStatsPayload>> {
     const response = await this.client.get<ApiResponse<ModerationStatsPayload>>('/stats/moderation', {
       params: { period }
+    })
+    return response.data
+  }
+
+  // Google / YouTube OAuth
+  async getGoogleAuthRequest(): Promise<GoogleAuthorizeResponse> {
+    const response = await this.client.get<GoogleAuthorizeResponse>('/v1/auth/google/authorize')
+    return response.data
+  }
+
+  async completeGoogleAuth(params: { code: string; state: string }): Promise<GoogleAuthCallbackResponse> {
+    const response = await this.client.get<GoogleAuthCallbackResponse>('/v1/auth/google/callback', {
+      params
     })
     return response.data
   }

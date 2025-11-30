@@ -156,7 +156,7 @@
                     >
                       <summary>{{ localeStore.t('statistics.moderation.classificationsTitle') }}</summary>
                       <div class="classification-chips">
-                        <span v-for="chip in row.values[column.id].breakdown" :key="chip.label">
+                        <span v-for="chip in row.values[column.id]?.breakdown ?? []" :key="chip.label">
                           {{ chip.label }} {{ chip.value }}
                         </span>
                       </div>
@@ -239,9 +239,28 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { useInsightsStore } from '@/stores/insights'
 import { useLocaleStore } from '@/stores/locale'
+import type { InsightsMonth } from '@/types/api'
 
 const insightsStore = useInsightsStore()
 const localeStore = useLocaleStore()
+
+type MetricConfig = {
+  key: string
+  label: string
+  formatter: (value: number) => string
+  getter: (month: InsightsMonth) => number | null
+}
+
+type FollowerTrendRow = {
+  id: string
+  label: string
+  count: number
+  countFormatted: string
+  delta: number
+  deltaFormatted: string
+  percentFormatted: string | null
+  barWidth: string
+}
 
 const selectedPeriod = computed({
   get: () => insightsStore.selectedPeriod,
@@ -288,45 +307,42 @@ function formatReactionTime(seconds: number | null): string {
   return `${hours.toFixed(1)}h`
 }
 
-const metricsConfig = computed(() => ([
+const metricsConfig = computed<MetricConfig[]>(() => ([
   {
     key: 'erReach',
     label: localeStore.t('statistics.metrics.erReach'),
-    formatter: (value: number | null) => {
-      if (value === null) return '—'
-      return `${value.toFixed(1)}%`
-    },
-    getter: (month) => insightsStore.getEngagementRate(month)
+    formatter: (value: number) => `${value.toFixed(1)}%`,
+    getter: (month: InsightsMonth) => insightsStore.getEngagementRate(month)
   },
   {
     key: 'likes',
     label: localeStore.t('statistics.metrics.likes'),
     formatter: (value: number) => formatNumber(value),
-    getter: (month) => insightsStore.getMetricValue(month, 'likes')
+    getter: (month: InsightsMonth) => insightsStore.getMetricValue(month, 'likes')
   },
   {
     key: 'comments',
     label: localeStore.t('statistics.metrics.comments'),
     formatter: (value: number) => formatNumber(value),
-    getter: (month) => insightsStore.getMetricValue(month, 'comments')
+    getter: (month: InsightsMonth) => insightsStore.getMetricValue(month, 'comments')
   },
   {
     key: 'saves',
     label: localeStore.t('statistics.metrics.saves'),
     formatter: (value: number) => formatNumber(value),
-    getter: (month) => insightsStore.getMetricValue(month, 'saves')
+    getter: (month: InsightsMonth) => insightsStore.getMetricValue(month, 'saves')
   },
   {
     key: 'shares',
     label: localeStore.t('statistics.metrics.shares'),
     formatter: (value: number) => formatNumber(value),
-    getter: (month) => insightsStore.getMetricValue(month, 'shares')
+    getter: (month: InsightsMonth) => insightsStore.getMetricValue(month, 'shares')
   },
   {
     key: 'reach',
     label: localeStore.t('statistics.metrics.reach'),
     formatter: (value: number) => formatNumber(value),
-    getter: (month) => insightsStore.getMetricValue(month, 'reach')
+    getter: (month: InsightsMonth) => insightsStore.getMetricValue(month, 'reach')
   }
 ]))
 
@@ -466,69 +482,50 @@ const moderationAiRows = computed(() => {
   })
 })
 
-const moderationClassificationRows = computed(() => {
-  if (!insightsStore.moderationMonths.length) return []
-  const classificationOrder = [
-    { key: 'positive', label: localeStore.t('statistics.moderation.classifications.positive') },
-    { key: 'critical', label: localeStore.t('statistics.moderation.classifications.critical') },
-    { key: 'urgent', label: localeStore.t('statistics.moderation.classifications.urgent') },
-    { key: 'question', label: localeStore.t('statistics.moderation.classifications.question') },
-    { key: 'partnership', label: localeStore.t('statistics.moderation.classifications.partnership') },
-    { key: 'toxic', label: localeStore.t('statistics.moderation.classifications.toxic') },
-    { key: 'spam', label: localeStore.t('statistics.moderation.classifications.spam') }
-  ]
-
-  return classificationOrder.map((type) => {
-    const values: Record<string, string> = {}
-    insightsStore.moderationMonths.forEach((month) => {
-      const raw = month.summary.classification_breakdown?.[type.key] ?? 0
-      values[month.month] = formatNumber(raw)
-    })
-    return { key: type.key, label: type.label, values }
-  })
-})
-
-const followerTrend = computed(() => {
+const followerTrend = computed<FollowerTrendRow[]>(() => {
   if (!insightsStore.months.length) return []
 
   const months = insightsStore.months
   const deltas = months.map((month) => insightsStore.getFollowerDelta(month))
-
-  const hasCurrentFollowers =
-    typeof insightsStore.currentFollowers === 'number' && Number.isFinite(insightsStore.currentFollowers)
+  const currentFollowersValue =
+    typeof insightsStore.currentFollowers === 'number' ? insightsStore.currentFollowers : null
 
   const followerCounts: number[] = []
   const effectiveDeltas: number[] = []
   let running = 0
 
   for (let i = 0; i < months.length; i++) {
+    const delta = deltas[i] ?? 0
     const isLast = i === months.length - 1
     const isFirst = i === 0
 
-    if (isLast && hasCurrentFollowers) {
-      // For the first (and only) month, use the delta from data instead of calculating from currentFollowers
+    if (isLast && currentFollowersValue !== null && Number.isFinite(currentFollowersValue)) {
+      const safeCurrentFollowers = Math.max(currentFollowersValue, 0)
       if (isFirst) {
-        followerCounts[i] = Math.max(insightsStore.currentFollowers as number, 0)
-        effectiveDeltas[i] = deltas[i]
-        running = followerCounts[i]
+        const followerCount = safeCurrentFollowers
+        followerCounts[i] = followerCount
+        effectiveDeltas[i] = delta
+        running = followerCount
       } else {
         const previousTotal = followerCounts[i - 1] ?? running
-        const adjustedDelta = (insightsStore.currentFollowers as number) - previousTotal
-        followerCounts[i] = Math.max(insightsStore.currentFollowers as number, 0)
+        const adjustedDelta = safeCurrentFollowers - previousTotal
+        const followerCount = safeCurrentFollowers
+        followerCounts[i] = followerCount
         effectiveDeltas[i] = adjustedDelta
-        running = followerCounts[i]
+        running = followerCount
       }
     } else {
-      running += deltas[i]
-      followerCounts[i] = Math.max(running, 0)
-      effectiveDeltas[i] = deltas[i]
+      running += delta
+      const followerCount = Math.max(running, 0)
+      followerCounts[i] = followerCount
+      effectiveDeltas[i] = delta
     }
   }
 
-  const rows = months.map((month, index) => {
-    const followerCount = followerCounts[index]
-    const previousCount = index > 0 ? followerCounts[index - 1] : 0
-    const delta = effectiveDeltas[index]
+  const rows: FollowerTrendRow[] = months.map((month, index) => {
+    const followerCount = followerCounts[index] ?? 0
+    const previousCount = index > 0 ? followerCounts[index - 1] ?? 0 : 0
+    const delta = effectiveDeltas[index] ?? 0
     const percent =
       previousCount > 0 ? (delta / previousCount) * 100 : delta > 0 ? 100 : delta < 0 ? -100 : null
 
@@ -546,10 +543,10 @@ const followerTrend = computed(() => {
 
   const maxCount = Math.max(...rows.map((row) => row.count), 0)
   rows.forEach((row) => {
-    if (row.count <= 0) {
+    if (row.count <= 0 || maxCount === 0) {
       row.barWidth = '0%'
     } else {
-      const ratio = maxCount > 0 ? row.count / maxCount : 0
+      const ratio = row.count / maxCount
       row.barWidth = `${Math.max(ratio * 100, 12)}%`
     }
   })
@@ -558,10 +555,9 @@ const followerTrend = computed(() => {
 })
 
 const formattedFollowerCount = computed(() => {
-  const current = insightsStore.currentFollowers
-  const fallback = followerTrend.value.length
-    ? followerTrend.value[followerTrend.value.length - 1].count
-    : null
+  const current = typeof insightsStore.currentFollowers === 'number' ? insightsStore.currentFollowers : null
+  const lastTrend = followerTrend.value[followerTrend.value.length - 1]
+  const fallback = lastTrend?.count ?? null
   const count = typeof current === 'number' && !Number.isNaN(current) ? current : fallback
   if (count === null || Number.isNaN(count)) return '—'
   return formatNumber(Math.round(count))
@@ -912,9 +908,9 @@ onMounted(() => {
     min-width: unset;
   }
 }
-</style>
 .moderation-card h3 {
   font-size: 1.1rem;
   color: var(--navy-900);
   margin: 0;
 }
+</style>

@@ -16,6 +16,7 @@ const en = {
     media: 'Media',
     comments: 'Comments',
     statistics: 'Statistics',
+    youtubeAuth: 'YouTube auth',
     logout: 'Logout'
   },
   auth: {
@@ -27,6 +28,27 @@ const en = {
     passwordPlaceholder: 'Enter your password',
     login: 'Login',
     hint: 'Sign in with your workspace credentials.'
+  },
+  youtubeAuth: {
+    eyebrow: 'YouTube',
+    title: 'Connect YouTube',
+    subtitle: 'Authorize Google to manage and moderate your YouTube comments.',
+    scopeTitle: 'Required scope',
+    redirectLabel: 'Redirect URI',
+    redirectNote: 'Use this exact redirect URI in Google Cloud for this environment.',
+    connectHeading: 'Authorization',
+    connectCopy: 'Start the OAuth flow to connect your YouTube account.',
+    cta: 'Continue',
+    connectedCta: 'YouTube connected',
+    consentHint: "You'll be redirected to Google to grant comment management access.",
+    exchanging: 'Completing Google sign-in...',
+    connectedStatus: 'YouTube connected. {{ channel }} is ready.',
+    retry: 'Retry',
+    rerunConsent: 'Re-run consent if the session expired.',
+    stateMismatch: 'State is missing, expired, or mismatched. Please start again.',
+    missingCode: 'Missing authorization code. Please try again.',
+    accessDenied: 'Access denied. You can retry authorization.',
+    genericError: 'Unable to complete authorization. Please try again.'
   },
   common: {
     actions: {

@@ -292,3 +292,16 @@ export interface ModerationStatsPayload {
   generated_at: string
   months: ModerationStatsMonth[]
 }
+
+// YouTube / Google OAuth
+export interface GoogleAuthorizeResponse {
+  auth_url: string
+  state: string
+}
+
+export interface GoogleAuthCallbackResponse {
+  connected: boolean
+  channel_title?: string | null
+  channel_id?: string | null
+  account_email?: string | null
+}
