@@ -287,12 +287,16 @@ class ApiService {
 
   // Google / YouTube OAuth
   async getGoogleAuthRequest(): Promise<GoogleAuthorizeResponse> {
-    const response = await this.client.get<GoogleAuthorizeResponse>('/v1/auth/google/authorize')
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/authorize' : '/v1/auth/google/authorize'
+    const response = await this.client.get<GoogleAuthorizeResponse>(endpoint)
     return response.data
   }
 
   async completeGoogleAuth(params: { code: string; state: string }): Promise<GoogleAuthCallbackResponse> {
-    const response = await this.client.get<GoogleAuthCallbackResponse>('/v1/auth/google/callback', {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/callback' : '/v1/auth/google/callback'
+    const response = await this.client.get<GoogleAuthCallbackResponse>(endpoint, {
       params
     })
     return response.data
