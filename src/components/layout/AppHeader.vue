@@ -29,19 +29,16 @@
           {{ localeStore.t('navigation.statistics') }}
         </router-link>
         <router-link
-          :to="{ name: 'YouTubeAuth' }"
-          class="app-header__nav-link app-header__nav-link--subtle"
-          active-class="app-header__nav-link--subtle-active"
+          :to="{ name: 'Settings' }"
+          class="app-header__nav-link"
+          active-class="app-header__nav-link--active"
         >
-          {{ localeStore.t('navigation.youtubeAuth') }}
+          {{ localeStore.t('navigation.settings') }}
         </router-link>
       </nav>
 
         <div class="app-header__actions">
           <LanguageSwitcher />
-          <BaseButton v-if="authStore.isAuthenticated" variant="ghost" size="sm" @click="handleLogout">
-            {{ localeStore.t('navigation.logout') }}
-          </BaseButton>
         </div>
       </div>
     </div>
@@ -49,20 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
-import BaseButton from '@/components/ui/BaseButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 
-const router = useRouter()
-const authStore = useAuthStore()
 const localeStore = useLocaleStore()
-
-function handleLogout() {
-  authStore.logout()
-  router.push('/login')
-}
 </script>
 
 <style scoped>

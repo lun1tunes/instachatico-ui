@@ -295,13 +295,30 @@ export interface ModerationStatsPayload {
 
 // YouTube / Google OAuth
 export interface GoogleAuthorizeResponse {
-  auth_url: string
-  state: string
+  auth_url?: string
+  url?: string
+  state?: string
 }
 
 export interface GoogleAuthCallbackResponse {
+  status?: string
   connected: boolean
   channel_title?: string | null
   channel_id?: string | null
   account_email?: string | null
+  account_id?: string | null
+  scope?: string | string[] | null
+  expires_at?: string | null
+  has_refresh_token?: boolean
+}
+
+export interface GoogleAccountStatusResponse {
+  connected: boolean
+  account_id?: string | null
+  channel_title?: string | null
+  channel_id?: string | null
+  account_email?: string | null
+  scope?: string | string[] | null
+  expires_at?: string | null
+  has_refresh_token?: boolean
 }

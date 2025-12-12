@@ -286,18 +286,27 @@ class ApiService {
   }
 
   // Google / YouTube OAuth
-  async getGoogleAuthRequest(): Promise<GoogleAuthorizeResponse> {
+  async getGoogleAuthRequest(
+    redirectTo?: string,
+    options?: { returnUrl?: boolean }
+  ): Promise<GoogleAuthorizeResponse> {
     const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/authorize' : '/v1/auth/google/authorize'
-    const response = await this.client.get<GoogleAuthorizeResponse>(endpoint)
+    // If base already ends with /v1, don't prepend v1 again
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/authorize' : 'v1/auth/google/authorize'
+    const response = await this.client.get<GoogleAuthorizeResponse>(endpoint, {
+      params: {
+        ...(redirectTo ? { redirect_to: redirectTo } : null),
+        return_url: options?.returnUrl ?? true
+      }
+    })
     return response.data
   }
 
-  async completeGoogleAuth(params: { code: string; state: string }): Promise<GoogleAuthCallbackResponse> {
+  async getGoogleAccountStatus(accountId?: string): Promise<GoogleAuthCallbackResponse> {
     const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/callback' : '/v1/auth/google/callback'
+    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/account' : '/v1/auth/google/account'
     const response = await this.client.get<GoogleAuthCallbackResponse>(endpoint, {
-      params
+      params: accountId ? { account_id: accountId } : undefined
     })
     return response.data
   }

@@ -16,7 +16,7 @@ const ru = {
     media: 'Медиа',
     comments: 'Комментарии',
     statistics: 'Статистика',
-    youtubeAuth: 'YouTube',
+    settings: 'Настройки',
     logout: 'Выйти'
   },
   auth: {
@@ -28,6 +28,21 @@ const ru = {
     passwordPlaceholder: 'Введите пароль',
     login: 'Войти',
     hint: 'Войдите с помощью своих учетных данных рабочей среды.'
+  },
+  settings: {
+    title: 'Настройки',
+    subtitle: 'Управляйте аккаунтом, подключениями и сессией',
+    account: {
+      eyebrow: 'Аккаунт',
+      heading: 'Данные аккаунта',
+      description: 'Текущая информация об авторизованной сессии.',
+      username: 'Имя пользователя',
+      unknown: 'Неизвестно',
+      apiBase: 'API базовый URL',
+      notProvided: 'Не указан',
+      scopes: 'Scopes',
+      noScopes: 'Список пуст'
+    }
   },
   youtubeAuth: {
     eyebrow: 'YouTube',

@@ -37,8 +37,26 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/Settings.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/youtube-auth',
     name: 'YouTubeAuth',
+    component: () => import('@/views/YouTubeAuth.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/api/v1/auth/google/callback',
+    name: 'YouTubeAuthCallback',
+    component: () => import('@/views/YouTubeAuth.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/auth/google/callback',
+    name: 'YouTubeAuthCallbackShort',
     component: () => import('@/views/YouTubeAuth.vue'),
     meta: { requiresAuth: true }
   }

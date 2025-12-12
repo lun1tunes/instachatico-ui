@@ -16,7 +16,7 @@ const en = {
     media: 'Media',
     comments: 'Comments',
     statistics: 'Statistics',
-    youtubeAuth: 'YouTube auth',
+    settings: 'Settings',
     logout: 'Logout'
   },
   auth: {
@@ -28,6 +28,21 @@ const en = {
     passwordPlaceholder: 'Enter your password',
     login: 'Login',
     hint: 'Sign in with your workspace credentials.'
+  },
+  settings: {
+    title: 'Settings',
+    subtitle: 'Manage your account, connections, and session',
+    account: {
+      eyebrow: 'Account',
+      heading: 'Account information',
+      description: 'Your current authenticated session details.',
+      username: 'Username',
+      unknown: 'Unknown user',
+      apiBase: 'API base URL',
+      notProvided: 'Not provided',
+      scopes: 'Scopes',
+      noScopes: 'No scopes provided'
+    }
   },
   youtubeAuth: {
     eyebrow: 'YouTube',
