@@ -60,12 +60,15 @@ import BaseCard from '@/components/ui/BaseCard.vue'
 import YouTubeAuthPanel from '@/components/settings/YouTubeAuthPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
+import { apiService } from '@/services/api'
 
 const authStore = useAuthStore()
 const localeStore = useLocaleStore()
 const router = useRouter()
 
 function handleLogout() {
+  // Best-effort: disconnect YouTube tokens on logout (ignore failures).
+  apiService.disconnectGoogleAccount().catch(() => undefined)
   authStore.logout()
   router.push({ name: 'Login' })
 }

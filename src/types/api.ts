@@ -90,9 +90,12 @@ export const MediaType = {
   CAROUSEL: 3 as MediaType
 }
 
+export type MediaPlatform = 'instagram' | 'youtube'
+
 // DTOs
 export interface Media {
   id: string
+  platform: MediaPlatform
   permalink: string
   caption: string
   url: string
@@ -314,6 +317,9 @@ export interface GoogleAuthCallbackResponse {
 
 export interface GoogleAccountStatusResponse {
   connected: boolean
+  access_token_valid?: boolean
+  refresh_token_valid?: boolean
+  needs_refresh?: boolean
   account_id?: string | null
   channel_title?: string | null
   channel_id?: string | null
@@ -321,4 +327,10 @@ export interface GoogleAccountStatusResponse {
   scope?: string | string[] | null
   expires_at?: string | null
   has_refresh_token?: boolean
+}
+
+export interface GoogleDisconnectResponse {
+  status: 'disconnected' | string
+  account_id?: string | null
+  worker_synced?: boolean
 }

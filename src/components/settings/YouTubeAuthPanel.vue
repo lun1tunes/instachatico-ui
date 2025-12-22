@@ -36,10 +36,25 @@
         <div class="actions">
           <BaseButton
             :loading="authorizeLoading"
-            :disabled="statusLoading || isConnected"
+            :disabled="statusLoading"
             @click="startAuthorization"
           >
-            {{ isConnected ? localeStore.t('youtubeAuth.connectedCta') : localeStore.t('youtubeAuth.cta') }}
+            {{
+              isConnected && needsRefresh
+                ? localeStore.t('youtubeAuth.retry')
+                : isConnected
+                  ? localeStore.t('youtubeAuth.reconnectCta')
+                  : localeStore.t('youtubeAuth.cta')
+            }}
+          </BaseButton>
+          <BaseButton
+            v-if="isConnected"
+            variant="danger"
+            :loading="disconnectLoading"
+            :disabled="authorizeLoading || statusLoading || disconnectLoading"
+            @click="disconnectDialogOpen = true"
+          >
+            {{ localeStore.t('youtubeAuth.disconnectCta') }}
           </BaseButton>
           <p class="hint muted">{{ localeStore.t('youtubeAuth.consentHint') }}</p>
         </div>
@@ -49,6 +64,17 @@
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-model="disconnectDialogOpen"
+      :title="localeStore.t('youtubeAuth.disconnectTitle')"
+      :message="localeStore.t('youtubeAuth.disconnectMessage')"
+      :confirmText="localeStore.t('youtubeAuth.disconnectConfirm')"
+      :cancelText="localeStore.t('common.actions.cancel')"
+      variant="danger"
+      :loading="disconnectLoading"
+      @confirm="confirmDisconnect"
+    />
   </BaseCard>
 </template>
 
@@ -57,6 +83,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { apiService } from '@/services/api'
 import { useLocaleStore } from '@/stores/locale'
@@ -71,10 +98,14 @@ const authStore = useAuthStore()
 
 const authorizeLoading = ref(false)
 const statusLoading = ref(false)
+const disconnectLoading = ref(false)
+const disconnectDialogOpen = ref(false)
 const statusMessage = ref('')
 const errorMessage = ref('')
 const isConnected = ref(false)
 const connectedChannelLabel = ref<string | null>(null)
+const needsRefresh = ref(false)
+const connectedAccountId = ref<string | null>(null)
 
 const redirectUri = computed(() => {
   const envValue = (import.meta as any)?.env?.VITE_YOUTUBE_REDIRECT_URI as string | undefined
@@ -132,27 +163,96 @@ async function loadStatus() {
     const response = await apiService.getGoogleAccountStatus(accountId.value)
     const payload = response as GoogleAccountStatusResponse
     isConnected.value = Boolean(payload?.connected)
+    needsRefresh.value = Boolean(payload?.needs_refresh)
+    connectedAccountId.value = payload?.account_id ?? null
     connectedChannelLabel.value =
       payload?.channel_title ||
       payload?.account_email ||
       payload?.channel_id ||
       payload?.account_id ||
       null
-    statusMessage.value = isConnected.value
-      ? localeStore.t('youtubeAuth.connectedStatus', {
-          channel: connectedChannelLabel.value || 'YouTube'
-        })
-      : ''
+    if (isConnected.value && needsRefresh.value) {
+      statusMessage.value = localeStore.t('youtubeAuth.connectedNeedsRefresh')
+    } else {
+      statusMessage.value = ''
+    }
   } catch (error) {
     const message = parseError(error)
     if (isMissingAuthError(message)) {
       statusMessage.value = localeStore.t('youtubeAuth.connectCopy')
       isConnected.value = false
+      needsRefresh.value = false
+      connectedAccountId.value = null
       return
     }
     errorMessage.value = message
   } finally {
     statusLoading.value = false
+  }
+}
+
+async function confirmDisconnect() {
+  if (disconnectLoading.value) return
+
+  errorMessage.value = ''
+  statusMessage.value = ''
+  disconnectLoading.value = true
+
+  try {
+    const response = await apiService.disconnectGoogleAccount(connectedAccountId.value ?? undefined)
+    const workerSynced = response?.worker_synced !== false
+
+    disconnectDialogOpen.value = false
+    isConnected.value = false
+    needsRefresh.value = false
+    connectedChannelLabel.value = null
+    connectedAccountId.value = null
+
+    const disconnectedMessage = workerSynced
+      ? localeStore.t('youtubeAuth.disconnectedStatus')
+      : localeStore.t('youtubeAuth.disconnectedWorkerSyncFailed')
+    statusMessage.value = disconnectedMessage
+
+    // Optional: refetch status to confirm
+    await loadStatus()
+
+    // Only restore the disconnected message if the refresh did not surface an error.
+    // Otherwise, keep the error visible (statusMessage takes precedence in the template).
+    if (!errorMessage.value && !isConnected.value) {
+      statusMessage.value = disconnectedMessage
+    }
+  } catch (error) {
+    const status = (error as any)?.response?.status || (error as any)?.status
+    const detail =
+      (error as any)?.response?.data?.detail ||
+      (error as any)?.response?.data?.message ||
+      parseError(error)
+
+    if (status === 401) {
+      authStore.logout()
+      errorMessage.value = localeStore.t('auth.login')
+      disconnectDialogOpen.value = false
+      return
+    }
+
+    if (status === 404) {
+      disconnectDialogOpen.value = false
+      isConnected.value = false
+      needsRefresh.value = false
+      connectedChannelLabel.value = null
+      connectedAccountId.value = null
+      const alreadyDisconnectedMessage = localeStore.t('youtubeAuth.alreadyDisconnected')
+      statusMessage.value = alreadyDisconnectedMessage
+      await loadStatus()
+      if (!errorMessage.value && !isConnected.value) {
+        statusMessage.value = alreadyDisconnectedMessage
+      }
+      return
+    }
+
+    errorMessage.value = detail || localeStore.t('youtubeAuth.genericError')
+  } finally {
+    disconnectLoading.value = false
   }
 }
 

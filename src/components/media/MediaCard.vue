@@ -14,6 +14,9 @@
           {{ mediaTypeLabel }}
         </BaseBadge>
       </div>
+      <div class="media-card__platform-badge" :class="`media-card__platform-badge--${platform}`">
+        <img :src="platformIconSrc" :alt="platformLabel" />
+      </div>
 
       <!-- Carousel indicator for preview -->
       <div v-if="isCarousel && media.children_urls.length > 1" class="carousel-preview">
@@ -76,7 +79,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
-import type { Media } from '@/types/api'
+import type { Media, MediaPlatform } from '@/types/api'
 import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -279,6 +282,21 @@ const mediaTypeBadge = computed(() => {
   }
 })
 
+const platform = computed<MediaPlatform>(() => {
+  return props.media.platform === 'youtube' ? 'youtube' : 'instagram'
+})
+
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const platformIconSrc = computed(() => {
+  return platform.value === 'youtube'
+    ? `${publicBase}/assets/platforms/youtube.png`
+    : `${publicBase}/assets/platforms/instagram.png`
+})
+
+const platformLabel = computed(() => {
+  return platform.value === 'youtube' ? 'YouTube' : 'Instagram'
+})
+
 const formattedPostedAt = computed(() => {
   if (!props.media.posted_at) return ''
   try {
@@ -347,6 +365,27 @@ const formattedPostedAt = computed(() => {
   top: var(--spacing-sm);
   right: var(--spacing-sm);
   z-index: 2;
+}
+
+.media-card__platform-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.35rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.media-card__platform-badge img {
+  height: 1.2rem;
+  width: auto;
+  max-width: 3.5rem;
+  display: block;
 }
 
 /* Carousel Preview Controls */

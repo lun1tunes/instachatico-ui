@@ -20,7 +20,8 @@ import type {
   AccountStatsPayload,
   ModerationStatsPayload,
   GoogleAuthorizeResponse,
-  GoogleAuthCallbackResponse
+  GoogleAccountStatusResponse,
+  GoogleDisconnectResponse
 } from '@/types/api'
 
 const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
@@ -295,17 +296,26 @@ class ApiService {
     const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/authorize' : 'v1/auth/google/authorize'
     const response = await this.client.get<GoogleAuthorizeResponse>(endpoint, {
       params: {
-        ...(redirectTo ? { redirect_to: redirectTo } : null),
+        ...(redirectTo ? { redirect_to: redirectTo } : {}),
         return_url: options?.returnUrl ?? true
       }
     })
     return response.data
   }
 
-  async getGoogleAccountStatus(accountId?: string): Promise<GoogleAuthCallbackResponse> {
+  async getGoogleAccountStatus(accountId?: string): Promise<GoogleAccountStatusResponse> {
     const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? '/auth/google/account' : '/v1/auth/google/account'
-    const response = await this.client.get<GoogleAuthCallbackResponse>(endpoint, {
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/account' : 'v1/auth/google/account'
+    const response = await this.client.get<GoogleAccountStatusResponse>(endpoint, {
+      params: accountId ? { account_id: accountId } : undefined
+    })
+    return response.data
+  }
+
+  async disconnectGoogleAccount(accountId?: string): Promise<GoogleDisconnectResponse> {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/account' : 'v1/auth/google/account'
+    const response = await this.client.delete<GoogleDisconnectResponse>(endpoint, {
       params: accountId ? { account_id: accountId } : undefined
     })
     return response.data

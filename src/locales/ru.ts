@@ -53,11 +53,20 @@ const ru = {
     redirectNote: 'Убедитесь, что этот URI указан в Google Cloud для текущего окружения.',
     connectHeading: 'Авторизация',
     connectCopy: 'Запустите OAuth, чтобы подключить ваш аккаунт YouTube.',
-    cta: 'Продолжить',
+    cta: 'Подключить YouTube',
     connectedCta: 'YouTube подключен',
+    reconnectCta: 'Переподключить YouTube',
     consentHint: 'Вы будете перенаправлены в Google для выдачи доступа к управлению комментариями.',
     exchanging: 'Завершаем вход через Google...',
-    connectedStatus: 'YouTube подключен. {{ channel }} готов.',
+    connectedStatus: 'YouTube подключен. {channel} готов.',
+    connectedNeedsRefresh: 'Подключено (нужно обновить доступ).',
+    disconnectCta: 'Выйти из YouTube',
+    disconnectTitle: 'Выйти из YouTube?',
+    disconnectMessage: 'Токены YouTube будут удалены. Вы сможете подключить снова в любой момент.',
+    disconnectConfirm: 'Выйти',
+    disconnectedStatus: 'YouTube отключён.',
+    alreadyDisconnected: 'Уже отключено.',
+    disconnectedWorkerSyncFailed: 'Отключено локально; синхронизация воркера не удалась.',
     retry: 'Повторить',
     rerunConsent: 'Запустите согласие ещё раз, если сессия истекла.',
     stateMismatch: 'State отсутствует, устарел или не совпадает. Попробуйте снова.',
@@ -89,9 +98,15 @@ const ru = {
   media: {
     list: {
       title: 'Публикации',
-      subtitle: 'Управляйте постами и комментариями Instagram',
+      subtitle: 'Управляйте постами и комментариями Instagram и YouTube',
       loading: 'Загрузка публикаций...',
-      error: 'Не удалось загрузить публикации'
+      error: 'Не удалось загрузить публикации',
+      filterLabel: 'Фильтр по платформе',
+      filters: {
+        all: 'Все',
+        instagram: 'Instagram',
+        youtube: 'YouTube'
+      }
     },
     card: {
       types: {
@@ -104,6 +119,7 @@ const ru = {
       allowComments: 'Разрешить комментарии',
       allowCommentsWarning: 'Отключение удалит все комментарии безвозвратно',
       viewOnInstagram: 'Открыть в Instagram',
+      viewOnYouTube: 'Открыть в YouTube',
       caption: 'Подпись',
       aiContext: 'AI контекст',
       editContext: 'Редактировать',

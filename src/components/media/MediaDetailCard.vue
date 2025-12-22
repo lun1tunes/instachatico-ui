@@ -2,6 +2,9 @@
   <BaseCard class="media-detail-card">
     <div class="media-detail-card__image">
       <img :src="imageUrl" :alt="media.caption" @error="handleImageError" @load="handleImageLoad" />
+      <div class="media-detail-card__platform-badge" :class="`media-detail-card__platform-badge--${platform}`">
+        <img :src="platformIconSrc" :alt="platformLabel" />
+      </div>
 
       <!-- Carousel Navigation -->
       <div v-if="isCarousel && media.children_urls.length > 1" class="carousel-controls">
@@ -56,13 +59,13 @@
 
       <div class="info-row info-row--instagram">
         <BaseButton
-          v-if="instagramUrl"
+          v-if="platformUrl"
           variant="ghost"
           size="sm"
           class="instagram-link-btn instagram-link-btn--full"
           @click="openPermalink"
         >
-          {{ localeStore.t('media.card.viewOnInstagram') }}
+          {{ platformCtaLabel }}
         </BaseButton>
         <span v-else class="value">—</span>
       </div>
@@ -136,7 +139,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import type { Media, UpdateMediaRequest } from '@/types/api'
+import type { Media, MediaPlatform, UpdateMediaRequest } from '@/types/api'
 import { MediaType } from '@/types/api'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseBadge from '@/components/ui/BaseBadge.vue'
@@ -181,6 +184,21 @@ const totalImages = computed(() => {
     return props.media.children_urls.length
   }
   return 1
+})
+
+const platform = computed<MediaPlatform>(() => {
+  return props.media.platform === 'youtube' ? 'youtube' : 'instagram'
+})
+
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const platformIconSrc = computed(() => {
+  return platform.value === 'youtube'
+    ? `${publicBase}/assets/platforms/youtube.png`
+    : `${publicBase}/assets/platforms/instagram.png`
+})
+
+const platformLabel = computed(() => {
+  return platform.value === 'youtube' ? 'YouTube' : 'Instagram'
 })
 
 function getDirectImageSource(): string | null {
@@ -350,17 +368,23 @@ function resolveSafeExternalUrl(raw?: string | null): string {
   return ''
 }
 
-const instagramUrl = computed(() => {
+const platformUrl = computed(() => {
   const fromPermalink = resolveSafeExternalUrl(props.media.permalink)
   if (fromPermalink) {
     return fromPermalink
   }
 
-  if (props.media.shortcode) {
+  if (platform.value === 'instagram' && props.media.shortcode) {
     return resolveSafeExternalUrl(`https://www.instagram.com/p/${props.media.shortcode}/`)
   }
 
   return ''
+})
+
+const platformCtaLabel = computed(() => {
+  return platform.value === 'youtube'
+    ? localeStore.t('media.card.viewOnYouTube')
+    : localeStore.t('media.card.viewOnInstagram')
 })
 
 const formattedPostedAt = computed(() => {
@@ -415,7 +439,7 @@ function saveContext(content: string) {
 }
 
 function openPermalink() {
-  const url = instagramUrl.value
+  const url = platformUrl.value
   if (!url || typeof window === 'undefined') {
     return
   }
@@ -446,6 +470,27 @@ function openPermalink() {
   height: 100%;
   object-fit: cover;
   transition: opacity var(--transition-fast);
+}
+
+.media-detail-card__platform-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.media-detail-card__platform-badge img {
+  height: 1.3rem;
+  width: auto;
+  max-width: 4rem;
+  display: block;
 }
 
 /* Carousel Controls */

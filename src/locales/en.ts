@@ -53,11 +53,20 @@ const en = {
     redirectNote: 'Use this exact redirect URI in Google Cloud for this environment.',
     connectHeading: 'Authorization',
     connectCopy: 'Start the OAuth flow to connect your YouTube account.',
-    cta: 'Continue',
+    cta: 'Connect to YouTube',
     connectedCta: 'YouTube connected',
+    reconnectCta: 'Reconnect YouTube',
     consentHint: "You'll be redirected to Google to grant comment management access.",
     exchanging: 'Completing Google sign-in...',
-    connectedStatus: 'YouTube connected. {{ channel }} is ready.',
+    connectedStatus: 'YouTube connected. {channel} is ready.',
+    connectedNeedsRefresh: 'Connected (refreshing required).',
+    disconnectCta: 'Logout from YouTube',
+    disconnectTitle: 'Logout from YouTube?',
+    disconnectMessage: 'This will remove your stored YouTube tokens. You can reconnect anytime.',
+    disconnectConfirm: 'Logout',
+    disconnectedStatus: 'YouTube disconnected.',
+    alreadyDisconnected: 'Already disconnected.',
+    disconnectedWorkerSyncFailed: 'Disconnected locally; worker sync failed.',
     retry: 'Retry',
     rerunConsent: 'Re-run consent if the session expired.',
     stateMismatch: 'State is missing, expired, or mismatched. Please start again.',
@@ -89,9 +98,15 @@ const en = {
   media: {
     list: {
       title: 'Media Posts',
-      subtitle: 'Manage Instagram posts and comments',
+      subtitle: 'Manage Instagram and YouTube posts and comments',
       loading: 'Loading media...',
-      error: 'Failed to load media'
+      error: 'Failed to load media',
+      filterLabel: 'Filter by platform',
+      filters: {
+        all: 'All',
+        instagram: 'Instagram',
+        youtube: 'YouTube'
+      }
     },
     card: {
       types: {
@@ -104,6 +119,7 @@ const en = {
       allowComments: 'Allow Comments',
       allowCommentsWarning: 'Disabling deletes all comments permanently',
       viewOnInstagram: 'View on Instagram',
+      viewOnYouTube: 'View on YouTube',
       caption: 'Caption',
       aiContext: 'AI Context',
       editContext: 'Edit',

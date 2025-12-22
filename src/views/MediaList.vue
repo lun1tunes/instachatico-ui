@@ -4,6 +4,37 @@
       <div class="page-header">
         <h1>{{ localeStore.t('media.list.title') }}</h1>
         <p class="page-subtitle">{{ localeStore.t('media.list.subtitle') }}</p>
+        <div class="platform-filter" role="group" :aria-label="localeStore.t('media.list.filterLabel')">
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': selectedPlatform === 'all' }]"
+            :aria-pressed="selectedPlatform === 'all'"
+            @click="selectedPlatform = 'all'"
+          >
+            {{ localeStore.t('media.list.filters.all') }}
+          </BaseButton>
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': selectedPlatform === 'instagram' }]"
+            :aria-pressed="selectedPlatform === 'instagram'"
+            @click="selectedPlatform = 'instagram'"
+          >
+            <img class="platform-filter__icon" :src="instagramIconSrc" alt="" aria-hidden="true" />
+            {{ localeStore.t('media.list.filters.instagram') }}
+          </BaseButton>
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': selectedPlatform === 'youtube' }]"
+            :aria-pressed="selectedPlatform === 'youtube'"
+            @click="selectedPlatform = 'youtube'"
+          >
+            <img class="platform-filter__icon" :src="youtubeIconSrc" alt="" aria-hidden="true" />
+            {{ localeStore.t('media.list.filters.youtube') }}
+          </BaseButton>
+        </div>
       </div>
 
       <LoadingSpinner
@@ -20,7 +51,7 @@
 
       <div v-else class="media-grid">
         <MediaCard
-          v-for="media in mediaStore.mediaList"
+          v-for="media in filteredMediaList"
           :key="media.id"
           :media="media"
           @click="goToMedia(media.id)"
@@ -42,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useLocaleStore } from '@/stores/locale'
@@ -54,6 +85,20 @@ import MediaCard from '@/components/media/MediaCard.vue'
 const router = useRouter()
 const mediaStore = useMediaStore()
 const localeStore = useLocaleStore()
+const selectedPlatform = ref<'all' | 'instagram' | 'youtube'>('all')
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const instagramIconSrc = `${publicBase}/assets/platforms/instagram.png`
+const youtubeIconSrc = `${publicBase}/assets/platforms/youtube.png`
+
+const filteredMediaList = computed(() => {
+  if (selectedPlatform.value === 'all') {
+    return mediaStore.mediaList
+  }
+  return mediaStore.mediaList.filter((media) => {
+    const platform = media.platform === 'youtube' ? 'youtube' : 'instagram'
+    return platform === selectedPlatform.value
+  })
+})
 
 onMounted(() => {
   loadMedia()
@@ -97,6 +142,37 @@ async function handleUpdateSettings(id: string, settings: { is_comment_enabled?:
   color: var(--navy-600);
   font-size: 1rem;
   margin: 0;
+}
+
+.platform-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.platform-filter__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+}
+
+.platform-filter__button.is-active {
+  background-color: var(--blue-500);
+  color: white;
+  border-color: var(--blue-500);
+}
+
+.platform-filter__button.is-active img {
+  filter: none;
+}
+
+.platform-filter__icon {
+  height: 1rem;
+  width: auto;
+  max-width: 2.2rem;
+  display: block;
 }
 
 .media-grid {
