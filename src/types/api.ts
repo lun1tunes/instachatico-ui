@@ -327,6 +327,7 @@ export interface GoogleAccountStatusResponse {
   account_email?: string | null
   scope?: string | string[] | null
   expires_at?: string | null
+  refresh_token_expires_at?: string | null
   has_refresh_token?: boolean
 }
 

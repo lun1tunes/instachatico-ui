@@ -49,7 +49,7 @@
         <div class="comment-actions-wrapper">
           <div class="comment-actions">
           <BaseButton
-            v-if="!comment.is_deleted"
+            v-if="!comment.is_deleted && canHideComment"
             :variant="isHiding ? 'secondary' : 'ghost'"
             size="sm"
             @click="handleToggleHidden"
@@ -326,6 +326,13 @@
             :title="mediaLinkTitle"
           >
             <div class="comment-media-summary__thumb">
+              <div
+                v-if="platformIconSrc"
+                class="comment-media-summary__platform-badge"
+                :class="`comment-media-summary__platform-badge--${commentPlatform}`"
+              >
+                <img :src="platformIconSrc" :alt="platformLabel" />
+              </div>
               <div v-if="mediaPreviewLoading || mediaSummaryLoading" class="comment-media-summary__thumb-skeleton" />
               <img
                 v-else-if="mediaPreviewUrl"
@@ -484,6 +491,44 @@ const hideButtonLabel = computed(() =>
     isHiding.value ? 'comments.card.settings.hide.unhide' : 'comments.card.settings.hide.hide'
   )
 )
+
+const commentPlatform = computed(() => {
+  const platform = mediaSummary.value?.platform ?? props.comment.media?.platform
+  if (platform === 'youtube' || platform === 'instagram') {
+    return platform
+  }
+
+  const shortcode = mediaSummary.value?.shortcode ?? props.comment.media?.shortcode
+  if (typeof shortcode === 'string' && shortcode.trim().length > 0) {
+    return 'instagram'
+  }
+
+  const url = mediaSummary.value?.url ?? (props.comment.media as any)?.url
+  if (typeof url === 'string' && /(?:youtube\.com|youtu\.be)/i.test(url)) {
+    return 'youtube'
+  }
+
+  return null
+})
+
+const canHideComment = computed(() => commentPlatform.value !== 'youtube')
+
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const platformIconSrc = computed(() => {
+  if (commentPlatform.value === 'youtube') {
+    return `${publicBase}/assets/platforms/youtube.png`
+  }
+  if (commentPlatform.value === 'instagram') {
+    return `${publicBase}/assets/platforms/instagram.png`
+  }
+  return ''
+})
+
+const platformLabel = computed(() => {
+  if (commentPlatform.value === 'youtube') return 'YouTube'
+  if (commentPlatform.value === 'instagram') return 'Instagram'
+  return ''
+})
 
 // Check if we should show "Create Answer" button
 const shouldShowCreateAnswerButton = computed(() => {
@@ -676,6 +721,7 @@ async function ensureMediaSummary(mediaId: string) {
       preview_url: payload.url,
       type: payload.type,
       shortcode: payload.shortcode,
+      platform: payload.platform,
       posted_at: payload.posted_at
     }
     mediaDetailsCache.set(mediaId, summary)
@@ -1063,6 +1109,40 @@ function toggleClassificationExpanded() {
   justify-content: center;
   flex-shrink: 0;
   position: relative;
+}
+
+.comment-media-summary__platform-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.comment-media-summary__platform-badge img {
+  height: 1.1rem;
+  width: auto;
+  max-width: 3.4rem;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.comment-media-summary__platform-badge--instagram img {
+  max-width: 1.6rem;
+}
+
+.comment-media-summary__platform-badge--youtube img {
+  max-width: 3.4rem;
+  background-color: #ffffff;
+  padding: 0.08rem 0.18rem;
+  border-radius: 0.2rem;
 }
 
 .comment-media-summary__thumb img {

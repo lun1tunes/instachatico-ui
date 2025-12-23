@@ -60,6 +60,7 @@ const ru = {
     exchanging: 'Завершаем вход через Google...',
     connectedStatus: 'YouTube подключен. {channel} готов.',
     connectedNeedsRefresh: 'Подключено (нужно обновить доступ).',
+    refreshTokenExpiringSoon: 'Внимание: Ваш токен обновления истекает через 2 дня или меньше. Пожалуйста, переподключитесь для сохранения доступа.',
     disconnectCta: 'Выйти из YouTube',
     disconnectTitle: 'Выйти из YouTube?',
     disconnectMessage: 'Токены YouTube будут удалены. Вы сможете подключить снова в любой момент.',

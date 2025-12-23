@@ -60,6 +60,7 @@ const en = {
     exchanging: 'Completing Google sign-in...',
     connectedStatus: 'YouTube connected. {channel} is ready.',
     connectedNeedsRefresh: 'Connected (refreshing required).',
+    refreshTokenExpiringSoon: 'Warning: Your refresh token expires in 2 days or less. Please reconnect to maintain access.',
     disconnectCta: 'Logout from YouTube',
     disconnectTitle: 'Logout from YouTube?',
     disconnectMessage: 'This will remove your stored YouTube tokens. You can reconnect anytime.',

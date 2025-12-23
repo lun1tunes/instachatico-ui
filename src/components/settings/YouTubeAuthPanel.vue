@@ -7,13 +7,28 @@
         <p class="subtitle">{{ localeStore.t('youtubeAuth.subtitle') }}</p>
       </div>
 
-      <div v-if="statusMessage" class="status status--info">
+      <div v-if="refreshTokenExpiringSoon" class="status status--warning">
+        {{ localeStore.t('youtubeAuth.refreshTokenExpiringSoon') }}
+      </div>
+      <div v-else-if="statusMessage" class="status status--info">
         {{ statusMessage }}
       </div>
       <div v-else-if="errorMessage" class="status status--error">
         {{ errorMessage }}
       </div>
       <div v-else-if="isConnected" class="status status--success">
+        <svg
+          v-if="isFullyConnected"
+          class="status-checkmark"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
         <strong>{{ localeStore.t('youtubeAuth.connectedStatus', { channel: connectedChannelLabel ?? 'YouTube' }) }}</strong>
       </div>
     </div>
@@ -36,15 +51,17 @@
         <div class="actions">
           <BaseButton
             :loading="authorizeLoading"
-            :disabled="statusLoading || authorizeLoading || (isConnected && !needsRefresh)"
+            :disabled="statusLoading || authorizeLoading || (isConnected && !needsRefresh && !refreshTokenExpiringSoon)"
             @click="startAuthorization"
           >
             {{
               isConnected && needsRefresh
                 ? localeStore.t('youtubeAuth.retry')
-                : isConnected
+                : refreshTokenExpiringSoon
                   ? localeStore.t('youtubeAuth.reconnectCta')
-                  : localeStore.t('youtubeAuth.cta')
+                  : isConnected && !needsRefresh
+                    ? localeStore.t('youtubeAuth.connectedCta')
+                    : localeStore.t('youtubeAuth.cta')
             }}
           </BaseButton>
           <BaseButton
@@ -106,6 +123,7 @@ const isConnected = ref(false)
 const connectedChannelLabel = ref<string | null>(null)
 const needsRefresh = ref(false)
 const connectedAccountId = ref<string | null>(null)
+const refreshTokenExpiresAt = ref<string | null>(null)
 
 const redirectUri = computed(() => {
   const envValue = (import.meta as any)?.env?.VITE_YOUTUBE_REDIRECT_URI as string | undefined
@@ -121,6 +139,25 @@ const redirectUri = computed(() => {
 })
 
 const requiredScope = computed(() => REQUIRED_SCOPE)
+
+const isFullyConnected = computed(() => isConnected.value && !needsRefresh.value)
+
+const refreshTokenExpiringSoon = computed(() => {
+  if (!refreshTokenExpiresAt.value || !isConnected.value) {
+    return false
+  }
+  
+  try {
+    const expiresAt = new Date(refreshTokenExpiresAt.value)
+    const now = new Date()
+    const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)
+    
+    // Check if expires within 2 days and hasn't expired yet
+    return expiresAt <= twoDaysFromNow && expiresAt > now
+  } catch {
+    return false
+  }
+})
 
 function parseError(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -171,6 +208,7 @@ async function loadStatus() {
       payload?.channel_id ||
       payload?.account_id ||
       null
+    refreshTokenExpiresAt.value = payload?.refresh_token_expires_at ?? null
     if (isConnected.value && needsRefresh.value) {
       statusMessage.value = localeStore.t('youtubeAuth.connectedNeedsRefresh')
     } else {
@@ -183,6 +221,7 @@ async function loadStatus() {
       isConnected.value = false
       needsRefresh.value = false
       connectedAccountId.value = null
+      refreshTokenExpiresAt.value = null
       return
     }
     errorMessage.value = message
@@ -207,6 +246,7 @@ async function confirmDisconnect() {
     needsRefresh.value = false
     connectedChannelLabel.value = null
     connectedAccountId.value = null
+    refreshTokenExpiresAt.value = null
 
     const disconnectedMessage = workerSynced
       ? localeStore.t('youtubeAuth.disconnectedStatus')
@@ -241,6 +281,7 @@ async function confirmDisconnect() {
       needsRefresh.value = false
       connectedChannelLabel.value = null
       connectedAccountId.value = null
+      refreshTokenExpiresAt.value = null
       const alreadyDisconnectedMessage = localeStore.t('youtubeAuth.alreadyDisconnected')
       statusMessage.value = alreadyDisconnectedMessage
       await loadStatus()
@@ -463,11 +504,26 @@ onMounted(() => {
 .status--success {
   background: rgba(34, 197, 94, 0.12);
   color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.status-checkmark {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--success);
 }
 
 .status--error {
   background: rgba(239, 68, 68, 0.12);
   color: var(--error);
+}
+
+.status--warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
 }
 
 .status--info {
