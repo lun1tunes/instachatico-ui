@@ -56,7 +56,7 @@
           >
             {{
               isConnected && needsRefresh
-                ? localeStore.t('youtubeAuth.retry')
+                ? localeStore.t('youtubeAuth.reconnectCta')
                 : refreshTokenExpiringSoon
                   ? localeStore.t('youtubeAuth.reconnectCta')
                   : isConnected && !needsRefresh

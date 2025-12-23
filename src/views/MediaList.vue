@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMediaStore } from '@/stores/media'
 import { useLocaleStore } from '@/stores/locale'
@@ -91,6 +91,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import MediaCard from '@/components/media/MediaCard.vue'
+import { usePolling } from '@/composables/usePolling'
 
 const router = useRouter()
 const mediaStore = useMediaStore()
@@ -110,13 +111,38 @@ const filteredMediaList = computed(() => {
   })
 })
 
+const shouldPoll = computed(() => mediaStore.currentPage === 1)
+
+const { pause: pausePolling, resume: resumePolling } = usePolling(
+  async () => {
+    if (shouldPoll.value) {
+      await mediaStore.fetchMedia()
+    }
+  },
+  {
+    interval: 30000,
+    immediate: false
+  }
+)
+
 onMounted(() => {
   loadMedia()
+})
+
+watch(shouldPoll, (isActive) => {
+  if (isActive) {
+    resumePolling()
+  } else {
+    pausePolling()
+  }
 })
 
 async function loadMedia() {
   try {
     await mediaStore.fetchMedia()
+    if (shouldPoll.value) {
+      resumePolling()
+    }
   } catch (error) {
     console.error('Failed to load media:', error)
   }
