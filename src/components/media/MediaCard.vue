@@ -382,10 +382,20 @@ const formattedPostedAt = computed(() => {
 }
 
 .media-card__platform-badge img {
-  height: 1.2rem;
+  height: 1.1rem;
   width: auto;
-  max-width: 3.5rem;
+  max-width: 3.4rem;
+  object-fit: contain;
+  object-position: center;
   display: block;
+}
+
+.media-card__platform-badge--instagram img {
+  max-width: 1.6rem;
+}
+
+.media-card__platform-badge--youtube img {
+  max-width: 3.6rem;
 }
 
 /* Carousel Preview Controls */

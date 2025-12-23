@@ -36,7 +36,7 @@
         <div class="actions">
           <BaseButton
             :loading="authorizeLoading"
-            :disabled="statusLoading"
+            :disabled="statusLoading || authorizeLoading"
             @click="startAuthorization"
           >
             {{
@@ -257,6 +257,9 @@ async function confirmDisconnect() {
 }
 
 async function startAuthorization() {
+  if (authorizeLoading.value || statusLoading.value) {
+    return
+  }
   errorMessage.value = ''
   statusMessage.value = ''
   authorizeLoading.value = true

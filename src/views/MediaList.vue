@@ -21,7 +21,12 @@
             :aria-pressed="selectedPlatform === 'instagram'"
             @click="selectedPlatform = 'instagram'"
           >
-            <img class="platform-filter__icon" :src="instagramIconSrc" alt="" aria-hidden="true" />
+            <img
+              class="platform-filter__icon platform-filter__icon--instagram"
+              :src="instagramIconSrc"
+              alt=""
+              aria-hidden="true"
+            />
             {{ localeStore.t('media.list.filters.instagram') }}
           </BaseButton>
           <BaseButton
@@ -31,7 +36,12 @@
             :aria-pressed="selectedPlatform === 'youtube'"
             @click="selectedPlatform = 'youtube'"
           >
-            <img class="platform-filter__icon" :src="youtubeIconSrc" alt="" aria-hidden="true" />
+            <img
+              class="platform-filter__icon platform-filter__icon--youtube"
+              :src="youtubeIconSrc"
+              alt=""
+              aria-hidden="true"
+            />
             {{ localeStore.t('media.list.filters.youtube') }}
           </BaseButton>
         </div>
@@ -169,10 +179,20 @@ async function handleUpdateSettings(id: string, settings: { is_comment_enabled?:
 }
 
 .platform-filter__icon {
-  height: 1rem;
+  height: 1.1rem;
   width: auto;
-  max-width: 2.2rem;
+  max-width: 3rem;
+  object-fit: contain;
+  object-position: center;
   display: block;
+}
+
+.platform-filter__icon--instagram {
+  max-width: 1.4rem;
+}
+
+.platform-filter__icon--youtube {
+  max-width: 3.2rem;
 }
 
 .media-grid {

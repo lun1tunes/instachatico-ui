@@ -487,10 +487,20 @@ function openPermalink() {
 }
 
 .media-detail-card__platform-badge img {
-  height: 1.3rem;
+  height: 1.2rem;
   width: auto;
-  max-width: 4rem;
+  max-width: 3.6rem;
+  object-fit: contain;
+  object-position: center;
   display: block;
+}
+
+.media-detail-card__platform-badge--instagram img {
+  max-width: 1.8rem;
+}
+
+.media-detail-card__platform-badge--youtube img {
+  max-width: 3.8rem;
 }
 
 /* Carousel Controls */
