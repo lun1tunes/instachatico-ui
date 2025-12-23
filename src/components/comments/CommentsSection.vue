@@ -5,6 +5,7 @@
       :classification-filters="commentsStore.classificationFilter"
       :visibility-filter="commentsStore.visibilityFilter"
       :deleted-filter="commentsStore.deletedFilter"
+      :platform-filter="commentsStore.platformFilter"
       :classification-counts="commentsStore.classificationCounts"
       :last-hour-classification-counts="commentsStore.lastHourClassificationCounts"
       @update="handleFilterUpdate"
@@ -242,6 +243,7 @@ interface FilterUpdatePayload {
   classifications: ClassificationType[]
   visibility: VisibilityFilter
   deleted: DeletedFilter
+  platform: 'all' | 'instagram' | 'youtube'
 }
 
 function handleFilterUpdate(filters: FilterUpdatePayload) {
@@ -249,6 +251,7 @@ function handleFilterUpdate(filters: FilterUpdatePayload) {
   commentsStore.setClassificationFilter(filters.classifications)
   commentsStore.setVisibilityFilter(filters.visibility)
   commentsStore.setDeletedFilter(filters.deleted)
+  commentsStore.setPlatformFilter(filters.platform)
   loadComments()
 }
 

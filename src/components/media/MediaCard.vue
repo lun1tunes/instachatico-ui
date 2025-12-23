@@ -395,6 +395,9 @@ const formattedPostedAt = computed(() => {
 }
 
 .media-card__platform-badge--youtube img {
+  background-color: #ffffff;
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.2rem;
   max-width: 3.6rem;
 }
 

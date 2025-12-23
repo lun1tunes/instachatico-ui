@@ -170,6 +170,12 @@ const ru = {
     loading: 'Загрузка комментариев...',
     empty: 'Комментарии не найдены',
     filters: {
+      platform: 'Платформа',
+      platformOptions: {
+        all: 'Все',
+        instagram: 'Instagram',
+        youtube: 'YouTube'
+      },
       visibility: 'Видимость',
       visibilityOptions: {
         all: 'Все',

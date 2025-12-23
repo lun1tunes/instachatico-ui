@@ -170,6 +170,12 @@ const en = {
     loading: 'Loading comments...',
     empty: 'No comments found',
     filters: {
+      platform: 'Platform',
+      platformOptions: {
+        all: 'All',
+        instagram: 'Instagram',
+        youtube: 'YouTube'
+      },
       visibility: 'Visibility',
       visibilityOptions: {
         all: 'All',

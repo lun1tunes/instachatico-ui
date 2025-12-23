@@ -1,6 +1,52 @@
 <template>
   <div class="comment-filters">
     <div class="filters-row">
+      <!-- Platform Filter -->
+      <div class="filter-section">
+        <span class="filter-label">{{ localeStore.t('comments.filters.platform') }}:</span>
+        <div class="platform-filter" role="group" :aria-label="localeStore.t('comments.filters.platform')">
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': platformFilter === 'all' }]"
+            :aria-pressed="platformFilter === 'all'"
+            @click="setPlatformFilter('all')"
+          >
+            {{ localeStore.t('comments.filters.platformOptions.all') }}
+          </BaseButton>
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': platformFilter === 'instagram' }]"
+            :aria-pressed="platformFilter === 'instagram'"
+            @click="setPlatformFilter('instagram')"
+          >
+            <img
+              class="platform-filter__icon platform-filter__icon--instagram"
+              :src="instagramIconSrc"
+              alt=""
+              aria-hidden="true"
+            />
+            {{ localeStore.t('comments.filters.platformOptions.instagram') }}
+          </BaseButton>
+          <BaseButton
+            size="sm"
+            variant="ghost"
+            :class="['platform-filter__button', { 'is-active': platformFilter === 'youtube' }]"
+            :aria-pressed="platformFilter === 'youtube'"
+            @click="setPlatformFilter('youtube')"
+          >
+            <img
+              class="platform-filter__icon platform-filter__icon--youtube"
+              :src="youtubeIconSrc"
+              alt=""
+              aria-hidden="true"
+            />
+            {{ localeStore.t('comments.filters.platformOptions.youtube') }}
+          </BaseButton>
+        </div>
+      </div>
+
       <!-- Visibility Filter -->
       <div class="filter-section">
         <span class="filter-label">{{ localeStore.t('comments.filters.visibility') }}:</span>
@@ -132,15 +178,18 @@
 import { ref, computed } from 'vue'
 import { ProcessingStatus, ClassificationType } from '@/types/api'
 import { useLocaleStore } from '@/stores/locale'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 type VisibilityFilter = 'all' | 'visible' | 'hidden'
 type DeletedFilter = 'all' | 'active' | 'deleted'
+type PlatformFilter = 'all' | 'instagram' | 'youtube'
 
 interface Props {
   statusFilters: ProcessingStatus[]
   classificationFilters: ClassificationType[]
   visibilityFilter?: VisibilityFilter
   deletedFilter?: DeletedFilter
+  platformFilter?: PlatformFilter
   classificationCounts?: Partial<Record<ClassificationType, number>>
   lastHourClassificationCounts?: Partial<Record<ClassificationType, number>>
 }
@@ -148,6 +197,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   visibilityFilter: 'all',
   deletedFilter: 'all',
+  platformFilter: 'all',
   classificationCounts: () => ({}),
   lastHourClassificationCounts: () => ({})
 })
@@ -158,14 +208,19 @@ const emit = defineEmits<{
     classifications: ClassificationType[]
     visibility: VisibilityFilter
     deleted: DeletedFilter
+    platform: PlatformFilter
   }]
 }>()
 
 const visibilityFilter = ref<VisibilityFilter>(props.visibilityFilter)
 const deletedFilter = ref<DeletedFilter>(props.deletedFilter)
+const platformFilter = ref<PlatformFilter>(props.platformFilter)
 const localeStore = useLocaleStore()
 const classificationCounts = computed(() => props.classificationCounts ?? {})
 const lastHourClassificationCounts = computed(() => props.lastHourClassificationCounts ?? {})
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const instagramIconSrc = `${publicBase}/assets/platforms/instagram.png`
+const youtubeIconSrc = `${publicBase}/assets/platforms/youtube.png`
 
 const processingStatuses = computed(() => [
   { value: ProcessingStatus.PENDING, label: localeStore.t('comments.statusLabels.pending') },
@@ -217,7 +272,8 @@ const hasActiveFilters = computed(() => {
   return props.statusFilters.length > 0 ||
          props.classificationFilters.length > 0 ||
          visibilityFilter.value !== 'all' ||
-         deletedFilter.value !== 'all'
+         deletedFilter.value !== 'all' ||
+         platformFilter.value !== 'all'
 })
 
 function isStatusActive(status: ProcessingStatus): boolean {
@@ -242,7 +298,8 @@ function setVisibilityFilter(filter: VisibilityFilter) {
     statuses: [...props.statusFilters],
     classifications: [...props.classificationFilters],
     visibility: filter,
-    deleted: deletedFilter.value
+    deleted: deletedFilter.value,
+    platform: platformFilter.value
   })
 }
 
@@ -252,7 +309,19 @@ function setDeletedFilter(filter: DeletedFilter) {
     statuses: [...props.statusFilters],
     classifications: [...props.classificationFilters],
     visibility: visibilityFilter.value,
-    deleted: filter
+    deleted: filter,
+    platform: platformFilter.value
+  })
+}
+
+function setPlatformFilter(filter: PlatformFilter) {
+  platformFilter.value = filter
+  emit('update', {
+    statuses: [...props.statusFilters],
+    classifications: [...props.classificationFilters],
+    visibility: visibilityFilter.value,
+    deleted: deletedFilter.value,
+    platform: filter
   })
 }
 
@@ -270,7 +339,8 @@ function toggleStatus(status: ProcessingStatus) {
     statuses: newFilters,
     classifications: [...props.classificationFilters],
     visibility: visibilityFilter.value,
-    deleted: deletedFilter.value
+    deleted: deletedFilter.value,
+    platform: platformFilter.value
   })
 }
 
@@ -288,14 +358,22 @@ function toggleClassification(classification: ClassificationType) {
     statuses: [...props.statusFilters],
     classifications: newFilters,
     visibility: visibilityFilter.value,
-    deleted: deletedFilter.value
+    deleted: deletedFilter.value,
+    platform: platformFilter.value
   })
 }
 
 function clearFilters() {
   visibilityFilter.value = 'all'
   deletedFilter.value = 'all'
-  emit('update', { statuses: [], classifications: [], visibility: 'all', deleted: 'all' })
+  platformFilter.value = 'all'
+  emit('update', {
+    statuses: [],
+    classifications: [],
+    visibility: 'all',
+    deleted: 'all',
+    platform: 'all'
+  })
 }
 </script>
 
@@ -338,6 +416,42 @@ function clearFilters() {
   display: flex;
   gap: calc(0.375rem * 2);
   flex-wrap: wrap;
+}
+
+.platform-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.platform-filter__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid transparent;
+}
+
+.platform-filter__button.is-active {
+  background-color: var(--blue-500);
+  color: white;
+  border-color: var(--blue-500);
+}
+
+.platform-filter__icon {
+  height: 1.1rem;
+  width: auto;
+  max-width: 3rem;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.platform-filter__icon--instagram {
+  max-width: 1.4rem;
+}
+
+.platform-filter__icon--youtube {
+  max-width: 3.2rem;
 }
 
 .filter-chips--wrap {

@@ -144,6 +144,7 @@ export interface CommentMediaSummary {
   children_urls?: string[]
   type?: MediaType
   shortcode?: string
+  platform?: MediaPlatform
   posted_at?: string
 }
 

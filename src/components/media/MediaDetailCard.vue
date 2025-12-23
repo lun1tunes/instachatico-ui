@@ -500,6 +500,9 @@ function openPermalink() {
 }
 
 .media-detail-card__platform-badge--youtube img {
+  background-color: #ffffff;
+  padding: 0.12rem 0.22rem;
+  border-radius: 0.24rem;
   max-width: 3.8rem;
 }
 

@@ -12,6 +12,7 @@ import type {
   ClassificationType,
   Classification,
   Media,
+  MediaPlatform,
   CommentMediaSummary,
   CommentsClassificationStats
 } from '@/types/api'
@@ -153,6 +154,7 @@ function buildMediaSummary(media: Media): CommentMediaSummary {
     preview_url: previewCandidates[0] ?? undefined,
     type: media.type,
     shortcode: media.shortcode,
+    platform: media.platform,
     posted_at: media.posted_at
   }
 }
@@ -177,6 +179,31 @@ function extractMediaId(comment: Comment): string | null {
   const camel = normalizeMediaId(raw.mediaId)
   if (camel) {
     return camel
+  }
+
+  return null
+}
+
+function resolveCommentPlatform(comment: Comment): MediaPlatform | null {
+  const raw = comment as unknown as Record<string, unknown>
+  const media = (comment as any)?.media as Record<string, unknown> | undefined
+  const platform = media?.platform
+  if (platform === 'youtube' || platform === 'instagram') {
+    return platform
+  }
+
+  const shortcode = media?.shortcode
+  if (typeof shortcode === 'string' && shortcode.trim().length > 0) {
+    return 'instagram'
+  }
+
+  const url = typeof media?.url === 'string' ? media.url : undefined
+  if (url && /(?:youtube\.com|youtu\.be)/i.test(url)) {
+    return 'youtube'
+  }
+
+  if (typeof raw.platform === 'string' && (raw.platform === 'youtube' || raw.platform === 'instagram')) {
+    return raw.platform
   }
 
   return null
@@ -359,6 +386,7 @@ export const useCommentsStore = defineStore('comments', () => {
   const classificationFilter = ref<ClassificationType[]>([])
   const visibilityFilter = ref<'all' | 'visible' | 'hidden'>('all')
   const deletedFilter = ref<'all' | 'active' | 'deleted'>('all')
+  const platformFilter = ref<'all' | MediaPlatform>('all')
   const globalClassificationTotals = ref<Record<ClassificationType, number> | null>(null)
   const globalClassificationLastHour = ref<Record<ClassificationType, number> | null>(null)
 
@@ -380,6 +408,10 @@ export const useCommentsStore = defineStore('comments', () => {
   // Computed: Filter and sort comments by visibility, deleted status, and created_at (frontend-only filters)
   const comments = computed(() => {
     let filtered = allComments.value
+
+    if (platformFilter.value !== 'all') {
+      filtered = filtered.filter(comment => resolveCommentPlatform(comment) === platformFilter.value)
+    }
 
     // Apply visibility filter (frontend-only)
     if (visibilityFilter.value === 'visible') {
@@ -678,11 +710,17 @@ export const useCommentsStore = defineStore('comments', () => {
     currentPage.value = 1
   }
 
+  function setPlatformFilter(platform: 'all' | MediaPlatform) {
+    platformFilter.value = platform
+    currentPage.value = 1
+  }
+
   function clearFilters() {
     statusFilter.value = []
     classificationFilter.value = []
     visibilityFilter.value = 'all'
     deletedFilter.value = 'all'
+    platformFilter.value = 'all'
     currentPage.value = 1
   }
 
@@ -809,6 +847,7 @@ export const useCommentsStore = defineStore('comments', () => {
     classificationFilter,
     visibilityFilter,
     deletedFilter,
+    platformFilter,
     classificationCounts,
     lastHourClassificationCounts,
     fetchComments,
@@ -823,6 +862,7 @@ export const useCommentsStore = defineStore('comments', () => {
     setClassificationFilter,
     setVisibilityFilter,
     setDeletedFilter,
+    setPlatformFilter,
     clearFilters,
     clearComments,
     nextPage,

@@ -36,7 +36,7 @@
         <div class="actions">
           <BaseButton
             :loading="authorizeLoading"
-            :disabled="statusLoading || authorizeLoading"
+            :disabled="statusLoading || authorizeLoading || (isConnected && !needsRefresh)"
             @click="startAuthorization"
           >
             {{
