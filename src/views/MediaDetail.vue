@@ -40,7 +40,10 @@
         </div>
 
         <div class="media-detail__comments">
-          <CommentsSection :media-id="mediaStore.currentMedia.id" />
+          <CommentsSection
+            :media-id="mediaStore.currentMedia.id"
+            :media-platform="mediaStore.currentMedia.platform"
+          />
         </div>
       </div>
     </div>

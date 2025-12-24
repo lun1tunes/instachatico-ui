@@ -6,6 +6,7 @@
       :visibility-filter="commentsStore.visibilityFilter"
       :deleted-filter="commentsStore.deletedFilter"
       :platform-filter="commentsStore.platformFilter"
+      :show-platform-filter="isGlobalScope"
       :classification-counts="commentsStore.classificationCounts"
       :last-hour-classification-counts="commentsStore.lastHourClassificationCounts"
       @update="handleFilterUpdate"
@@ -37,6 +38,7 @@
         v-for="comment in commentsStore.comments"
         :key="comment.id"
         :comment="comment"
+        :media-platform="props.mediaPlatform"
         :updating-answer-id="updatingAnswerId"
         :is-creating-answer="creatingAnswerForCommentId === comment.id"
         :show-media-info="isGlobalScope"
@@ -73,7 +75,8 @@ import type {
   UpdateAnswerRequest,
   CreateAnswerRequest,
   ProcessingStatus,
-  ClassificationType
+  ClassificationType,
+  MediaPlatform
 } from '@/types/api'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BasePagination from '@/components/ui/BasePagination.vue'
@@ -83,6 +86,7 @@ import CommentCard from './CommentCard.vue'
 
 interface Props {
   mediaId?: string
+  mediaPlatform?: MediaPlatform
   scope?: 'media' | 'global'
 }
 

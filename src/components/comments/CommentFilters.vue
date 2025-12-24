@@ -2,7 +2,7 @@
   <div class="comment-filters">
     <div class="filters-row">
       <!-- Platform Filter -->
-      <div class="filter-section">
+      <div v-if="showPlatformFilter" class="filter-section">
         <span class="filter-label">{{ localeStore.t('comments.filters.platform') }}:</span>
         <div class="platform-filter" role="group" :aria-label="localeStore.t('comments.filters.platform')">
           <BaseButton
@@ -190,6 +190,7 @@ interface Props {
   visibilityFilter?: VisibilityFilter
   deletedFilter?: DeletedFilter
   platformFilter?: PlatformFilter
+  showPlatformFilter?: boolean
   classificationCounts?: Partial<Record<ClassificationType, number>>
   lastHourClassificationCounts?: Partial<Record<ClassificationType, number>>
 }
@@ -198,6 +199,7 @@ const props = withDefaults(defineProps<Props>(), {
   visibilityFilter: 'all',
   deletedFilter: 'all',
   platformFilter: 'all',
+  showPlatformFilter: true,
   classificationCounts: () => ({}),
   lastHourClassificationCounts: () => ({})
 })

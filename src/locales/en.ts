@@ -248,7 +248,7 @@ const en = {
     confirmations: {
       deleteComment: {
         title: 'Delete Comment',
-        message: 'This comment will be deleted permanently from Instagram. This action cannot be undone.',
+        message: 'This comment will be deleted permanently. This action cannot be undone.',
         confirm: 'Delete Permanently',
         cancel: 'Cancel'
       },

@@ -388,7 +388,8 @@ import type {
   UpdateAnswerRequest,
   CreateAnswerRequest,
   ProcessingStatus,
-  ClassificationType
+  ClassificationType,
+  MediaPlatform
 } from '@/types/api'
 import { ProcessingStatus as ProcessingStatusEnum, ClassificationType as ClassificationTypeEnum } from '@/types/api'
 import { format, parseISO } from 'date-fns'
@@ -424,6 +425,7 @@ function normalizeMediaId(value: unknown): string | null {
 
 interface Props {
   comment: Comment
+  mediaPlatform?: MediaPlatform
   updatingAnswerId?: string | null
   isCreatingAnswer?: boolean
   showMediaInfo?: boolean
@@ -493,7 +495,7 @@ const hideButtonLabel = computed(() =>
 )
 
 const commentPlatform = computed(() => {
-  const platform = mediaSummary.value?.platform ?? props.comment.media?.platform
+  const platform = props.mediaPlatform ?? mediaSummary.value?.platform ?? props.comment.media?.platform
   if (platform === 'youtube' || platform === 'instagram') {
     return platform
   }
