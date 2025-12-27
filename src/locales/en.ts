@@ -58,7 +58,7 @@ const en = {
     reconnectCta: 'Reconnect YouTube',
     consentHint: "You'll be redirected to Google to grant comment management access.",
     exchanging: 'Completing Google sign-in...',
-    connectedStatus: 'YouTube connected. {channel} is ready.',
+    connectedStatus: 'YouTube connected.',
     connectedNeedsRefresh: 'Connected (refreshing required).',
     refreshTokenExpiringSoon: 'Warning: Your refresh token expires in 2 days or less. Please reconnect to maintain access.',
     disconnectCta: 'Logout from YouTube',

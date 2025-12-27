@@ -58,7 +58,7 @@ const ru = {
     reconnectCta: 'Переподключить YouTube',
     consentHint: 'Вы будете перенаправлены в Google для выдачи доступа к управлению комментариями.',
     exchanging: 'Завершаем вход через Google...',
-    connectedStatus: 'YouTube подключен. {channel} готов.',
+    connectedStatus: 'YouTube подключен.',
     connectedNeedsRefresh: 'Подключено (нужно обновить доступ).',
     refreshTokenExpiringSoon: 'Внимание: Ваш токен обновления истекает через 2 дня или меньше. Пожалуйста, переподключитесь для сохранения доступа.',
     disconnectCta: 'Выйти из YouTube',
