@@ -6,7 +6,22 @@
         <h3>{{ localeStore.t('instagramAuth.title') }}</h3>
         <p class="subtitle">{{ localeStore.t('instagramAuth.subtitle') }}</p>
       </div>
-      <span class="status" :class="`status--${statusBadge.variant}`">{{ statusBadge.label }}</span>
+      <span v-if="showStatusBadge" class="status" :class="`status--${statusBadge.variant}`">
+        <svg
+          v-if="statusBadge.variant === 'success'"
+          class="status-checkmark"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+        <span v-else class="status-dot" aria-hidden="true"></span>
+        <span>{{ statusBadge.label }}</span>
+      </span>
     </div>
 
     <div v-if="noticeMessage" class="notice" :class="`notice--${noticeVariant}`">
@@ -21,12 +36,12 @@
     <div class="actions">
       <BaseButton
         :loading="authorizeLoading"
-        :disabled="authorizeLoading || statusLoading"
+        :disabled="authorizeLoading || statusLoading || (isConnected && accessTokenValid !== false)"
         @click="startAuthorization"
       >
         {{ localeStore.t('instagramAuth.cta') }}
       </BaseButton>
-      <div class="secondary-actions">
+      <div v-if="isConnected" class="secondary-actions">
         <BaseButton
           size="sm"
           variant="secondary"
@@ -107,10 +122,9 @@ const formattedExpiry = computed(() => {
   return format(parsed, pattern, { locale: localeStore.dateLocale })
 })
 
+const showStatusBadge = computed(() => isConnected.value)
+
 const statusBadge = computed(() => {
-  if (!isConnected.value) {
-    return { label: localeStore.t('instagramAuth.status.disconnected'), variant: 'muted' }
-  }
   if (accessTokenValid.value === false) {
     return { label: localeStore.t('instagramAuth.status.needsRefresh'), variant: 'warning' }
   }
@@ -339,25 +353,48 @@ onMounted(async () => {
 }
 
 .status {
-  border-radius: var(--radius-md);
-  padding: 0.35rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
   font-weight: 600;
   font-size: 0.85rem;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-sm);
 }
 
 .status--success {
   background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.28);
   color: var(--success);
 }
 
 .status--warning {
   background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.28);
   color: #d97706;
 }
 
 .status--muted {
-  background: var(--slate-100);
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.3);
   color: var(--navy-600);
+}
+
+.status-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+}
+
+.status-checkmark {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 .notice {
