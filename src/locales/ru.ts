@@ -44,6 +44,33 @@ const ru = {
       noScopes: 'Список пуст'
     }
   },
+  instagramAuth: {
+    eyebrow: 'Instagram',
+    title: 'Подключить Instagram',
+    subtitle: 'Подключите бизнес-аккаунт Instagram для управления комментариями.',
+    cta: 'Подключить Instagram',
+    refreshCta: 'Обновить доступ',
+    disconnectCta: 'Отключить',
+    consentHint: 'Вы будете перенаправлены в Instagram Business для входа.',
+    loading: 'Проверяем подключение Instagram...',
+    expiresLabel: 'Доступ истекает',
+    status: {
+      connected: 'Подключено',
+      disconnected: 'Не подключено',
+      needsRefresh: 'Нужно обновить'
+    },
+    callbackSuccess: 'Instagram успешно подключен.',
+    callbackFailed: 'Не удалось подключить Instagram. Попробуйте снова.',
+    workerSyncFailed: 'Подключено, но синхронизация воркера не удалась.',
+    refreshSuccess: 'Доступ обновлён.',
+    refreshWorkerSyncFailed: 'Обновлено локально; синхронизация воркера не удалась.',
+    disconnectSuccess: 'Instagram отключён.',
+    disconnectWorkerSyncFailed: 'Отключено локально; синхронизация воркера не удалась.',
+    disconnectTitle: 'Отключить Instagram?',
+    disconnectMessage: 'Подключение Instagram будет удалено. Вы сможете подключить снова.',
+    disconnectConfirm: 'Отключить',
+    genericError: 'Не удалось завершить авторизацию Instagram. Попробуйте снова.'
+  },
   youtubeAuth: {
     eyebrow: 'YouTube',
     title: 'Подключить YouTube',

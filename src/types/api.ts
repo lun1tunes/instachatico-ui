@@ -297,6 +297,30 @@ export interface ModerationStatsPayload {
   months: ModerationStatsMonth[]
 }
 
+// Instagram OAuth
+export interface InstagramAuthorizeResponse {
+  auth_url?: string
+}
+
+export interface InstagramAccountStatusResponse {
+  connected: boolean
+  account_id?: string | null
+  scope?: string | string[] | null
+  access_token_expires_at?: string | null
+  access_token_valid?: boolean
+}
+
+export interface InstagramRefreshResponse {
+  status?: string
+  access_token_expires_at?: string | null
+  worker_synced?: boolean
+}
+
+export interface InstagramDisconnectResponse {
+  status?: string
+  worker_synced?: boolean
+}
+
 // YouTube / Google OAuth
 export interface GoogleAuthorizeResponse {
   auth_url?: string

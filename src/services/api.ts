@@ -19,6 +19,10 @@ import type {
   InsightsPeriod,
   AccountStatsPayload,
   ModerationStatsPayload,
+  InstagramAuthorizeResponse,
+  InstagramAccountStatusResponse,
+  InstagramRefreshResponse,
+  InstagramDisconnectResponse,
   GoogleAuthorizeResponse,
   GoogleAccountStatusResponse,
   GoogleDisconnectResponse
@@ -283,6 +287,44 @@ class ApiService {
     const response = await this.client.get<ApiResponse<ModerationStatsPayload>>('/stats/moderation', {
       params: { period }
     })
+    return response.data
+  }
+
+  // Instagram OAuth
+  async getInstagramAuthRequest(
+    redirectTo?: string,
+    options?: { returnUrl?: boolean; forceReauth?: boolean }
+  ): Promise<InstagramAuthorizeResponse> {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/authorize' : 'v1/auth/instagram/authorize'
+    const response = await this.client.get<InstagramAuthorizeResponse>(endpoint, {
+      params: {
+        ...(redirectTo ? { redirect_to: redirectTo } : {}),
+        return_url: options?.returnUrl ?? true,
+        force_reauth: options?.forceReauth ?? false
+      }
+    })
+    return response.data
+  }
+
+  async getInstagramAccountStatus(): Promise<InstagramAccountStatusResponse> {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/account' : 'v1/auth/instagram/account'
+    const response = await this.client.get<InstagramAccountStatusResponse>(endpoint)
+    return response.data
+  }
+
+  async refreshInstagramAccount(): Promise<InstagramRefreshResponse> {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/refresh' : 'v1/auth/instagram/refresh'
+    const response = await this.client.post<InstagramRefreshResponse>(endpoint)
+    return response.data
+  }
+
+  async disconnectInstagramAccount(): Promise<InstagramDisconnectResponse> {
+    const base = this.client.defaults.baseURL ?? ''
+    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/account' : 'v1/auth/instagram/account'
+    const response = await this.client.delete<InstagramDisconnectResponse>(endpoint)
     return response.data
   }
 

@@ -44,6 +44,33 @@ const en = {
       noScopes: 'No scopes provided'
     }
   },
+  instagramAuth: {
+    eyebrow: 'Instagram',
+    title: 'Connect Instagram',
+    subtitle: 'Link your Instagram Business account to manage comments.',
+    cta: 'Connect Instagram',
+    refreshCta: 'Refresh access',
+    disconnectCta: 'Disconnect',
+    consentHint: "You'll be redirected to Instagram Business login.",
+    loading: 'Checking Instagram connection...',
+    expiresLabel: 'Access expires',
+    status: {
+      connected: 'Connected',
+      disconnected: 'Not connected',
+      needsRefresh: 'Refresh needed'
+    },
+    callbackSuccess: 'Instagram connected successfully.',
+    callbackFailed: 'Instagram connection failed. Please try again.',
+    workerSyncFailed: 'Connected, but worker sync failed.',
+    refreshSuccess: 'Access token refreshed.',
+    refreshWorkerSyncFailed: 'Refreshed locally; worker sync failed.',
+    disconnectSuccess: 'Instagram disconnected.',
+    disconnectWorkerSyncFailed: 'Disconnected locally; worker sync failed.',
+    disconnectTitle: 'Disconnect Instagram?',
+    disconnectMessage: 'This will remove your Instagram connection. You can reconnect anytime.',
+    disconnectConfirm: 'Disconnect',
+    genericError: 'Unable to complete Instagram authorization. Please try again.'
+  },
   youtubeAuth: {
     eyebrow: 'YouTube',
     title: 'Connect YouTube',

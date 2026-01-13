@@ -26,6 +26,7 @@
           </dl>
         </BaseCard>
 
+        <InstagramAuthPanel />
         <YouTubeAuthPanel />
       </div>
     </div>
@@ -36,6 +37,7 @@
 import { useRouter } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
+import InstagramAuthPanel from '@/components/settings/InstagramAuthPanel.vue'
 import YouTubeAuthPanel from '@/components/settings/YouTubeAuthPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
