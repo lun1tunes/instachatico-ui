@@ -24,7 +24,7 @@
       </span>
     </div>
 
-    <div v-if="noticeMessage" class="notice" :class="`notice--${noticeVariant}`">
+    <div v-if="showNotice" class="notice" :class="`notice--${noticeVariant}`">
       {{ noticeMessage }}
     </div>
 
@@ -121,6 +121,8 @@ const formattedExpiry = computed(() => {
   const pattern = localeStore.t('formats.date.withTime')
   return format(parsed, pattern, { locale: localeStore.dateLocale })
 })
+
+const showNotice = computed(() => noticeMessage.value && noticeVariant.value !== 'success')
 
 const showStatusBadge = computed(() => isConnected.value)
 
