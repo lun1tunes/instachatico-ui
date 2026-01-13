@@ -1,5 +1,5 @@
 <template>
-  <BaseCard class="auth-card">
+  <BaseCard class="auth-card" padding="lg" shadow="lg">
     <div class="card-header">
       <div>
         <p class="eyebrow">{{ localeStore.t('youtubeAuth.eyebrow') }}</p>
@@ -33,65 +33,20 @@
       </div>
     </div>
 
-    <div class="auth-grid">
-      <div class="panel">
-        <h4>{{ localeStore.t('youtubeAuth.scopeTitle') }}</h4>
-        <p class="scope">{{ requiredScope }}</p>
-        <p class="redirect">
-          <span class="label">{{ localeStore.t('youtubeAuth.redirectLabel') }}</span>
-          <span class="value">{{ redirectUri }}</span>
-        </p>
-        <p class="hint">{{ localeStore.t('youtubeAuth.redirectNote') }}</p>
-      </div>
-
-      <div class="panel panel--action">
-        <h4>{{ localeStore.t('youtubeAuth.connectHeading') }}</h4>
-        <p class="hint">{{ localeStore.t('youtubeAuth.connectCopy') }}</p>
-
-        <div class="actions">
-          <BaseButton
-            :loading="authorizeLoading"
-            :disabled="statusLoading || authorizeLoading || (isConnected && !needsRefresh && !refreshTokenExpiringSoon)"
-            @click="startAuthorization"
-          >
-            {{
-              isConnected && needsRefresh
-                ? localeStore.t('youtubeAuth.reconnectCta')
-                : refreshTokenExpiringSoon
-                  ? localeStore.t('youtubeAuth.reconnectCta')
-                  : isConnected && !needsRefresh
-                    ? localeStore.t('youtubeAuth.connectedCta')
-                    : localeStore.t('youtubeAuth.cta')
-            }}
-          </BaseButton>
-          <BaseButton
-            v-if="isConnected"
-            variant="danger"
-            :loading="disconnectLoading"
-            :disabled="authorizeLoading || statusLoading || disconnectLoading"
-            @click="disconnectDialogOpen = true"
-          >
-            {{ localeStore.t('youtubeAuth.disconnectCta') }}
-          </BaseButton>
-          <p class="hint muted">{{ localeStore.t('youtubeAuth.consentHint') }}</p>
-        </div>
-
-        <div v-if="statusLoading" class="inline-loader">
-          <LoadingSpinner :message="localeStore.t('youtubeAuth.exchanging')" />
-        </div>
-      </div>
+    <div class="auth-actions">
+      <BaseButton
+        :loading="authorizeLoading"
+        :disabled="statusLoading || authorizeLoading || (isConnected && !needsRefresh && !refreshTokenExpiringSoon)"
+        @click="startAuthorization"
+      >
+        {{ localeStore.t('youtubeAuth.cta') }}
+      </BaseButton>
+      <p class="hint muted">{{ localeStore.t('youtubeAuth.consentHint') }}</p>
     </div>
 
-    <ConfirmDialog
-      v-model="disconnectDialogOpen"
-      :title="localeStore.t('youtubeAuth.disconnectTitle')"
-      :message="localeStore.t('youtubeAuth.disconnectMessage')"
-      :confirmText="localeStore.t('youtubeAuth.disconnectConfirm')"
-      :cancelText="localeStore.t('common.actions.cancel')"
-      variant="danger"
-      :loading="disconnectLoading"
-      @confirm="confirmDisconnect"
-    />
+    <div v-if="statusLoading" class="inline-loader">
+      <LoadingSpinner :message="localeStore.t('youtubeAuth.exchanging')" />
+    </div>
   </BaseCard>
 </template>
 
@@ -100,14 +55,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
-import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { apiService } from '@/services/api'
 import { useLocaleStore } from '@/stores/locale'
 import { useAuthStore } from '@/stores/auth'
 import type { GoogleAccountStatusResponse } from '@/types/api'
-
-const REQUIRED_SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -115,14 +67,11 @@ const authStore = useAuthStore()
 
 const authorizeLoading = ref(false)
 const statusLoading = ref(false)
-const disconnectLoading = ref(false)
-const disconnectDialogOpen = ref(false)
 const statusMessage = ref('')
 const errorMessage = ref('')
 const isConnected = ref(false)
 const connectedChannelLabel = ref<string | null>(null)
 const needsRefresh = ref(false)
-const connectedAccountId = ref<string | null>(null)
 const refreshTokenExpiresAt = ref<string | null>(null)
 
 const redirectUri = computed(() => {
@@ -137,8 +86,6 @@ const redirectUri = computed(() => {
     return ''
   }
 })
-
-const requiredScope = computed(() => REQUIRED_SCOPE)
 
 const isFullyConnected = computed(() => isConnected.value && !needsRefresh.value)
 
@@ -201,7 +148,6 @@ async function loadStatus() {
     const payload = response as GoogleAccountStatusResponse
     isConnected.value = Boolean(payload?.connected)
     needsRefresh.value = Boolean(payload?.needs_refresh)
-    connectedAccountId.value = payload?.account_id ?? null
     connectedChannelLabel.value =
       payload?.channel_title ||
       payload?.account_email ||
@@ -217,83 +163,15 @@ async function loadStatus() {
   } catch (error) {
     const message = parseError(error)
     if (isMissingAuthError(message)) {
-      statusMessage.value = localeStore.t('youtubeAuth.connectCopy')
+      statusMessage.value = ''
       isConnected.value = false
       needsRefresh.value = false
-      connectedAccountId.value = null
       refreshTokenExpiresAt.value = null
       return
     }
     errorMessage.value = message
   } finally {
     statusLoading.value = false
-  }
-}
-
-async function confirmDisconnect() {
-  if (disconnectLoading.value) return
-
-  errorMessage.value = ''
-  statusMessage.value = ''
-  disconnectLoading.value = true
-
-  try {
-    const response = await apiService.disconnectGoogleAccount(connectedAccountId.value ?? undefined)
-    const workerSynced = response?.worker_synced !== false
-
-    disconnectDialogOpen.value = false
-    isConnected.value = false
-    needsRefresh.value = false
-    connectedChannelLabel.value = null
-    connectedAccountId.value = null
-    refreshTokenExpiresAt.value = null
-
-    const disconnectedMessage = workerSynced
-      ? localeStore.t('youtubeAuth.disconnectedStatus')
-      : localeStore.t('youtubeAuth.disconnectedWorkerSyncFailed')
-    statusMessage.value = disconnectedMessage
-
-    // Optional: refetch status to confirm
-    await loadStatus()
-
-    // Only restore the disconnected message if the refresh did not surface an error.
-    // Otherwise, keep the error visible (statusMessage takes precedence in the template).
-    if (!errorMessage.value && !isConnected.value) {
-      statusMessage.value = disconnectedMessage
-    }
-  } catch (error) {
-    const status = (error as any)?.response?.status || (error as any)?.status
-    const detail =
-      (error as any)?.response?.data?.detail ||
-      (error as any)?.response?.data?.message ||
-      parseError(error)
-
-    if (status === 401) {
-      authStore.logout()
-      errorMessage.value = localeStore.t('auth.login')
-      disconnectDialogOpen.value = false
-      return
-    }
-
-    if (status === 404) {
-      disconnectDialogOpen.value = false
-      isConnected.value = false
-      needsRefresh.value = false
-      connectedChannelLabel.value = null
-      connectedAccountId.value = null
-      refreshTokenExpiresAt.value = null
-      const alreadyDisconnectedMessage = localeStore.t('youtubeAuth.alreadyDisconnected')
-      statusMessage.value = alreadyDisconnectedMessage
-      await loadStatus()
-      if (!errorMessage.value && !isConnected.value) {
-        statusMessage.value = alreadyDisconnectedMessage
-      }
-      return
-    }
-
-    errorMessage.value = detail || localeStore.t('youtubeAuth.genericError')
-  } finally {
-    disconnectLoading.value = false
   }
 }
 
@@ -395,7 +273,7 @@ onMounted(() => {
 .auth-card {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .card-header {
@@ -417,61 +295,14 @@ onMounted(() => {
   margin: 0;
 }
 
-.auth-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: var(--spacing-lg);
-  align-items: start;
-}
-
-.panel {
+.auth-actions {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-}
-
-.panel h4 {
-  margin: 0;
-  color: var(--navy-900);
-}
-
-.panel--action {
   padding: var(--spacing-md);
-  border: 1px dashed var(--slate-200);
   border-radius: var(--radius-lg);
-  background: var(--slate-50);
-}
-
-.scope {
-  font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
-  background: var(--slate-50);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--slate-200);
-  color: var(--navy-800);
-  font-size: 0.9rem;
-  word-break: break-all;
-}
-
-.redirect {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2xs);
-}
-
-.redirect .label {
-  font-weight: 600;
-  color: var(--navy-700);
-}
-
-.redirect .value {
-  font-family: var(--font-mono, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace);
-  color: var(--navy-800);
-  background: white;
-  border: 1px solid var(--slate-200);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  word-break: break-all;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.9));
 }
 
 .hint {
@@ -483,12 +314,6 @@ onMounted(() => {
 .hint.muted {
   font-size: 0.85rem;
   color: var(--slate-500);
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
 }
 
 .inline-loader {
@@ -529,11 +354,5 @@ onMounted(() => {
 .status--info {
   background: var(--slate-50);
   color: var(--navy-800);
-}
-
-@media (max-width: 960px) {
-  .auth-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

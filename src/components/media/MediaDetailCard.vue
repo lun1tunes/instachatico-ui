@@ -111,7 +111,7 @@
           <span>{{ localeStore.t('media.detail.enableProcessing') }}</span>
         </label>
 
-        <label class="checkbox-label checkbox-label--danger">
+        <label v-if="platform === 'instagram'" class="checkbox-label checkbox-label--danger">
           <input
             type="checkbox"
             :checked="media.is_comment_enabled"

@@ -7,15 +7,15 @@
       </div>
 
       <div class="settings-grid">
-        <BaseCard class="account-card">
+        <BaseCard class="account-card" shadow="lg">
           <div class="card-header">
             <div>
               <p class="eyebrow">{{ localeStore.t('settings.account.eyebrow') }}</p>
               <h3>{{ localeStore.t('settings.account.heading') }}</h3>
-              <p class="card-subtitle">
-                {{ localeStore.t('settings.account.description') }}
-              </p>
             </div>
+            <BaseButton size="sm" variant="danger" class="logout-button" @click="handleLogout">
+              {{ localeStore.t('common.actions.logout') }}
+            </BaseButton>
           </div>
 
           <dl class="account-details">
@@ -23,28 +23,7 @@
               <dt>{{ localeStore.t('settings.account.username') }}</dt>
               <dd>{{ authStore.user?.username || localeStore.t('settings.account.unknown') }}</dd>
             </div>
-            <div class="detail-row">
-              <dt>{{ localeStore.t('settings.account.apiBase') }}</dt>
-              <dd class="mono">{{ authStore.baseUrl || localeStore.t('settings.account.notProvided') }}</dd>
-            </div>
-            <div class="detail-row">
-              <dt>{{ localeStore.t('settings.account.scopes') }}</dt>
-              <dd>
-                <template v-if="authStore.scopes?.length">
-                  <span class="scope-pill" v-for="scope in authStore.scopes" :key="scope">
-                    {{ scope }}
-                  </span>
-                </template>
-                <span v-else>{{ localeStore.t('settings.account.noScopes') }}</span>
-              </dd>
-            </div>
           </dl>
-
-          <div class="actions">
-            <BaseButton variant="danger" @click="handleLogout">
-              {{ localeStore.t('common.actions.logout') }}
-            </BaseButton>
-          </div>
         </BaseCard>
 
         <YouTubeAuthPanel />
@@ -77,6 +56,13 @@ function handleLogout() {
 <style scoped>
 .settings-page {
   min-height: calc(100vh - 4rem);
+  background: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 0%, rgba(15, 23, 42, 0.08), transparent 40%);
+}
+
+.settings-page .container {
+  position: relative;
+  z-index: 1;
 }
 
 .page-header {
@@ -92,20 +78,23 @@ function handleLogout() {
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 }
 
 .account-card {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .eyebrow {
@@ -116,12 +105,6 @@ function handleLogout() {
   margin: 0 0 var(--spacing-xs) 0;
 }
 
-.card-subtitle {
-  margin: var(--spacing-xs) 0 0;
-  color: var(--slate-600);
-  font-size: 0.95rem;
-}
-
 .account-details {
   display: flex;
   flex-direction: column;
@@ -130,10 +113,13 @@ function handleLogout() {
 }
 
 .detail-row {
-  display: grid;
-  grid-template-columns: 160px 1fr;
+  display: flex;
   gap: var(--spacing-sm);
-  align-items: baseline;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 dt {
@@ -147,32 +133,14 @@ dd {
   word-break: break-word;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-}
-
-.scope-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  background: var(--slate-100);
-  color: var(--navy-700);
-  font-size: 0.85rem;
-  margin-right: 0.35rem;
-  margin-bottom: 0.35rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
+.logout-button {
+  margin-left: auto;
 }
 
 @media (max-width: 640px) {
   .detail-row {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
