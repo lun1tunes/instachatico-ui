@@ -6,6 +6,13 @@
         <h3>{{ localeStore.t('instagramAuth.title') }}</h3>
         <p class="subtitle">{{ localeStore.t('instagramAuth.subtitle') }}</p>
       </div>
+    </div>
+
+    <div v-if="showNotice" class="notice" :class="`notice--${noticeVariant}`">
+      {{ noticeMessage }}
+    </div>
+
+    <div v-if="showStatusBadge || formattedExpiry" class="meta">
       <span v-if="showStatusBadge" class="status" :class="`status--${statusBadge.variant}`">
         <svg
           v-if="statusBadge.variant === 'success'"
@@ -22,19 +29,15 @@
         <span v-else class="status-dot" aria-hidden="true"></span>
         <span>{{ statusBadge.label }}</span>
       </span>
-    </div>
-
-    <div v-if="showNotice" class="notice" :class="`notice--${noticeVariant}`">
-      {{ noticeMessage }}
-    </div>
-
-    <div v-if="formattedExpiry" class="expiry">
-      <span class="label">{{ localeStore.t('instagramAuth.expiresLabel') }}</span>
-      <span class="value">{{ formattedExpiry }}</span>
+      <div v-if="formattedExpiry" class="expiry">
+        <span class="label">{{ localeStore.t('instagramAuth.expiresLabel') }}</span>
+        <span class="value">{{ formattedExpiry }}</span>
+      </div>
     </div>
 
     <div class="actions">
       <BaseButton
+        fullWidth
         :loading="authorizeLoading"
         :disabled="authorizeLoading || statusLoading || (isConnected && accessTokenValid !== false)"
         @click="startAuthorization"
@@ -335,10 +338,8 @@ onMounted(async () => {
 
 .card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-md);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .eyebrow {
@@ -363,7 +364,6 @@ onMounted(async () => {
   font-weight: 600;
   font-size: 0.85rem;
   border: 1px solid transparent;
-  box-shadow: var(--shadow-sm);
 }
 
 .status--success {
@@ -425,14 +425,26 @@ onMounted(async () => {
   color: var(--navy-800);
 }
 
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
 .expiry {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.8);
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: white;
   border: 1px solid rgba(226, 232, 240, 0.8);
+  font-size: 0.85rem;
 }
 
 .expiry .label {
@@ -442,23 +454,23 @@ onMounted(async () => {
 
 .expiry .value {
   color: var(--navy-900);
-  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-md);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  background: linear-gradient(135deg, rgba(225, 29, 72, 0.08), rgba(255, 255, 255, 0.9));
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.07), rgba(255, 255, 255, 0.92));
 }
 
 .secondary-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--spacing-sm);
-  flex-wrap: wrap;
 }
 
 .hint {
@@ -477,8 +489,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
-  .card-header {
-    align-items: flex-start;
+  .actions {
+    padding: var(--spacing-md);
   }
 }
 </style>
