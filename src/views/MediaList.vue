@@ -59,6 +59,10 @@
         </BaseButton>
       </div>
 
+      <div v-else-if="!filteredMediaList.length" class="empty-state">
+        <p>{{ localeStore.t('media.list.empty') }}</p>
+      </div>
+
       <div v-else class="media-grid">
         <MediaCard
           v-for="media in filteredMediaList"
@@ -198,6 +202,22 @@ async function handleUpdateSettings(id: string, settings: { is_comment_enabled?:
   background-color: var(--blue-500);
   color: white;
   border-color: var(--blue-500);
+}
+
+.error-state,
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.error-state p {
+  color: var(--error);
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-state p {
+  color: var(--navy-600);
+  margin: 0;
 }
 
 .platform-filter__button.is-active img {

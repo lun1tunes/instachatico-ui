@@ -128,6 +128,7 @@ const en = {
       title: 'Media Posts',
       subtitle: 'Manage Instagram and YouTube posts and comments',
       loading: 'Loading media...',
+      empty: 'No media posts found yet.',
       error: 'Failed to load media',
       filterLabel: 'Filter by platform',
       filters: {
