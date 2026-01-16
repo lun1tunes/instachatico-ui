@@ -59,6 +59,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import { apiService } from '@/services/api'
 import { useLocaleStore } from '@/stores/locale'
 import { useAuthStore } from '@/stores/auth'
+import { resolveAuthHostUrl } from '@/utils/authBase'
 import type { GoogleAccountStatusResponse } from '@/types/api'
 
 const localeStore = useLocaleStore()
@@ -194,7 +195,10 @@ async function startAuthorization() {
     }
 
     // Call backend explicitly with redirect: 'manual' so the browser does not fetch Google in XHR.
-    const authorizeUrl = new URL('/api/v1/auth/google/authorize', window.location.origin)
+    const authHost = resolveAuthHostUrl()
+    const authorizeBase =
+      authHost && /^https?:\/\//i.test(authHost) ? authHost : window.location.origin
+    const authorizeUrl = new URL('/api/v1/auth/google/authorize', authorizeBase)
     authorizeUrl.searchParams.set('return_url', 'true')
     if (redirectTo) authorizeUrl.searchParams.set('redirect_to', redirectTo)
 
@@ -206,7 +210,7 @@ async function startAuthorization() {
           Authorization: `Bearer ${token}`,
           Accept: 'application/json'
         },
-        mode: 'same-origin',
+        mode: 'cors',
         redirect: 'manual'
       })
     } catch (fetchError) {
@@ -215,13 +219,18 @@ async function startAuthorization() {
     }
 
     // Handle redirects manually by reading Location and navigating.
-    if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+    if (response.type === 'opaqueredirect') {
+      window.location.assign(authorizeUrl.toString())
+      return
+    }
+    if (response.status >= 300 && response.status < 400) {
       const locationHeader = response.headers.get('Location') || response.headers.get('location')
       if (locationHeader) {
         window.location.assign(locationHeader)
         return
       }
-      throw new Error(localeStore.t('youtubeAuth.genericError'))
+      window.location.assign(authorizeUrl.toString())
+      return
     }
 
     if (response.status === 401) {

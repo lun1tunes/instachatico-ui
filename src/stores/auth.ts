@@ -2,6 +2,7 @@ import axios from 'axios'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { apiService } from '@/services/api'
+import { buildAuthTokenUrl, resolveAuthHostUrl } from '@/utils/authBase'
 
 interface User {
   username: string
@@ -24,11 +25,16 @@ interface StoredAuth {
 
 const STORAGE_KEY = 'instachatico_auth'
 const DEFAULT_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
+const AUTH_HOST_URL = resolveAuthHostUrl()
 const TOKEN_ENDPOINT = (() => {
   const raw = (import.meta.env.VITE_AUTH_TOKEN_URL as string | undefined) ?? ''
   const trimmed = raw.trim()
 
   if (!trimmed) {
+    const inferred = buildAuthTokenUrl()
+    if (inferred) {
+      return inferred
+    }
     // Use /token directly (not combined with API base URL)
     return '/token'
   }
@@ -39,7 +45,14 @@ const TOKEN_ENDPOINT = (() => {
 
   // If path starts with /, treat it as absolute (from root), don't combine with base URL
   if (trimmed.startsWith('/')) {
+    if (AUTH_HOST_URL) {
+      return `${AUTH_HOST_URL}${normalizePath(trimmed)}`
+    }
     return normalizePath(trimmed) || '/token'
+  }
+
+  if (AUTH_HOST_URL) {
+    return `${AUTH_HOST_URL}${normalizePath(trimmed || '/token')}`
   }
 
   const base = normalizeBaseUrl(DEFAULT_BASE_URL) || '/api'

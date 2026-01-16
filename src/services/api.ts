@@ -27,6 +27,7 @@ import type {
   GoogleAccountStatusResponse,
   GoogleDisconnectResponse
 } from '@/types/api'
+import { buildAuthApiUrl } from '@/utils/authBase'
 
 const AUTH_FAILURE_CODES = new Set([4003, 4004, 4005])
 
@@ -118,6 +119,15 @@ class ApiService {
 
   getAuthTokenType(): string {
     return this.bearerType
+  }
+
+  private resolveAuthEndpoint(path: string): string {
+    const authUrl = buildAuthApiUrl(path)
+    if (authUrl) {
+      return authUrl
+    }
+    const base = this.client.defaults.baseURL ?? ''
+    return /\/v1\/?$/.test(base) ? path : `v1/${path}`
   }
 
   // Authentication endpoints
@@ -295,8 +305,7 @@ class ApiService {
     redirectTo?: string,
     options?: { returnUrl?: boolean; forceReauth?: boolean }
   ): Promise<InstagramAuthorizeResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/authorize' : 'v1/auth/instagram/authorize'
+    const endpoint = this.resolveAuthEndpoint('auth/instagram/authorize')
     const response = await this.client.get<InstagramAuthorizeResponse>(endpoint, {
       params: {
         ...(redirectTo ? { redirect_to: redirectTo } : {}),
@@ -308,22 +317,19 @@ class ApiService {
   }
 
   async getInstagramAccountStatus(): Promise<InstagramAccountStatusResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/account' : 'v1/auth/instagram/account'
+    const endpoint = this.resolveAuthEndpoint('auth/instagram/account')
     const response = await this.client.get<InstagramAccountStatusResponse>(endpoint)
     return response.data
   }
 
   async refreshInstagramAccount(): Promise<InstagramRefreshResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/refresh' : 'v1/auth/instagram/refresh'
+    const endpoint = this.resolveAuthEndpoint('auth/instagram/refresh')
     const response = await this.client.post<InstagramRefreshResponse>(endpoint)
     return response.data
   }
 
   async disconnectInstagramAccount(): Promise<InstagramDisconnectResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/instagram/account' : 'v1/auth/instagram/account'
+    const endpoint = this.resolveAuthEndpoint('auth/instagram/account')
     const response = await this.client.delete<InstagramDisconnectResponse>(endpoint)
     return response.data
   }
@@ -333,9 +339,7 @@ class ApiService {
     redirectTo?: string,
     options?: { returnUrl?: boolean }
   ): Promise<GoogleAuthorizeResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    // If base already ends with /v1, don't prepend v1 again
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/authorize' : 'v1/auth/google/authorize'
+    const endpoint = this.resolveAuthEndpoint('auth/google/authorize')
     const response = await this.client.get<GoogleAuthorizeResponse>(endpoint, {
       params: {
         ...(redirectTo ? { redirect_to: redirectTo } : {}),
@@ -346,8 +350,7 @@ class ApiService {
   }
 
   async getGoogleAccountStatus(accountId?: string): Promise<GoogleAccountStatusResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/account' : 'v1/auth/google/account'
+    const endpoint = this.resolveAuthEndpoint('auth/google/account')
     const response = await this.client.get<GoogleAccountStatusResponse>(endpoint, {
       params: accountId ? { account_id: accountId } : undefined
     })
@@ -355,8 +358,7 @@ class ApiService {
   }
 
   async disconnectGoogleAccount(accountId?: string): Promise<GoogleDisconnectResponse> {
-    const base = this.client.defaults.baseURL ?? ''
-    const endpoint = /\/v1\/?$/.test(base) ? 'auth/google/account' : 'v1/auth/google/account'
+    const endpoint = this.resolveAuthEndpoint('auth/google/account')
     const response = await this.client.delete<GoogleDisconnectResponse>(endpoint, {
       params: accountId ? { account_id: accountId } : undefined
     })
