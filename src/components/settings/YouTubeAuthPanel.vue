@@ -3,7 +3,10 @@
     <div class="card-header">
       <div>
         <p class="eyebrow">{{ localeStore.t('youtubeAuth.eyebrow') }}</p>
-        <h3>{{ localeStore.t('youtubeAuth.title') }}</h3>
+        <h3 class="title-row">
+          <img class="platform-icon" :src="youtubeIconSrc" alt="" aria-hidden="true" />
+          {{ localeStore.t('youtubeAuth.title') }}
+        </h3>
         <p class="subtitle">{{ localeStore.t('youtubeAuth.subtitle') }}</p>
       </div>
 
@@ -65,6 +68,8 @@ import type { GoogleAccountStatusResponse } from '@/types/api'
 const localeStore = useLocaleStore()
 const route = useRoute()
 const authStore = useAuthStore()
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const youtubeIconSrc = `${publicBase}/assets/platforms/youtube.png`
 
 const authorizeLoading = ref(false)
 const statusLoading = ref(false)
@@ -297,6 +302,21 @@ onMounted(() => {
   font-size: 0.8rem;
   color: var(--navy-500);
   margin: 0;
+}
+
+.title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.platform-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  border-radius: 0.4rem;
+  box-shadow: var(--shadow-sm);
+  background: white;
 }
 
 .subtitle {

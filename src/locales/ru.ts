@@ -53,6 +53,7 @@ const ru = {
     disconnectCta: 'Отключить',
     consentHint: 'Вы будете перенаправлены в Instagram Business для входа.',
     loading: 'Проверяем подключение Instagram...',
+    accountLabel: 'Аккаунт',
     expiresLabel: 'Доступ истекает',
     status: {
       connected: 'Подключено',

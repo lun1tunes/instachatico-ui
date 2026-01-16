@@ -305,6 +305,7 @@ export interface InstagramAuthorizeResponse {
 export interface InstagramAccountStatusResponse {
   connected: boolean
   account_id?: string | null
+  username?: string | null
   scope?: string | string[] | null
   access_token_expires_at?: string | null
   access_token_valid?: boolean

@@ -3,7 +3,10 @@
     <div class="card-header">
       <div>
         <p class="eyebrow">{{ localeStore.t('instagramAuth.eyebrow') }}</p>
-        <h3>{{ localeStore.t('instagramAuth.title') }}</h3>
+        <h3 class="title-row">
+          <img class="platform-icon" :src="instagramIconSrc" alt="" aria-hidden="true" />
+          {{ localeStore.t('instagramAuth.title') }}
+        </h3>
         <p class="subtitle">{{ localeStore.t('instagramAuth.subtitle') }}</p>
       </div>
     </div>
@@ -12,7 +15,7 @@
       {{ noticeMessage }}
     </div>
 
-    <div v-if="showStatusBadge || formattedExpiry" class="meta">
+    <div v-if="hasAccountMeta" class="meta">
       <span v-if="showStatusBadge" class="status" :class="`status--${statusBadge.variant}`">
         <svg
           v-if="statusBadge.variant === 'success'"
@@ -29,6 +32,10 @@
         <span v-else class="status-dot" aria-hidden="true"></span>
         <span>{{ statusBadge.label }}</span>
       </span>
+      <div v-if="instagramUsername" class="account">
+        <span class="label">{{ localeStore.t('instagramAuth.accountLabel') }}</span>
+        <span class="value">{{ instagramUsername }}</span>
+      </div>
       <div v-if="formattedExpiry" class="expiry">
         <span class="label">{{ localeStore.t('instagramAuth.expiresLabel') }}</span>
         <span class="value">{{ formattedExpiry }}</span>
@@ -103,6 +110,8 @@ const localeStore = useLocaleStore()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const instagramIconSrc = `${publicBase}/assets/platforms/instagram.png`
 
 const authorizeLoading = ref(false)
 const refreshLoading = ref(false)
@@ -113,6 +122,7 @@ const statusLoading = ref(false)
 const isConnected = ref(false)
 const accessTokenValid = ref<boolean | null>(null)
 const accessTokenExpiresAt = ref<string | null>(null)
+const instagramUsername = ref<string | null>(null)
 
 const noticeMessage = ref('')
 const noticeVariant = ref<NoticeVariant>('info')
@@ -128,6 +138,8 @@ const formattedExpiry = computed(() => {
 const showNotice = computed(() => noticeMessage.value && noticeVariant.value !== 'success')
 
 const showStatusBadge = computed(() => isConnected.value)
+
+const hasAccountMeta = computed(() => showStatusBadge.value || !!formattedExpiry.value || !!instagramUsername.value)
 
 const statusBadge = computed(() => {
   if (accessTokenValid.value === false) {
@@ -212,6 +224,7 @@ async function loadStatus() {
     isConnected.value = Boolean(response?.connected)
     accessTokenValid.value = response?.access_token_valid ?? null
     accessTokenExpiresAt.value = response?.access_token_expires_at ?? accessTokenExpiresAt.value
+    instagramUsername.value = response?.username ?? null
   } catch (error) {
     const status = (error as any)?.response?.status || (error as any)?.status
     if (status === 401) {
@@ -300,6 +313,7 @@ async function confirmDisconnect() {
     isConnected.value = false
     accessTokenValid.value = null
     accessTokenExpiresAt.value = null
+    instagramUsername.value = null
     await loadStatus()
 
     if (response?.worker_synced === false) {
@@ -348,6 +362,21 @@ onMounted(async () => {
   font-size: 0.8rem;
   color: var(--navy-500);
   margin: 0 0 var(--spacing-xs) 0;
+}
+
+.title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.platform-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  border-radius: 0.4rem;
+  box-shadow: var(--shadow-sm);
+  background: white;
 }
 
 .subtitle {
@@ -434,6 +463,27 @@ onMounted(async () => {
   border-radius: var(--radius-lg);
   background: rgba(248, 250, 252, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.account {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  font-size: 0.85rem;
+}
+
+.account .label {
+  font-weight: 600;
+  color: var(--navy-700);
+}
+
+.account .value {
+  color: var(--navy-900);
+  font-weight: 600;
 }
 
 .expiry {

@@ -53,6 +53,7 @@ const en = {
     disconnectCta: 'Disconnect',
     consentHint: "You'll be redirected to Instagram Business login.",
     loading: 'Checking Instagram connection...',
+    accountLabel: 'Account',
     expiresLabel: 'Access expires',
     status: {
       connected: 'Connected',
