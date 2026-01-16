@@ -197,35 +197,6 @@
           </div>
         </div>
 
-        <div class="moderation-section">
-          <div class="section-heading">
-            <div>
-              <h3>{{ localeStore.t('statistics.moderation.section.aiTitle') }}</h3>
-              <p class="section-description">{{ localeStore.t('statistics.moderation.section.aiDescription') }}</p>
-            </div>
-          </div>
-          <div class="stats-table-wrapper">
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>{{ localeStore.t('statistics.table.metric') }}</th>
-                  <th v-for="column in monthColumns" :key="`moderation-ai-${column.id}`">
-                    {{ column.label }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in moderationAiRows" :key="row.key">
-                  <th>{{ row.label }}</th>
-                  <td v-for="column in monthColumns" :key="`${row.key}-${column.id}`">
-                    {{ row.values[column.id] ?? '—' }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </BaseCard>
     </div>
   </div>
@@ -457,24 +428,6 @@ const moderationViolationRows = computed(() => {
     const values: Record<string, string> = {}
     insightsStore.moderationMonths.forEach((month) => {
       const raw = month.violations[field.key as keyof typeof month.violations] as number
-      const coerced = typeof raw === 'number' ? raw : Number(raw ?? 0)
-      values[month.month] = formatNumber(coerced)
-    })
-    return { key: field.key, label: field.label, values }
-  })
-})
-
-const moderationAiRows = computed(() => {
-  if (!insightsStore.moderationMonths.length) return []
-  const fields = [
-    { key: 'deleted_content', label: localeStore.t('statistics.moderation.ai.deleted') },
-    { key: 'hidden_comments', label: localeStore.t('statistics.moderation.ai.hidden') }
-  ]
-
-  return fields.map((field) => {
-    const values: Record<string, string> = {}
-    insightsStore.moderationMonths.forEach((month) => {
-      const raw = month.ai_moderator[field.key as keyof typeof month.ai_moderator] as number
       const coerced = typeof raw === 'number' ? raw : Number(raw ?? 0)
       values[month.month] = formatNumber(coerced)
     })
