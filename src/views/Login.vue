@@ -3,33 +3,7 @@
     <div class="login-container">
       <BaseCard padding="lg" shadow="lg">
         <div class="login-header">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <rect width="32" height="32" rx="8" fill="url(#gradient)" />
-            <path
-              d="M16 10L20 14H18V20H14V14H12L16 10Z"
-              fill="white"
-              opacity="0.9"
-            />
-            <defs>
-              <linearGradient
-                id="gradient"
-                x1="0"
-                y1="0"
-                x2="32"
-                y2="32"
-                gradientUnits="userSpaceOnUse"
-              >
-                <stop stop-color="#3B82F6" />
-                <stop offset="1" stop-color="#1E40AF" />
-              </linearGradient>
-            </defs>
-          </svg>
+          <img class="login-icon" :src="appIconSrc" alt="" aria-hidden="true" />
           <h1>{{ localeStore.t('auth.title') }}</h1>
           <p class="login-subtitle">{{ localeStore.t('auth.subtitle') }}</p>
         </div>
@@ -99,6 +73,8 @@ const localeStore = useLocaleStore()
 const username = ref('')
 const password = ref('')
 const loading = ref(false)
+const publicBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
+const appIconSrc = `${publicBase}/assets/instachatico_icon.png`
 
 async function handleLogin() {
   loading.value = true
@@ -134,8 +110,14 @@ async function handleLogin() {
   margin-bottom: var(--spacing-xl);
 }
 
-.login-header svg {
+.login-icon {
+  width: 56px;
+  height: 56px;
   margin-bottom: var(--spacing-md);
+  border-radius: 14px;
+  object-fit: contain;
+  box-shadow: var(--shadow-md);
+  background: white;
 }
 
 .login-header h1 {
