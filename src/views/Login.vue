@@ -5,7 +5,10 @@
         <div class="login-header">
           <img class="login-icon" :src="appIconSrc" alt="" aria-hidden="true" />
           <h1>{{ localeStore.t('auth.title') }}</h1>
-          <p class="login-subtitle">{{ localeStore.t('auth.subtitle') }}</p>
+          <p class="login-subtitle">
+            <span class="login-subtitle__accent">{{ localeStore.t('auth.subtitleLead') }}</span>
+            <span class="login-subtitle__rest">{{ localeStore.t('auth.subtitleTail') }}</span>
+          </p>
         </div>
 
         <form @submit.prevent="handleLogin" class="login-form">
@@ -130,8 +133,27 @@ async function handleLogin() {
 
 .login-subtitle {
   color: var(--navy-600);
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   margin: 0;
+}
+
+.login-subtitle__accent {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(59, 130, 246, 0.28));
+  color: var(--blue-500);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.login-subtitle__rest {
+  color: var(--navy-600);
+  font-weight: 500;
 }
 
 .login-form {

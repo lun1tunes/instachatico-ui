@@ -21,7 +21,9 @@ const en = {
   },
   auth: {
     title: 'Chatico',
-    subtitle: 'Comment Bot Moderator',
+    subtitle: 'Your 24 hour AI comment moderator',
+    subtitleLead: 'Your 24 hour AI',
+    subtitleTail: 'comment moderator',
     username: 'Username',
     password: 'Password',
     usernamePlaceholder: 'Enter your username',
