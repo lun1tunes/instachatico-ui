@@ -31,7 +31,8 @@ const en = {
   },
   settings: {
     title: 'Settings',
-    subtitle: 'Manage your account, connections, and session',
+    subtitle: 'Manage your account and platform integrations',
+    privacyLink: 'Privacy policy',
     account: {
       eyebrow: 'Account',
       heading: 'Account information',

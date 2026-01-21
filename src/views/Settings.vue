@@ -4,6 +4,14 @@
       <div class="page-header">
         <h1>{{ localeStore.t('settings.title') }}</h1>
         <p class="page-subtitle">{{ localeStore.t('settings.subtitle') }}</p>
+        <a
+          class="privacy-link"
+          href="https://assist.chatico.cc/privacy_policy.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ localeStore.t('settings.privacyLink') }}
+        </a>
       </div>
 
       <div class="settings-grid">
@@ -75,6 +83,27 @@ function handleLogout() {
   color: var(--navy-600);
   font-size: 1rem;
   margin: 0;
+}
+
+.privacy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: var(--spacing-md);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy-800);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
+}
+
+.privacy-link:hover {
+  color: var(--blue-500);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .settings-grid {
