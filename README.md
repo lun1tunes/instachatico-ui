@@ -1,4 +1,4 @@
-# Instachatico UI
+# Chatico UI
 
 A modern, minimalistic UI for managing Instagram comment moderation with AI-powered classification.
 

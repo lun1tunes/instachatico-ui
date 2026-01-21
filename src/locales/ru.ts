@@ -20,7 +20,7 @@ const ru = {
     logout: 'Выйти'
   },
   auth: {
-    title: 'Instachatico',
+    title: 'Chatico',
     subtitle: 'Модератор комментариев',
     username: 'Имя пользователя',
     password: 'Пароль',

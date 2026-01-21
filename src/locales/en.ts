@@ -20,7 +20,7 @@ const en = {
     logout: 'Logout'
   },
   auth: {
-    title: 'Instachatico',
+    title: 'Chatico',
     subtitle: 'Comment Bot Moderator',
     username: 'Username',
     password: 'Password',
