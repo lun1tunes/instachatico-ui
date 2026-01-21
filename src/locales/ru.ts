@@ -22,8 +22,6 @@ const ru = {
   auth: {
     title: 'Chatico',
     subtitle: 'Ваш 24-часовой AI модератор комментариев',
-    subtitleLead: 'Ваш 24-часовой AI',
-    subtitleTail: 'модератор комментариев',
     username: 'Имя пользователя',
     password: 'Пароль',
     usernamePlaceholder: 'Введите имя пользователя',
