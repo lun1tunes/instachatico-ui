@@ -124,12 +124,14 @@ export const useInsightsStore = defineStore('insights', () => {
   const error = ref<string | null>(null)
   const hasFetched = ref(false)
   const accountFollowers = ref<number | null>(null)
+  let requestToken = 0
 
   const months = computed<InsightsMonth[]>(() => insights.value?.months ?? [])
   const moderationMonths = computed<ModerationStatsMonth[]>(() => moderationStats.value?.months ?? [])
   const currentFollowers = computed(() => accountFollowers.value)
 
   async function fetchInsights() {
+    const currentToken = ++requestToken
     loading.value = true
     error.value = null
 
@@ -140,6 +142,9 @@ export const useInsightsStore = defineStore('insights', () => {
         apiService.getModerationStats(selectedPeriod.value).catch(() => null)
       ])
 
+      if (currentToken !== requestToken) {
+        return
+      }
       insights.value = insightsResponse.payload
       moderationStats.value = moderationResponse?.payload ?? null
       const payloadFollowers = accountResponse?.payload
@@ -149,11 +154,16 @@ export const useInsightsStore = defineStore('insights', () => {
         determineFallbackFollowers(insightsResponse.payload)
       accountFollowers.value = followerValue ?? accountFollowers.value
     } catch (err) {
+      if (currentToken !== requestToken) {
+        return
+      }
       error.value = err instanceof Error ? err.message : 'Failed to load statistics'
       throw err
     } finally {
-      loading.value = false
-      hasFetched.value = true
+      if (currentToken === requestToken) {
+        loading.value = false
+        hasFetched.value = true
+      }
     }
   }
 
@@ -185,6 +195,17 @@ export const useInsightsStore = defineStore('insights', () => {
     return (delta / followers) * 100
   }
 
+  function reset() {
+    requestToken += 1
+    selectedPeriod.value = DEFAULT_PERIOD
+    insights.value = null
+    moderationStats.value = null
+    accountFollowers.value = null
+    loading.value = false
+    error.value = null
+    hasFetched.value = false
+  }
+
   return {
     selectedPeriod,
     insights,
@@ -200,6 +221,7 @@ export const useInsightsStore = defineStore('insights', () => {
     getEngagementRate,
     getFollowerDelta,
     getFollowerDeltaPercent,
-    getFollowersForMonth
+    getFollowersForMonth,
+    reset
   }
 })

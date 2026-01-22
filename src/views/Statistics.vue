@@ -203,7 +203,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { parse, format } from 'date-fns'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
@@ -524,6 +524,10 @@ function handleGenerate() {
 
 onMounted(() => {
   // Wait for user action to fetch statistics
+})
+
+onUnmounted(() => {
+  insightsStore.reset()
 })
 </script>
 
